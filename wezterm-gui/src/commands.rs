@@ -904,7 +904,9 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
         DecreaseFontSize => CommandDef {
             brief: "Decrease font size".into(),
             doc: "Scales the font size smaller by 10%".into(),
-            keys: vec![],
+            keys: vec![
+                (Modifiers::CTRL, "-".into()),
+            ],
             args: &[ArgType::ActiveWindow],
             menubar: &["View", "Font Size"],
             icon: Some("md_format_size"),
@@ -912,7 +914,9 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
         IncreaseFontSize => CommandDef {
             brief: "Increase font size".into(),
             doc: "Scales the font size larger by 10%".into(),
-            keys: vec![],
+            keys: vec![
+                (Modifiers::CTRL, "=".into()),
+            ],
             args: &[ArgType::ActiveWindow],
             menubar: &["View", "Font Size"],
             icon: Some("md_format_size"),
