@@ -766,7 +766,7 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
             doc: "Clears any text that has scrolled out of the \
               viewport of the current pane"
                 .into(),
-            keys: vec![(Modifiers::SUPER, "k".into())],
+            keys: vec![],
             args: &[ArgType::ActivePane],
             menubar: &["Edit"],
             icon: Some("cod_clear_all"),
@@ -774,7 +774,10 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
         ClearScrollback(ScrollbackEraseMode::ScrollbackAndViewport) => CommandDef {
             brief: "Clear the scrollback and viewport".into(),
             doc: "Removes all content from the screen and scrollback".into(),
-            keys: vec![],
+            keys: vec![
+                (Modifiers::SUPER, "k".into()),
+                (Modifiers::CTRL, "k".into()),
+            ],
             args: &[ArgType::ActivePane],
             menubar: &["Edit"],
             icon: Some("cod_clear_all"),
@@ -901,10 +904,7 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
         DecreaseFontSize => CommandDef {
             brief: "Decrease font size".into(),
             doc: "Scales the font size smaller by 10%".into(),
-            keys: vec![
-                (Modifiers::SUPER, "-".into()),
-                (Modifiers::CTRL, "-".into()),
-            ],
+            keys: vec![],
             args: &[ArgType::ActiveWindow],
             menubar: &["View", "Font Size"],
             icon: Some("md_format_size"),
@@ -912,10 +912,7 @@ pub fn derive_command_from_key_assignment(action: &KeyAssignment) -> Option<Comm
         IncreaseFontSize => CommandDef {
             brief: "Increase font size".into(),
             doc: "Scales the font size larger by 10%".into(),
-            keys: vec![
-                (Modifiers::SUPER, "=".into()),
-                (Modifiers::CTRL, "=".into()),
-            ],
+            keys: vec![],
             args: &[ArgType::ActiveWindow],
             menubar: &["View", "Font Size"],
             icon: Some("md_format_size"),
