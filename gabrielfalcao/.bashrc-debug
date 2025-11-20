@@ -1,0 +1,2 @@
+set -x
+. ~/.shell.d/entrypoint.sh
