@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+for colnum in range(77):
+    r = int(255-(colnum*255/76))
+    g = int((colnum*510/76))
+    b = int((colnum*255/76))
+    if g>255:
+        g = 510-g
+    bg = "\033[48;2;%d;%d;%dm" % (r,g,b )
+    fg = "\033[38;2;%d;%d;%dm" % (255-r,255-g,255-b)
+    pad = " " * 30
+    code = f"#{r:02x}{g:02x}{b:02x} ({colnum+1:02d} / {colnum+1:02x})"
+    reset = f"{pad}{code}{pad}\033[0m"
+    print(f"{bg}{fg}{reset}")

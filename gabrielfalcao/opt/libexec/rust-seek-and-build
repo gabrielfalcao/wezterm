@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+
+path="$(echo -n "$@" | tr -d '[:space:]')"
+
+if [ -z "${path}" ]; then
+    path="$HOME/projects"
+fi
+
+if [ ! -e "$path" ]; then
+    exit_error 101 "$path does not exist"
+fi
+
+if [ ! -d "$path" ]; then
+    exit_error 101 "$path is not a directory"
+fi
+
+ansi_clear
+bar_text_left 237 231 "scanning rust projects in $(ansi_spaced 220 237 "$(get_display_path ${path})")$(ansi 237 231)"
+declare -a projects_to_build=($(find-rust-projects "${path}"))
+declare total_projects=${#projects_to_build[@]}
+declare padmax="${total_projects}"
+declare padmax=${#padmax}
+
+date_dirname=$(date +"%Y-%m-%d")
+time_dirname=$(date +"%H-%M-%S-%Z")
+state_dir_location=${HOME}/state/${date_dirname}/${time_dirname}
+state_location=${state_dir_location}/$(basename $0)
+mkdir -p "${state_dir_location}"
+
+sed 's/\s\+/\n/g' > ${state_location}.paths <<< "${projects_to_build[@]}"
+
+for index in ${!projects_to_build[@]}; do
+    path=${projects_to_build[$index]}
+    current=$(($index + 1))
+    padc="${current}"
+    padc=$(( ${padmax} - ${#current} ))
+    pad=$(seq ${padc} | tr -d '[0-9]' | tr '\n' ' ')
+    current="${pad}${current}"
+    # flags="raid"
+    # if [ -d "${path}/target" ]; then
+    flags="rwaid"
+    # else
+    #     flags="raid"
+    # fi
+    prefix="[${current}/${total_projects}]"
+    title="${prefix} building ${path}"
+    echo "${title}" > ${state_location}.current
+    bar_text_center 202 16 "${title}"
+    echo "${prefix}" > ~/state/
+    (cd $path && cargo doc)
+    (cd $path && cargo check)
+    (cd $path && cargo build)
+    (cd $path && cargo cbt "-${flags}")
+    rm -rf ${path}/target
+done
+date > ${state_location}.done

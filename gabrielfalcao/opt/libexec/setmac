@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# previous_addr=$(ifconfig  en0 ether  | grep ether | awk '{ print $2 }')
+# wanted_addr="5c:07:6f:43:43:43"
+# set -e
+# if [ "${previous_addr}" != "${wanted_addr}" ]; then
+#     sudo networksetup -setairportpower en0 off
+#     sleep 2
+#     sudo networksetup -setairportpower en0 on
+#     if 2>/dev/random sudo ifconfig en0 ether 5c:07:6f:43:49:41; then
+#         sudo networksetup -setairportpower en0 on
+#         sudo networksetup -detectnewhardware
+#         current_addr=$(ifconfig  en0 ether  | grep ether | awk '{ print $2 }')
+#         echo "OK"
+#     else
+#         sudo networksetup -setairportpower en0 on
+#         sudo networksetup -detectnewhardware
+#         exit 1
+#     fi
+# fi

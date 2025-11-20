@@ -1,0 +1,8 @@
+#!/bin/sh
+
+
+while [ 2 == 2 ]; do
+    say -v 'Eddy (English (US))' "NOT PLAYING" &
+    disown -h
+    sleep 2
+done

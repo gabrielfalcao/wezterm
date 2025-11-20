@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+
+set -e
+shfmt \
+    --keep-padding \
+    --binary-next-line \
+    --case-indent \
+    --indent 4 \
+    --language-dialect=bash \
+    --write \
+    $@
+
+# shfmt opts:
+# ~~~~~~~~~~
+#
+# -i,  --indent uint       0 for tabs (default), >0 for number of spaces
+# -bn, --binary-next-line  binary ops like && and | may start a line
+# -ci, --case-indent       switch cases will be indented
+# -sr, --space-redirects   redirect operators will be followed by a space
+# -kp, --keep-padding      keep column alignment paddings
+# -fn, --func-next-line    function opening braces are placed on a separate line
+# -mn, --minify             minify the code to reduce its size (implies -s)

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+url="$@"
+
+if [ -z "${url}" ]; then
+    url=$(pbpaste)
+    if [ -z "${url}" ]; then
+        1>&2 echo "WARNING: no url in clipboard"
+    fi
+fi
+if [ -x "$HOME/.cargo/bin/g" ]; then
+    cd "$HOME/*scratch*/Data/websites"
+    stderr_a=$(mktemp)
+    stdout_a=$(mktemp)
+    stderr=$(mktemp)
+    stdout=$(mktemp)
+    logslug=$(slugify-string "${url}")
+    failed_path="${logslug}.failed.txt"
+
+    if [ -z "${logslug}" ]; then
+        1>&2 echo "WARNING: no slug from ${url@Q}"
+    fi
+
+    if ! 2>${stderr_a} 2>${stdout_a} g w -A "${url}"; then
+        if ! 2>${stderr} 2>${stdout} g w "${url}"; then
+            echo "$(basename $0) failed with status $?" | tee ${failed_path}
+        fi
+    fi
+    gzip -f *.json
+    declare -a potential_tarball_inputs=("${logslug}.logs.tar.gz" "${logslug}.stderr.log" "${logslug}.stderr_a.log" "${logslug}.stdout.log" "${logslug}.stdout_a.log")
+    declare -a tarball_inputs=()
+    mv -f "${stderr}" "${logslug}.stderr.log"
+    mv -f "${stderr_a}" "${logslug}.stderr_a.log"
+    mv -f "${stdout}" "${logslug}.stdout.log"
+    mv -f "${stdout_a}" "${logslug}.stdout_a.log"
+    for potential_path in ${potential_tarball_inputs[@]}; do
+        if [ -e "${potential_path}" ] && [ -f "${potential_path}" ] && [ -e "${potential_path}" ] && [ -s "${potential_path}" ]; then
+            tarball_inputs+=("${potential_path}")
+        fi
+    done
+    if [ -e "${failed_path}" ]; then
+        tarball_inputs+=("${failed_path}")
+    fi
+    if tar czf "${logslug}.logs.tar.gz" ${tarball_inputs[@]}; then
+        rm -rf ${tarball_inputs[@]}
+    fi
+    echo -e "\x1b[1;38;5;237mOK\x1b[0m"
+else
+    echo -e "\x1b[1;38;5;237mnoon-cli not installed\x1b[0m"
+fi

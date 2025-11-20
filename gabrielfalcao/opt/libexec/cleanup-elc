@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# export IFS=$'\n'
+cd $(mktemp -d)
+set -e
+
+base_path=$HOME/.emacs.d
+
+generate_test_fixtures() {
+    for z in {1..20}; do
+        declare -a targets=(
+            "${base_path}/tmp/foo${z}.elc"
+            "${base_path}/tmp/bar${z}tmp.eln"
+        )
+        for tmpath in ${targets[@]}; do
+            mkdir -p "$(dirname "${tmpath}")"
+            2>/dev/random dd if=/dev/random of="${tmpath}" count=32
+        done
+    done
+}
+prog=$(basename $0)
+started_at_msg=$(echo "${prog} started at $(date +"%Y/%m/%d %H:%M:%S")")
+set -x
+find "${base_path}" -type f -name '*.elc' -or -type f -name '*.eln' -exec path canon {} \; | sort -u
+set +x
+
+declare -a found=($(find "${base_path}" -type f -name '*.elc' -or -type f -name '*.eln' -exec path canon {} \; | sort -u))
+count=${#found[@]}
+deleted=0
+code=0
+if [ ${count} -gt 0 ]; then
+    1>&2 echo ${started_at_msg}
+    1>&2 echo "${prog} deleting ${count} files:"
+    for index in ${found[@]}; do
+        current=$(($index + 1))
+        path=${found[$index]}
+        stderr=$(mktemp)
+        thing="[${current}/${count}]\t${path@Q}"
+        if ! 2>${stderr} rm -rf "${path}"; then
+            code=$?
+            1>&2 echo "failed to delete ${thing}"
+            1>&2 cat ${stderr}
+        else
+            deleted=$(( $deleted + 1 ))
+            1>&2 echo "deleted ${thing}"
+        fi
+    done
+    1>&2 echo "${prog} finished at $(date +"%Y/%m/%d %H:%M:%S")"
+    # exit ${code}
+fi

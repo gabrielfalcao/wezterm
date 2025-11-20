@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+. ~/opt/lib/ansi.sh
+set -e
+declare -a argv=($@)
+declare argc=${#argv}
+
+declare -a known_opts=(
+    "-a"
+    "add"
+    "-l"
+    "list"
+    "-p"
+    "path"
+    "-v"
+    "verbose"
+    "-h"
+    "--help"
+)
+usage() {
+    1>&2 echo "USAGE: $(basename $0) $(echo -ne "${known_opts[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/[\1]/g")"
+}
+
+action="add"
+verbose="false"
+path=$HOME/$(rmao -l *ocknech*/unen)/mu
+mkdir -p "${path}"
+
+if [ ${#argv} -gt 0 ]; then
+    for arg in ${argv[@]}; do
+        case "${arg}" in
+            "--help" | "-h")
+                usage
+                exit 0
+                ;;
+            "-p"|"path")
+                action="show_path"
+                ;;
+            "-v"|"verbose")
+                verbose="true"
+                ;;
+            "-a"|"add")
+                action="add"
+                ;;
+            "-l"|"list")
+                action="list"
+                ;;
+            *)
+                1>&2 echo "unknown option: ${arg@Q}"
+                1>&2 usage
+                exit 1
+                ;;
+        esac
+    done
+fi
+musgz_show_path() {
+    echo "$path"
+}
+
+musgz_add() {
+    cd "$path"
+    target_path=$(t16g).json.enc.gz
+    pbpaste | gzip > ${target_path}
+    if [ "${verbose}" == "true" ]; then
+        echo "${target_path}"
+    fi
+}
+musgz_list() {
+    cd "$path"
+    ls -ltrh | lastcol
+}
+
+
+case "${action}" in
+    "show_path")
+        musgz_show_path
+        ;;
+    "add")
+        musgz_add
+        ;;
+    "list")
+        musgz_list
+        ;;
+    *)
+        bar_text_left 231 196 "invalid action: ${action@Q}"
+        1>&2 usage
+        exit 1
+        ;;
+esac

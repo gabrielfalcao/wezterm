@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+libexec="$(dirname $BASH_SOURCE[0])/emacs"
+
+. "$libexec"
+
+declare -a files=()
+declare -a params=()
+declare create="false"
+declare open="false"
+declare boot="false"
+
+emacs_is_open() {
+    if [ -z "$(ps aux | 2>/dev/random ack '(Applications/Emacs[.]app|emacs)' | ack -v ack)" ]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+create_if_needed() {
+    path="$@"
+    if [ "${create}" == "true" ] && [ ! -f "$path" ]; then
+        1>&2 echo "create_if_needed: '${path}'"
+        mkdir -p "$(dirname "$path")"
+        touch "$path"
+    fi
+}
+
+if [ -S "${socket}" ]; then
+    if ! emacs_is_open; then
+        2>/dev/random 1>/dev/random g p -r Emacs -k
+    fi
+elif ! emacs_is_open; then
+    boot="true"
+fi
+
+extract_path_lineno() {
+    group="${1}"
+    shift
+    argument="${@}"
+    if result=$(sed -n "s/^\([a-zA-Z0-9_\/-]\+\|[^:]\+\):\([1-9][0-9]*\)[:]\?/\\${group}/gp" <<<"${argument}"); then
+        if [ -z "${result}" ]; then
+            return 101
+        else
+            echo -n "${result}"
+        fi
+    else
+        return 101
+    fi
+    # ICAgICMgc2VkICJzL15cKFthLXpBLVowLTlfXC8tXVwrXHxbXjpdXCtcKTpcKFsxLTldWzAtOV0qXClbOl1cPy9cXCR7Z3JvdXB9L2ciIDw8PCIke2FyZ3VtZW50fSIKICAgICMgIyAjIFdST05HIChtaXNzaW5nIFxcJDogIyBzZWQgLW4gInMvXlwoW2EtekEtWjAtOV9cLy1dXCtcfFteOl1cK1wpOlwoWzEtOV1bMC05XSpcKVs6XT8vXCR7Z3JvdXB9L2dwIiA8PDwgIiR7YXJndW1lbnR9Igo=
+}
+for arg in $@; do
+    case "$arg" in
+        "--boot")
+            2>/dev/random 1>/dev/random g p -r Emacs -k
+            rm -f "${socket}"
+            boot="true"
+            ;;
+        "-w" | "--wait")
+            wait="true"
+            ;;
+        "-c" | "--create")
+            create="true"
+            ;;
+        "-f" | "--force")
+            open="true"
+            ;;
+        "-n" | "--no-wait")
+            wait="false"
+            ;;
+        "-V" | "--version" | "-H" | "--help" | "-c" | "--create-frame" | "-r" | "--reuse-frame" | "-e" | "--eval" | "-q" | "--quiet" | "-u" | "--suppress-output" | "-w")
+            params+=("$arg")
+            ;;
+        +*)
+            params+=("$arg")
+            ;;
+        -*)
+            params+=("$arg")
+            ;;
+        *:*)
+            if path=$(extract_path_lineno 1 "${arg}") && lineno=$(extract_path_lineno 2 "${arg}"); then
+                files+=("${path}")
+                params+=("+${lineno}")
+            elif [ -f "${arg}" ] && [ -r "${arg}" ]; then
+                files+=("$arg")
+            else
+                1>&2 echo -e "unrecognized argument: ${arg@Q}"
+            fi
+            ;;
+        *)
+            files+=("$arg")
+            ;;
+    esac
+done
+
+if ! g p -q -r Emacs; then
+    $libexec ${params[*]} &
+    disown -h
+    disown -a
+    2>/dev/null 1>/dev/null wait3 command "test -S ${socket}"
+elif [ ! -S "${socket}" ]; then
+    $libexec -f &
+    disown -h
+    disown -a
+    wait3 command "test -S ${socket}"
+fi
+
+# cat <<EOF
+# open="${open}"
+# create="${create}"
+# files="${files[@]}"
+# params="${params[@]}"
+# EOF
+
+if [ "${boot}" == "true" ]; then
+    exit
+fi
+
+if [ ${#files} -gt 0 ]; then
+    export XPC_FLAGS=0x0
+    export XPC_SERVICE_NAME=0
+    client --socket-name "${socket}" -n $*
+    for path in ${files[@]}; do
+        if [ ! -e "${path}" ]; then
+            wait="false"
+        fi
+        # create_if_needed "$path"
+        if [ "${wait}" == "true" ]; then
+            client --socket-name "${socket}" ${params[@]} "$path"
+        else
+            client --socket-name "${socket}" -n ${params[@]} "$path"
+        fi
+    done
+else
+    1>&2 echo -e "$(basename $0): no files specified"
+    # if [ ${#params[@]} -gt 0 ]; then
+    #     1>&2 echo -e "DEBUG PARAMS:"
+    #     for param in ${params[@]}; do
+    #         1>&2 echo -e "\t${param}"
+    #     done
+    # fi
+fi

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+
+
+ioreg -c IOUSB -a # list usb devices

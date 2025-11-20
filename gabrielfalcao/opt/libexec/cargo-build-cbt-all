@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+. "$HOME/opt/lib/cargo-script.sh"
+
+search_path="${1}"
+if [ -z "${search_path}" ] || [ ! -e "${search_path}" ]; then
+    args="${1}"
+    search_path=$(pwd)
+elif [ -e "${search_path}" ]; then
+    shift
+    args="${1}"
+fi
+search_path="$(path canon "$search_path")"
+
+if [ -f "${search_path}" ]; then
+    search_path="$(path parent "$search_path")"
+fi
+
+set -e
+2>/dev/random find "${search_path}" -type f -name Cargo.toml -exec cargo-build-cbt-one {} "${args}" \;

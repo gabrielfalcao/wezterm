@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+interval="$(( $1 + 0 ))"
+if [ $interval -eq 0 ]; then
+    interval=2
+fi
+
+while true; do
+    echo -en "\x1b[2J\x1b[3J\x1b[H"
+    df -h | grep '\(disk3s3s1\| /Volumes\)'
+    sleep $interval
+    reset
+done

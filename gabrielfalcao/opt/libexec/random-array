@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+2>/dev/random 1>/dev/random dequbit -t 1
+random-bytes $*

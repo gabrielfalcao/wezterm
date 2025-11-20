@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+set -e
+declare -a volumes=(
+    "NO%20NAME"
+    "nothing%201"
+    "Time%20Machine%20Backups"
+    "UNTITLED"
+    "Untitled"
+    "UNTITLED%202"
+    TemplarKnight
+    WaveMandala1T
+    AiryMcLeod
+    DEFCON-24
+    DR-05
+    GREEN5GB
+    Kindle
+    NONAME
+    NOTHING
+    OF
+    Pedrita1 Pedrita2
+    8x16g
+    SAMDATA-Red
+    Untitled
+    Untitled42
+    WaveMandala
+    crypto
+    GARMIN
+    gabe-private
+    gabe-public
+    gabe-shared
+    gabriel
+    gabriel
+    gabriel-private
+    gabriel-public
+    gabriel-shared
+    gabrielfalcao
+    garuda-bkp
+    garuda-bkp
+    hanuman-bkp
+    medula22
+    mudface-bkp
+    mudface-external
+    newstore-bkp
+    rosencreuz
+    rotekafer
+    sec04212023
+    simba
+    takitaki
+    work-2020-2022
+    X2133
+    "DATA"
+    MalaysianNonSSD
+    nothing
+)
+
+
+function retry-force-eject-volume() {
+    name="${@/\%20/ }"
+    volume="/Volumes/${name}/"
+    if [ ! -e "$(basename "${volume}")" ]; then
+        return
+        # echo -e "\x1b[1;38;5;220m$(basename "${volume}") \x1b[1;38;5;33mdoes not appear to be present\x1b[0m"
+    elif 2>/dev/null sudo diskutil unmount force "$(basename "${volume}")"; then
+        echo -e "\x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;220mwas ejected forcefully\x1b[0m"
+    else
+        echo -e "\x1b[1;38;5;220mfailed to eject \x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;145m(maybe in use or already ejected ?)\x1b[0m"
+    fi;
+}
+
+function eject-volume() {
+    name="${@/\%20/ }"
+    volume="/Volumes/${name}/"
+    if 2>/dev/null sudo diskutil unmount "$(basename "${volume}")"; then
+        echo -e "\x1b[1;38;5;154m$(basename "${volume}") \x1b[1;38;5;220mwas ejected\x1b[0m"
+    else
+        retry-force-eject-volume "${name}"
+    fi;
+}
+
+for name in ${volumes[*]}; do
+    eject-volume "${name}"
+done

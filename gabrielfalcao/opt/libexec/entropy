@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+for T in $(seq 137); do
+    bash -c "sleep 0.$T;1>/dev/random 2>/dev/random dequbit</dev/null &
+             disown -h" &
+done

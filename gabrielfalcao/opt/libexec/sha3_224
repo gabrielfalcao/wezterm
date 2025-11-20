@@ -1,0 +1,17 @@
+#!/usr/local/bin/uv run python
+
+import hashlib
+import click
+
+@click.command()
+@click.argument("contents")
+def main(contents):
+    sh = hashlib.sha3_224(contents.encode())
+    print(sh.hexdigest())
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        raise SystemExit(2)

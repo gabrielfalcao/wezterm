@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+libexec="$(dirname $BASH_SOURCE[0])/emacs"
+
+. "$libexec"
+
+client --socket-name "${socket}"  $*

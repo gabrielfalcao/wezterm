@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+socket="$HOME/.emacs.d/socket/server"
+
+working_path="$(pwd)"
+log_timestamp="$(date +"%Y%m%d-%H%M%S")"
+stdout_log_path="$HOME/opt/var/log/emacs.out.${log_timestamp}.log"
+stderr_log_path="$HOME/opt/var/log/emacs.err.${log_timestamp}.log"
+exec="/Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11"
+homebrew_bin="/opt/homebrew/bin/emacs"
+declare -a exec_args=()
+
+client() {
+    2>/dev/random /Applications/Emacs.app/Contents/MacOS/bin/emacsclient $*
+}
+
+if [ "$0" == "${BASH_SOURCE[0]}" ]; then
+    delete_socket=
+    kill=
+
+    for arg in $@; do
+        case "$arg" in
+            "-f")
+                delete_socket=true
+                kill=true
+                ;;
+            "-k")
+                kill=true
+                ;;
+            "-d" | "-r")
+                delete_socket=true
+                ;;
+            "-nw")
+                export EMACS_NO_SERVER=true
+                exec_args+=("${arg}")
+                if [ ! -e "${homebrew_bin}" ]; then
+                    1>&2 echo "${homebrew_bin@Q} does not exist"
+                    exit 1
+                fi
+                if [ ! -f "${homebrew_bin}" ] && [ ! -L "${homebrew_bin}" ] && [ ! -h "${homebrew_bin}" ]; then
+                    1>&2 echo "${homebrew_bin@Q} is not a file or symlink"
+                    exit 1
+                fi
+                if [ ! -s "${homebrew_bin}" ]; then
+                    1>&2 echo "${homebrew_bin@Q} is empty"
+                    exit 1
+                fi
+                if [ ! -x "${homebrew_bin}" ]; then
+                    1>&2 echo "${homebrew_bin@Q} is not executable"
+                    exit 1
+                fi
+                exec=/opt/homebrew/bin/emacs
+                ;;
+            *)
+                exec_args+=("${arg}")
+                ;;
+        esac
+    done
+
+    if [ "$kill" == "true" ]; then
+        2>/dev/random 1>/dev/random g p -r Emacs -k
+    fi
+    if [ "$delete_socket" == "true" ]; then
+        2>/dev/random 1>/dev/random rm -f "$socket"
+    fi
+
+    if [ -S "${socket}" ] && [ -n "$(ps aux | 2>/dev/random grep /Applications/Emacs.app | grep -v grep)" ]; then
+        export EMACS_NO_SERVER=true
+        set -x
+        $exec ${exec_args[@]} --debug-init 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
+        exit 0
+        # # 1>&2 echo "emacs already running: ${socket}"
+        # exit 1
+    fi
+
+    2>/dev/null 1>/dev/null cd "$working_path"
+    $exec ${exec_args[@]} --debug-init 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
+    rm -f "$socket"
+fi

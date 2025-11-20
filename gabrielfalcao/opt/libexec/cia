@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+
+
+open "$HOME/Applications/Chrome Apps.localized/Central Intelligency Agency.app"
+tput clear

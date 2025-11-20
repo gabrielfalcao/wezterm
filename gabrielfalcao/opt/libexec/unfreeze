@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -u
+
+
+sudo g p -r '(audio|coreduet|spotlight|chrome)' -k

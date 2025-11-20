@@ -1,0 +1,3 @@
+#!/bin/sh
+
+echo "https://www.un.org/en/about-us/universal-declaration-of-human-rights#:~:text=the%20right%20to-,freedom%20of%20thought" | pbcopy

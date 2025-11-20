@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+set -e
+
+
+base_url="https://github.com/"
+url=""
+username=""
+declare -a query=( "tab=repositories" "q=" "type=source" )
+declare -a argv=( $@ )
+
+declare -a known_flags=(
+    "--rust"
+    "-h"
+    "--help"
+)
+declare -a known_opts=(
+    "--language"
+)
+
+get_querystring() {
+    echo "${query[@]}" | sed 's/\s\+/&/g'
+}
+get_url() {
+    if is_valid_url "${url}"; then
+        echo "${url}/?$(get_querystring)"
+    elif [ -z "${username}" ]; then
+        fail_with_error_message "missing argument: USERNAME"
+    fi
+    url=$(echo "${base_url}/${username}?$(get_querystring)")
+    if ! echo -e "${url}" | 1>/dev/random grep 'https://github[.]com'; then
+        fail_with_error_message "invalid github url: ${url@Q}"
+        exit 1
+    else
+        echo "${url}"
+    fi
+}
+is_valid_username() {
+    arg="$@"
+    if echo "${arg}" | 1>/dev/random grep '^[a-z0-9_-]\+$'; then
+        return 0
+    else
+        return 1
+    fi
+}
+is_valid_url() {
+    arg="$@"
+    if echo "${arg}" | 1>/dev/random grep '^https://github.com/[a-z0-9_-]\+'; then
+        return 0
+    else
+        return 1
+    fi
+}
+fail_with_error_message() {
+    message="$@"
+    1>&2 bar 235
+    1>&2 bar_text_left 196 231 "ERROR: $(ansi_spaced 231 196 "${message}")$(ansi 235 196 "")"
+    1>&2 bar 235
+    1>&2 usage
+    exit 1
+}
+parse_arg() {
+    pos=$(require_number_argument "nth group" "${1}")
+    shift
+    arg=$(require_argument "arg string" "${@}")
+    group="$(printf "\%s" "${pos}")"
+    echo -n "${arg}" | sed "s/^\(.*\)=\(.*\)\$/${group}/g"
+}
+print_known_flags() {
+    echo -ne "${known_flags[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/$(ansi 233 220 "[\1]")$(ansi 233 231)/g"
+}
+print_known_opts() {
+    echo -ne "${known_opts[@]}" | sed "s/\([-]\{1,\}\)\([a-zA-Z0-9_]\+\)/$(ansi 233 220 "[\1\2=\U\2\L]")$(ansi 233 231)/g"
+}
+usage() {
+    1>&2 bar 16
+    1>&2 bar_text_left 233 231 "$(ansi_spaced 159 235 "USAGE:")$(ansi_spaced 231 235 "$(basename $0)")$(ansi_spaced 233 190 '<USERNAME or URL>')$(print_known_opts) $(print_known_flags)"
+    1>&2 bar 16
+}
+if [ ${#argv} -eq 0 ]; then
+    clipboard="$(pbpaste)"
+    if [ -n "${clipboard}" ]; then
+        argv+=( "${clipboard}" )
+    fi
+fi
+
+if [ ${#argv} -gt 0 ]; then
+    for index in ${!argv[@]}; do
+        next_index=$(( $index + 1 ))
+        curr_arg=$(parse_arg 1 "${argv[$index]}")
+        next_arg=$(parse_arg 2 "${argv[$index]}")
+
+        if [ -z "${next_arg}" ] && [ ${next_index} -lt ${#argv} ]; then
+            next_arg=${argv[$next_arg]}
+        fi
+
+        case "${curr_arg}" in
+            "--help"|"-h")
+                usage
+                exit 0
+                ;;
+            # "--source"|"--sources")
+            #     query+=( "type=source" )
+            #     ;;
+            "--language"|"--lang")
+                language="${next_arg}"
+                if [ -n "${language}" ]; then
+                    query+=( "language=${language}" )
+                fi
+                ;;
+            "--rust")
+                query+=( "language=${curr_arg##*-}" )
+                ;;
+            *)
+                if [ "${curr_arg##*-}" != "${curr_arg}" ]; then
+                    fail_with_error_message "unknown option: ${curr_arg@Q}"
+                fi
+
+                if is_valid_username "${curr_arg}"; then
+                    if [ -z "${username}" ]; then
+                        username="${curr_arg}"
+                    else
+                        fail_with_error_message "username already set to ${username@Q} unknown argument: ${curr_arg@Q}"
+                    fi
+                elif is_valid_url "${curr_arg}"; then
+                    if [ -z "${url}" ]; then
+                        url="${curr_arg}"
+                    else
+                        fail_with_error_message "url already set to ${url@Q} unknown argument: ${curr_arg@Q}"
+                    fi
+                else
+                    fail_with_error_message "unknown argument: ${curr_arg@Q}"
+                fi
+                ;;
+        esac
+    done
+fi
+query+=( "sort=" )
+
+if url="$(get_url)"; then
+    set -ex
+    quick-css-select "${url}" 'h3 a[href]' --attr href
+else
+    exit 1
+fi

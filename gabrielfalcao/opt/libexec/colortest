@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+colortest-out | bat --file-name "ANSI-256-Colors"

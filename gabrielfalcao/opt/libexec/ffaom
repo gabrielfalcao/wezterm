@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# .FFFFF .FFFFF 7"""""`'"""`77 PP"""""""`PP 77""""""""`7 GG'"""""`GG
+# FF   " FF   " M  MM.  MM.  M PP  PPPPP  P EE  EEEEEEEE G' .GGG. `G
+# FFFFF  FFFFF  M  MMM  MMM  M P'        .P E`      EEEE G  GGGGGGGG
+# FF     FF     M  MMM  MMM  M PP  PPPPPPPP EE  EEEEEEEE G  GGG   `G
+# FF     FF     M  MMM  MMM  M PP  PPPPPPPP EE  EEEEEEEE G. `GGG' .G
+# FF     FF     M  MMM  MMM  M PP  PPPPPPPP EE        .E GG.     .GG
+#               77777777777777 PPPPPPPPPPPP 777777777777 GGGGGGGGGGG
+set -e
+source ffmpeg-a $1 mkv
+ffmpeg "$input" -c:v libaom-av1 -q:v 83 -c:a libopus -y "$output"
+
+# ffmpeg -i "$input" -c:v libaom-av1 -qscale:v 10 -pass 1 -an -f null /dev/null && \
+# ffmpeg -i "$input" -c:v libaom-av1 -qscale:v 10 -pass 2 -c:a libopus "$output"
+
+# ffmpeg -i "$input" -c:v libaom-av1 -qscale:v 10 -b:v 2M -b:a 44k -pass 1 -an -f null /dev/null && \
+# ffmpeg -i "$input" -c:v libaom-av1 -qscale:v 10 -b:v 2M -b:a 44k -pass 2 -c:a libopus "$output"

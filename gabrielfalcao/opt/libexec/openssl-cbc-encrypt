@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+function fail(){
+    echo "$@"
+    exit 42
+}
+
+in_file="$@"
+if [ -z "${in_file}" ]; then
+    fail 'missing "in_file"'
+fi
+
+shift
+
+if [ -z "${out_file}" ]; then
+    out_file="${in_file}.aes-256-cbc"
+fi
+
+set -xe
+
+openssl aes-256-cbc -a -salt -in "${in_file}" -out "${out_file}"

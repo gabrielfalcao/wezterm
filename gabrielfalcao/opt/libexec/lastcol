@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ ! -t 0 ]; then
+    awk '{ print $NF }'
+else
+    declare args="$@"
+    1>&2 echo "$0 ${args@Q}"
+    exit 1
+fi

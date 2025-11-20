@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+##
+## ##"""""""'#                    dP
+## ##  mmmm. `#                   88
+## #'        .# .d8888b. .d8888b. 88  .dP  dP    dP 88d888b.
+## ##  ###b.'Y# 88'  `88 88'  `"" 88888"   88    88 88'  `88
+## ##  ####'  # 88.  .88 88.  ... 88  `8b. 88.  .88 88.  .88
+## ##       .;# `88888P8 `88888P' dP   `YP `88888P' 88Y888P'
+## ###########                                      88
+##                                                  dP
+##
+## #""#####""##
+## #  #####  ##
+## #         `# .d8888b. 88d8b.d8b. .d8888b.
+## #  #####  ## 88'  `88 88'`88'`88 88ooood8
+## #  #####  ## 88.  .88 88  88  88 88.  ...
+## #  #####  ## `88888P' dP  dP  dP `88888P'
+## ############
+##
+
+
+if [ "$UID" != 0 ]; then
+    sudo $0
+    exit 0
+fi
+
+
+function check-space() {
+    item="$(basename "$1")"
+    if [ "${opt/#\//}" == "${opt}" ]; then
+        src="${HOME}/${item}"
+    else
+        src="${item}"
+    fi
+
+    if [ ! -e "$src" ]; then
+        return 9
+    fi
+    if [ -d "$src" ]; then
+        echo "${src}:$(cd "$src" && dua -l | sed '/^$/d' | sed 's,\s\+total,,g' | sed 's,\s\+,,g' | tail -1| ansistrip )"
+    else
+        return 9
+    fi
+}
+
+
+check-space "Library/Preferences"
+check-space "Library/HTTPStorages"
+check-space "Library/Caches"
+check-space "Library/LaunchAgents"
+check-space "Library/LaunchDaemons"
+check-space "Library/Logs"
+check-space "Library/Application Support"
+check-space "Library/Audio/Plug-Ins"
+check-space "*scratch*/Data"
+check-space "*scratch*"
+check-space "__sandbox__"
+check-space "*sandbox*"
+check-space "*nons*"
+check-space ".wezterm.lua"
+check-space "sandbox"
+check-space "opt"
+check-space "SDKs"
+check-space ".bun"
+check-space ".gnupg"
+check-space ".ssh"
+check-space ".config"
+check-space ".git"
+check-space ".casa"
+check-space ".emacs.d"
+check-space ".cups"
+check-space ".ipython"
+check-space ".nvm"
+check-space ".pyenv"
+check-space ".vim"
+check-space ".yarn"
+check-space ".local"
+check-space ".logs"
+check-space "projects"
+check-space "sec"
+check-space "src"
+check-space "usr"
+check-space "Music"
+check-space "JUCE"
+check-space "Unity"
+check-space "Blender"
+check-space "Documents"
+check-space "unknown-dated"
+check-space "default.etcd"
+check-space "HUAWEI-E3372"
+check-space "Splice"
+check-space "Downloads"
+check-space "Backups"
+check-space "Bildern"
+check-space "Büchen"
+check-space "Kino"
+check-space "Obiz"
+check-space "LOL"
+check-space "Publications"
+check-space "tmp"
+check-space "Desktop"
+check-space "DropBox"
+check-space "Movies"
+check-space "Pictures"
+check-space "album-covers"
+check-space "srv"
+check-space "Applications"
+check-space "go"
+
+check-space "/opt/"
+check-space "/Applications/"

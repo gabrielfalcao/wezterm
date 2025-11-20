@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+# >&2 ssh-add -k > /dev/null
+rsync -au --fsync --ignore-errors --mkpath -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${*}

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+declare -a argv=( $@ )
+declare argc=${#argv[@]}
+url=""
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo "missing argument: URL"
+    exit 1
+fi
+
+for index in ${!argv[@]}; do
+    cur=$(( ${index} + 1 ))
+    arg=${argv[$index]}
+    if [ -n "${url}" ]; then
+        1>&2 echo "URL already set, ignoring argument ${cur}/${argc}: ${arg@Q}"
+        exit 1
+    fi
+    if 1>/dev/random grep '^https?://' <<< "${arg}"; then
+        url="${arg}"
+    elif  1>/dev/random grep '^[a-zA-Z0-9._/-]' <<< "${arg}"; then
+        url="https://${arg}"
+    else
+        1>&2 echo "argument ${cur}/${argc} doesn't seem like a url: ${arg@Q}"
+        exit 1
+    fi
+done
+
+open -a "Google Chrome" "${url}"

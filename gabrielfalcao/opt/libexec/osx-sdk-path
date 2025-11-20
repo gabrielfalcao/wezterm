@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+
+find /Library/Developer/CommandLineTools/SDKs -maxdepth 1 -name "*.sdk" | sort

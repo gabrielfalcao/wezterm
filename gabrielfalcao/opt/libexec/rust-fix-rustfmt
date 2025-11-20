@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+. $HOME/opt/lib/ansi.sh
+set -e
+
+if ! 2>/dev/null 1>/dev/null which rustfmt; then
+    exit_error 101 "rustfmt executable not found"
+fi
+if ! 2>/dev/null 1>/dev/null which rg || [ "$(rg --version | head -1 | sed 's/\s\+.*//g')" != "ripgrep" ]; then
+    exit_error 101 "ripgrep executable not found"
+fi
+if ! 2>/dev/null 1>/dev/null which ack || [ "$(ack --version | head -1 | sed 's/\s\+.*//g')" != "ack" ]; then
+    exit_error 101 "ack executable not found"
+fi
+if ! 2>/dev/null 1>/dev/null which git || [ "$(git --version | head -1 | sed 's/\s\+.*//g')" != "git" ]; then
+    use_git="false"
+else
+    use_git="true"
+fi
+
+path="$( echo -n "$@" | tr -d '[:space:]')"
+
+if [ -z "${path}" ]; then
+    path="$HOME/projects"
+fi
+
+if [ ! -e "$path" ]; then
+    exit_error 101 "$path does not exist"
+fi
+
+if [ ! -d "$path" ]; then
+    exit_error 101 "$path is not a directory"
+fi
+declare -a possible_rustfmt_filenames=( rustfmt.toml .rustfmt.toml )
+
+get_rustfmt_git_path() {
+    path=$(require_argument "first argument: <path>" "${1}")
+    if [ ! -d "${path}" ]; then
+        error_function "path is not a directory: ${path}"
+        return 1
+    fi
+    cd "${path}" && 2>/dev/null git status --porcelain | lastcol | grep -i 'rustfmt[.]toml' | sort -u | tail -1 | tr -d '[:space:]'
+}
+fix_rustfmt() {
+    path=$(require_argument "first argument: <path>" "${1}")
+    if [ ! -d "${path}" ]; then
+        error_function "path is not a directory: ${path}"
+        return 1
+    fi
+
+    fmtpath=""
+    if git_path=$(2>/dev/null git rev-parse --show-toplevel); then
+        relative_path="${path/#$git_path/}"
+        if [ ${#relative_path} -ge ${#path} ]; then # if $path DON'T START with $git_path
+            git_path=""
+        fi
+        if git_status_fmtpath=$(get_rustfmt_git_path "${path}"); then
+            fmtpath="${git_status_fmtpath}"
+        fi
+    elif [ "${use_git}" == "true" ]; then
+        (cd "${path}" && git init --porcelain)
+        git_path="${path}"
+    else
+        git_path=""
+    fi
+    for possible in ${possible_rustfmt_filenames[@]}; do
+        if [ -n "${fmtpath}" ] && [ -n "${git_status_fmtpath}" ] && [ "${fmtpath}" == "${git_status_fmtpath}" ]; then
+            break
+        elif [ -z "${fmtpath}" ] || [ ! -f "${fmtpath}" ] || [ ! -r "${fmtpath}" ]; then
+            fmtpath="${path}/${possible}"
+        fi
+    done
+
+    if [ -z "${fmtpath}" ]; then
+        bar_text_center 220 16 "WARNING"
+        bar_text_left 16 220 "$(ansi_spaced 16 220 "WARNING: processing path")$(ansi_spaced 220 16 "${path}")$(ansi_reset)"
+        bar_text_left 196 231 "$(ansi_spaced 196 231 "expected")$(ansi_spaced 231 196 "\${rustfmt}")$(ansi_spaced 196 231 "to be non-empty at this point")$(ansi_reset)"
+        continue
+    fi
+    rust_toolchain_unstable="false"
+    if [ -f "${path}/rust-toolchain.toml" ] && 2>/dev/null 1>/dev/null rg --multiline '^\s*\[toolchain\](.|\n)*(^\s*[^#].*|\n)*^\s*channel\s*=\s*"nightly.*"\s*$' "${path}/rust-toolchain.toml"; then
+        rust_toolchain_unstable="true"
+    fi
+
+    if [ "${rust_toolchain_unstable}" != "true" ]; then
+        sed '/unstable_features/d' -i "${fmtpath}"
+    fi
+
+    # ICAgICMgaWYgWyAtbiAiJHtnaXRfc3RhdHVzX2ZtdHBhdGh9IiBdICYmIFsgIiR7Z2l0X3N0YXR1c19mbXRwYXRofSIgIT0gIiR7Zm10cGF0aH0iIF07IHRoZW4KICAgICMgICAgIGJhcl90ZXh0X2NlbnRlciAyMjAgMTYgIldBUk5JTkciCiAgICAjICAgICBiYXJfdGV4dF9sZWZ0IDE2IDIyMCAiJChhbnNpX3NwYWNlZCAxNiAyMjAgIldBUk5JTkc6IHByb2Nlc3NpbmcgcGF0aCIpJChhbnNpX3NwYWNlZCAyMjAgMTYgIiR7cGF0aH0iKSQoYW5zaV9yZXNldCkiCiAgICAjICAgICBiYXJfdGV4dF9sZWZ0IDE5NiAyMzEgIiQoYW5zaV9zcGFjZWQgMTk2IDIzMSAiZXhwZWN0ZWQgXCR7cnVzdGZtdH0iKSQoYW5zaV9zcGFjZWQgMjMxIDE5NiAiJHtydXN0Zm10fSIpJChhbnNpX3NwYWNlZCAxOTYgMjMxICJ0byBlcXVhbCBcJHtnaXRfc3RhdHVzX2ZtdHBhdGh9IikkKGFuc2lfc3BhY2VkIDIzMSAxOTYgIiR7Z2l0X3N0YXR1c19mbXRwYXRofSIpJChhbnNpX3Jlc2V0KSIKICAgICMgICAgIGNvbnRpbnVlCiAgICAjIGZp
+
+    if [ -n "${git_path}" ] && [ -n "${git_status_fmtpath}" ] && [ "${fmtpath}" == "${git_status_fmtpath}" ] ; then
+        (cd "${path}" && git commit $(get_rustfmt_git_path "${path}") -m "auto-commit ${fmtpath}");
+    elif [ ! -f "${fmtpath}" ]; then
+        rustfmt --print-config default > ${fmtpath}
+        if [ -n "${git_path}" ]; then
+            (cd "${path}" && git add -f "${fmtpath}")
+            (cd "${path}" && git commit "${fmtpath}" -m "introduce add $(basename ${fmtpath})")
+        fi
+    fi
+
+    if [ -n "${git_path}" ]; then
+        if 2>/dev/null git add -f "${fmtpath}"; then
+            bar_text_left 159 16 "add '${fmtpath}' to git"
+        fi
+    fi
+    if sed '/unstable_features/d' -i "${fmtpath}"; then
+        bar_text_left 82 16 "removed unstable_features from '${fmtpath}'"
+    fi
+}
+ansi_clear
+bar_text_left 237 231 "scanning rust projects in $(ansi_spaced 220 237 "$(get_display_path ${path})")$(ansi 237 231)"
+for path in $(find-rust-projects "${path}"); do
+    fix_rustfmt "${path}"
+done

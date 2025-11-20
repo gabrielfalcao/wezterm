@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+import re
+import sys
+from typing import List, Dict, Tuple
+from pprint import pformat
+
+regex = re.compile(
+    r"^(?P<begspace>\s*)(?P<prefix>\S+)((?P<space>\s+)(?P<suffix>\S+)(?P<endspace>\s*))+$"
+)
+
+
+class Result:
+    begspace: str
+    prefix: str
+    space: str
+    suffix: str
+    endspace: str
+
+    def __init__(
+        self,
+        begspace: str = "",
+        prefix: str = "",
+        space: str = "",
+        suffix: str = "",
+        endspace: str = "",
+    ):
+        self.begspace = begspace
+        self.prefix = prefix
+        self.space = space
+        self.suffix = suffix
+        self.endspace = endspace
+
+    def width(self) -> int:
+        return len(self.space)
+
+    def field_names(self):
+        return [
+            "begspace",
+            "prefix",
+            "space",
+            "suffix",
+            "endspace",
+        ]
+
+    def field(self, name: str):
+        value = getattr(self, name) or ""
+        width = len(value)
+        if width > 0 or name == "space":
+            return [
+                f"{name}='{value}'",
+                f"{name}_width={width}",
+            ]
+        else:
+            return []
+
+    def __str__(self):
+        result = []
+        for name in self.field_names():
+            result.extend(self.field(name))
+        return "\n".join(filter(lambda t: len(t) > 0, result))
+
+
+def space_width(text):
+    found = regex.search(text)
+    if not found:
+        sys.stderr.write(f"NO SPACE FOUND IN: '{text}'\n")
+        sys.stderr.flush()
+        raise SystemExit(101)
+    return Result(**found.groupdict())
+
+
+def main():
+    text = " ".join(map(str, sys.argv[1:]))
+    result = space_width(text)
+    print(result)
+
+
+def color(text) -> int:
+    color = 0
+    for c in text:
+        color = color ^ ord(c)
+    if color == 0:
+        return 231
+
+
+def invert_color_bw(color:int) -> int:
+    if color in dark_colors():
+        return 231
+    else:
+        return 16
+
+def dark_colors() -> List[int]:
+    colors = []
+    colors.extend([0])
+    colors.extend([8])
+    colors.extend(range(16, 21))
+    colors.extend(range(52, 61))
+    colors.extend(range(88, 93))
+    colors.extend(range(232, 239))
+    return dark
+
+if __name__ == "__main__":
+    main()

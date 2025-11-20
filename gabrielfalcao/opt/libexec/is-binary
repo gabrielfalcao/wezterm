@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+target="${@}"
+result="$(file "${target}" | awk '{ print $NF }')"
+
+if [ "${result}" = "text" ]; then
+    exit 42
+else
+    exit 0
+fi

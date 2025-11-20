@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# set -e
+# set -o pipefail
+
+script_name="${BASH_SOURCE[0]}"
+
+for s in {1..31}; do
+    color=$(((${s} + 64) % 255))
+    hl=$(grep "^\([# ]\+\)\?\b${s}\b[[:space:]]\+" ${script_name} | sed -n 's/\([#][ ]\)\+//p' | grep "^${s}")
+    signame=$(sed -n 's/^[0-9]\+\s\+\(SIG[A-Z0-9]\+\)\s\+\([#]\s*\)\?\([a-zA-Z0-9].*\)/\1/gp' <<<"${hl}")
+    sigdesc=$(sed -n 's/^[0-9]\+\s\+\(SIG[A-Z0-9]\+\)\s\+\([#]\s*\)\?\([a-zA-Z0-9].*\)/\3/gp' <<<"${hl}")
+    # trap_desc=$(builtin trap -p "${s}" | sed 's/^trap[[:space:]-]\{1,6\}//g') # not working, dunno WHY
+    trap_name=$(sed -n 's/^SIG//pi' <<< "${signame@L}")
+    echo -e "\x1b[1;38;5;${color}m${pad}${s}\x1b[0m \x1b[1;48;5;${color}m\x1b[1;38;5;233m${signame}\x1b[0m \x1b[1;38;5;${color}m${trap_name@Q}\x1b[0m ${sigdesc}\x1b[0m"
+done
+
+exit 0
+1  # SIGHUP          # terminal line hangup
+2  # SIGINT          # interrupt program
+3  # SIGQUIT         # quit program
+4  # SIGILL          # illegal instruction
+5  # SIGTRAP         # trace trap
+6  # SIGABRT         # abort program (formerly SIGIOT)
+7  # SIGEMT          # emulate instruction executed
+8  # SIGFPE          # floating-point exception
+9  # SIGKILL         # kill program
+10 # SIGBUS          # bus error
+11 # SIGSEGV         # segmentation violation
+12 # SIGSYS          # non-existent system call invoked
+13 # SIGPIPE         # write on a pipe with no reader
+14 # SIGALRM         # real-time timer expired
+15 # SIGTERM         # software termination signal
+16 # SIGURG          # urgent condition present on socket
+17 # SIGSTOP         # stop (cannot be caught or ignored)
+18 # SIGTSTP         # stop signal generated from keyboard
+19 # SIGCONT         # continue after stop
+20 # SIGCHLD         # child status has changed
+21 # SIGTTIN         # background read attempted from control terminal
+22 # SIGTTOU         # background write attempted to control terminal
+23 # SIGIO           # I/O is possible on a descriptor (see fcntl(2))
+24 # SIGXCPU         # cpu time limit exceeded (see setrlimit(2))
+25 # SIGXFSZ         # file size limit exceeded (see setrlimit(2))
+26 # SIGVTALRM       # virtual time alarm (see setitimer(2))
+27 # SIGPROF         # profiling timer alarm (see setitimer(2))
+28 # SIGWINCH        # Window size change
+29 # SIGINFO         # status request from keyboard
+30 # SIGUSR1         # User defined signal 1
+31 # SIGUSR2         # User defined signal 2

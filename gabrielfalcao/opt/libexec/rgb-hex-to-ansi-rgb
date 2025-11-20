@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+import sys
+import re
+import click
+from math import copysign
+from click import UsageError, BadParameter
+
+from itertools import (
+    accumulate,
+    batched,
+    chain,
+    combinations,
+    combinations_with_replacement,
+    compress,
+    count,
+    cycle,
+    dropwhile,
+    filterfalse,
+    groupby,
+    islice,
+    pairwise,
+    permutations,
+    product,
+    repeat,
+    starmap,
+    takewhile,
+    tee,
+    zip_longest,
+)
+from functools import (
+    cache,
+    cached_property,
+    cmp_to_key,
+    get_cache_token,
+    lru_cache,
+    namedtuple,
+    partial,
+    partialmethod,
+    recursive_repr,
+    reduce,
+    singledispatch,
+    singledispatchmethod,
+    total_ordering,
+    update_wrapper,
+    wraps,
+)
+
+hex_regex = re.compile(r"^#?([a-f0-9]+)$", re.I)
+non_hex_regex = re.compile(r"([^a-f0-9]+)", re.I)
+
+band_names = ("red", "green", "blue")
+band_count = len(band_names)
+label_width = max(map(len, band_names))
+
+slices = list(
+    map(
+        lambda s: slice(s, s + 2),
+        map(lambda s: s << 1 if s else 0, range(band_count)),
+    )
+)
+plane_choices = list(
+    chain(
+        *[
+            [w[::2][::2][:2], w[0], w[4], w]
+            for w in [f"{plain}ground" for plain in ("fore", "back")]
+        ]
+    )
+)
+
+
+label_alignment = {
+    -1: str.ljust,
+    0: str.center,
+    1: str.rjust,
+}
+
+def band_label(index: int) -> str:
+    return band_names[index % band_count if index > 0 else 0]
+
+def band_value(index: int, value: int, align: int = True) -> str:
+    label = band_label(index)
+    align = label_alignment[copysign(align and align / align, align)]
+    return ": ".join((align(f"{label}", label_width), str(value)))
+
+
+def get_valid_hex_string(value: str, ctx=None) -> (str, int):
+    found = hex_regex.search(value)
+    if not found:
+        non_hex = "".join(non_hex_regex.findall(value))
+        if len(non_hex_regex) == len(value):
+            raise BadParameter(
+                f"{value} is not a valid hexadecimal", param_hint=[value]
+            )
+        else:
+            raise BadParameter(
+                f"invalid, non-hexadecimal characters found: {non_hex}",
+                param_hint=[value],
+                ctx=ctx,
+            )
+    value = found.group(1)
+    length = len(value)
+    if length not in (3, 6):
+        raise BadParameter(
+            f"invalid length of hex color, should be either 3 or 6, not {length}",
+            param_hint=[value],
+            ctx=ctx,
+        )
+    return value, length
+
+
+def hex_to_int(value: str) -> int:
+    return int(value, 16)
+
+
+def get_valid_rgb_hex_bands(param: str, ctx=None) -> (str, str, str):
+    string, length = get_valid_hex_string(param)
+    if length == 3:
+        string = "".join(
+            chain(*list(map(list, (map(partial(repeat, times=2), color)))))
+        )
+
+    return [string[s] for s in slices]
+
+
+def get_valid_rgb_color(ctx, command, value) -> (int, int, int):
+    return tuple(map(hex_to_int, get_valid_rgb_hex_bands(value, ctx)))
+
+
+@click.command()
+@click.argument("color", default="#1A1B34", callback=get_valid_rgb_color)
+@click.option(
+    "-e",
+    "--escape",
+    is_flag=True,
+    help="prints escape sequence",
+)
+@click.option(
+    "-p",
+    "--plane",
+    type=click.Choice(plane_choices, case_sensitive=False),
+    help="ansi plane: foreground or background",
+)
+@click.option(
+    "-b",
+    "--bold",
+    is_flag=True,
+    help="make it bold",
+)
+@click.option(
+    "-n",
+    "--no-ansi",
+    is_flag=True,
+    help="don't print ansi code, just integer rgb values",
+)
+def hex_to_ansi(escape, color, plane, bold, no_ansi):
+    """converts hex rgb colors to ANSI rgb codes
+
+    COLOR is the RGB HEX to convert
+    """
+    # return print(locals())
+
+    if no_ansi:
+        list(map(print, starmap(band_value, enumerate(color))))
+        return
+
+    result = "".join([escape and '"',
+        ";".join(map(str, filter(bool, chain(
+        [
+         escape and rf"\x1b[1",
+         bold and '1',
+         plane and plane_choices.index(plane) < 4 and '38' or '48',
+         escape and 2],
+        color)))) + "m",
+        escape and '"'])
+
+    print(result)
+
+if __name__ == "__main__":
+    hex_to_ansi()
+
+
+# 0524D6
+# 1A1B34
+# 0E208F
+
+
+# if no_ansi:
+#     return list(map(print,
+#                 map(": ".join,
+#                     map(str,
+#                         map(dict.values,
+#                             map(dict,
+#                             map(tuple,
+#                                 zip(band_names, color)))))))

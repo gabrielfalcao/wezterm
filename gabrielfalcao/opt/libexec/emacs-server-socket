@@ -1,0 +1,17 @@
+#!/bin/sh
+## OO^^^^^^^^^G
+## OO  OOOOOOOG
+## OO      ---- ggggg-ggg- -gggggg- -gggggg- -gggggg-
+## OO  OOOOOOOG gggggggggg ggg  ggg ggg  ggg ggggggg-
+## OO  OOOOOOOG gg  gg  gg gg-  -gg gg-  ---       gg
+## OO        -- gg  gg  gg gggggggg gggggggg gggggggg
+## OOOOOOOOOOOG
+
+set -e
+
+# unix-socket file
+if ! sio="$(lsof | grep 'emacs[0-9]\{3,\}/server')"; then
+    exit 1
+fi
+
+echo "${sio}" | lastcol | xargs ls -l | grep '^s' | lastcol | sort -u

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+IFS=$'\n'
+set -e
+declare -a argv=($@)
+declare argc=${#argv}
+
+if ! bin_path=$(which faloops); then
+    1>&2 echo "faloops does not seem to be installed. Fix with: 'cargo install faloops'"
+    exit 1
+fi
+
+declare -a known_opts=(
+    "-k"
+    "kill"
+    "-o"
+    "off"
+    "-i"
+    "on"
+    "-l"
+    "list"
+    "-h"
+    "-s"
+    "single"
+    "--help"
+)
+usage() {
+    1>&2 echo "USAGE: $(basename $0) $(echo -ne "${known_opts[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/[\1]/g")"
+}
+
+action="single"
+
+if [ ${#argv} -gt 0 ]; then
+    for arg in ${argv[@]}; do
+        case "${arg}" in
+            "--help" | "-h")
+                usage
+                exit 0
+                ;;
+            "-l"|"list")
+                action="list"
+                ;;
+            "-i"|"on")
+                action="on"
+                ;;
+            "-s"|"single")
+                action="single"
+                ;;
+            "-k"|"-o"|"off"|"kill")
+                action="off"
+                ;;
+            *)
+                1>&2 echo "unknown option: ${arg@Q}"
+                1>&2 usage
+                exit 1
+                ;;
+        esac
+    done
+fi
+
+faloops_list() {
+    IFS=$'\n'
+
+    for item in $(ps aux | grep "${bin_path}" | grep -v grep); do
+        pid="$(awk '{ print $2 }' <<< "${item}")"
+        started_at="$(awk '{ print $9 }' <<< "${item}")"
+        IFS=$' '
+        regexp="^.*$(sed "s/\(\/\)/\\\\\1/g" <<< ${bin_path})"
+        declare -a tmp_args=( $(sed 's/\(\S\+\s\+\)\{10\}//g' <<< "${item}" | sed "s/\(${regexp}\)/faloops/g") )
+        call_args="${tmp_args[@]}"
+        # regexp="^.*$(sed "s/\(\/\)/\\\\\1/g" <<< ${item})\s*\(.*\)"
+        # sedexp="s/${regexp}/\1/g"
+        # echo sed "${sedexp@Q} <<< ${item@Q}"
+        # # declare -a args=( $( ) )
+
+        echo "pid=${pid} started_at=${started_at} call_args=${call_args@Q}"
+    done
+}
+
+faloops_on() {
+    declare -a faloops_args=(
+        "-b 16000 -m 180 -M 1800"
+        "-b 13000 -m 360 -M 1200"
+    )
+    for params in ${faloops_args[@]}; do
+        IFS=$' ';
+        declare -a cmd=( $(echo "${bin_path} ${params[@]}") )
+        bash_call="${cmd[@]} &
+disown -h"
+        2>/dev/random 1>/dev/random bash -c "${bash_call}"
+    done
+}
+faloops_single() {
+    declare -a faloops_args=(
+        "-b 13000 -m 360 -M 1800"
+    )
+    for params in ${faloops_args[@]}; do
+        IFS=$' ';
+        declare -a cmd=( $(echo "${bin_path} ${params[@]}") )
+        bash_call="${cmd[@]} &
+disown -h"
+        2>/dev/random 1>/dev/random bash -c "${bash_call}"
+    done
+}
+
+faloops_off() {
+    2>/dev/random 1>/dev/random g p -q -r "faloops" -k
+}
+
+
+case "${action}" in
+    "on"|"off"|"list"|"single")
+        faloops_${action}
+        ;;
+    *)
+        bar_text_left 231 196 "invalid cation: ${action@Q}"
+        1>&2 usage
+        exit 1
+        ;;
+esac

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+unset IFS
+declare -a argv=( $@ )
+declare -i argc=${#argv[@]}
+
+declare -- key=""
+declare -A extensions=(
+    ["videos"]='[.]?((3gp|(m2?)?ts|a(mv|sf|vif?)|drc|f(4[avbp]|lv)|gifv|m(2v|4[pv]|kv|ng|ov|p[24e]|p(e?g|eg?)|pv|xf|sv)|nsv|og[vg]|qt|rm|rmvb|roq|svi|v(iv|ob)|w(mv|ebm)|yuv))$'
+)
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "missing argument: <TYPE> or <COMMAND>"
+fi
+case "${argv[0]}" in
+    -v|vid|video|videos|movie)
+        key="videos"
+        ;;
+    -h|--help|help)
+                echo -e 'NAME
+    file-extension-regex - prints regular expressions to match high-level categories of file types
+
+SYNOPSIS
+    file-extension-regex [vid|video|videos|movie|-v] [-h|--help|help]
+
+DESCRIPTION
+
+    Options:
+
+       -v, vid, video, videos, movie
+          prints regular expression for videos
+
+      -h, --help, help
+
+          Print this help.
+'
+                exit 0
+                ;;
+esac
+
+
+echo ${extensions[$key]}

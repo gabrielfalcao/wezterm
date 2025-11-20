@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+
+# printf "\033[48;2;%d;%d;%dm", r,g,b;
+# printf "\033[38;2;%d;%d;%dm", 255-r,255-g,255-b;
+# printf "%s\033[0m", substr(s,colnum+1,1);
+
+reset = "\x1b[0m"
+
+
+def fg(r, g, b, *args):
+    prefix = ";".join(map(str, args))
+    if len(args) > 0:
+        return f"{prefix};38;2;{r};{g};{b}m"
+    else:
+        return f"38;2;{r};{g};{b}m"
+
+
+def bg(r, g, b, *args):
+    prefix = ";".join(map(str, args))
+    if len(args) > 0:
+        return f"{prefix};48;2;{r};{g};{b}m"
+    else:
+        return f"48;2;{r};{g};{b}m"
+
+
+def hexify(c):
+    code = hex(c)[2:]
+    return code.zfill(2)
+    # if len(code) == 2:
+    #     return f"{code}"
+    # else:
+    #     return f"0{code}"
+
+
+def decimal_str(c: int):
+    return f"{int(c):03}"
+
+
+def hex_repr(r, g, b, *args):
+    r, g, b = tuple(map(hexify, (r, g, b)))
+    return f"#{r}{g}{b}"
+
+
+def dec_repr(r, g, b, *args):
+    r, g, b = tuple(map(decimal_str, (r, g, b)))
+    return f"({r}, {g}, {b})"
+
+def ansi_repr(r, g, b, *args):
+    r, g, b = tuple(map(str, (r, g, b)))
+    return f"\\x1b[38;2;{r};{g};{b}m"
+
+
+def color_fg(text, r, g, b, *args):
+    return "".join([f"{set(fg(r,g,b,*args))}", f"{text}", f"{reset}"])
+
+
+def color_bg(text, r, g, b, *args):
+    return "".join(
+        [
+            (
+                f"{set(bg(0xff,0xff,0xff, *args))}"
+                if (
+                    (r, g, b) <= (0xF, 0xF, 0xF)
+                    or (
+                        (r, g, b) >= (0xE8, 0xE8, 0xE8) and (r, g, b) <= 0xF6,
+                        0xF6,
+                        0xF6,
+                    ),
+                )
+                else f"{set(fg(16,16,16, *args))}"
+            ),
+            f"{set(bg(r,g,b, *args))}",
+            f"{text}",
+            f"{reset}",
+        ]
+    )
+
+
+def hex_args(*args):
+    c = "".join(map(lambda n: hex(n)[2:].zfill(2), args))
+    return f"0x{c}"
+
+
+def str_args(*args):
+    return "".join(map(str, args))
+
+
+def set(s):
+    return f"\x1b[{s}"
+
+
+def display_rgb(r, g, b):
+    print(
+        f"{color_fg(hex_args(r,g,b), r,g,b)} {color_fg('=>', 0xff,0xff,0xff)} {color_bg(dec_repr(r,g,b), r,g,b)} {color_fg('#', 0x66,0x66,0x66)} {color_bg(ansi_repr(r,g,b), r,g,b)}"
+    )
+
+
+def main():
+    for r in range(0x100):
+        for g in reversed(range(0x100)):
+            for b in range(0x100):
+                display_rgb(r, g, b)
+
+
+if __name__ == '__main__':
+    main()

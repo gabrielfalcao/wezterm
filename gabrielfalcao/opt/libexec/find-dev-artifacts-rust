@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+path="${@:-$(pwd)}"
+
+if [ ! -d "$path" ]; then
+    g o -e2 "$path is not a directory"
+    exit 1
+fi
+find "$path" -name target -type d -not -path '*/target*target'

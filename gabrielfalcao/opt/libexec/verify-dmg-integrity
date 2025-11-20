@@ -1,0 +1,1 @@
+codesign --verify -R="anchor apple generic and certificate leaf[subject.OU] = MLZF7K7B5R" $*

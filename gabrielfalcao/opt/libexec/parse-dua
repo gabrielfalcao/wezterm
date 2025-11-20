@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -o noglob
+set -u
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;50;50"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+
+on_exit() {
+    repl sane
+}
+on_ctrlc() {
+    repl no echo
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    repl sane
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${warn_color_rgb}m\n${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[1]}"
+    warn_prefixed "[${script_name} warn at ${linenum}]" "${@}"
+}
+
+error() {
+    local -- linenum="${BASH_LINENO[1]}"
+    error_prefixed "[${script_name} error at ${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${error_color_rgb}m\n${message}\x1b[0m"
+}
+
+if [ -t 0 ]; then
+    exit_error "stdin is a terminal"
+    exit 1
+fi
+
+declare -x IFS=$'\n'
+
+declare -i index=0
+declare -i current=0
+declare -a all_dua_lines=( ansistrip < /dev/stdin )
+declare -i len_dua_lines=${#all_dua_lines[@]}
+declare -a dua_lines=( $(for index in ${!all_dua_lines[@]}) )
+
+ | sed -E 's/^\s*([0-9]+([.][0-9]+))\s*(([KMG]i)?B)\s*(.*)$/\5/g'

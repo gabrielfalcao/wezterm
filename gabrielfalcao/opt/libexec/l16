@@ -1,0 +1,18 @@
+#!/bin/sh
+##  ooooooooO ooooo ooooo ooooooooooo ooooo       ooooo
+## OOO         OOO   OOO   OOO    OO   OOO         OOO
+##  OOOoooooo  OOOoooOOO   OOOoooO     OOO         OOO
+##         OOO OOO   OOO   OOO    oo   OOO      o  OOO      o
+## oOOooooOOO oOOOo oOOOo oOOOoooOOOO oOOOoooooOO oOOOoooooOO
+
+t16l() {
+    for s in $(ls -lc | grep '^d' | lastcol | ansistrip); do
+        if p=$(2>/dev/null t16 p $s); then
+            if d="$(dua "$s" | ansistrip | tail -1 | col 1 3)"; then
+                echo -e -- "$p" "\x1b[1;38;5;33m${d}\x1b[0m" "\x1b[1;38;5;220m$s\x1b[0m"
+            fi
+        fi
+    done
+}
+
+t16l | sort

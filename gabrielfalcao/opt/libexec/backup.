@@ -1,0 +1,424 @@
+#!/usr/bin/env bash
+
+if [ "$(whoami)" != "root" ]; then
+    sudo -E $0
+    exit 0
+fi
+trap ctrl_c INT
+
+
+function ctrl_c() {
+    1>&2 echo -e "\rBackup Interrupted"
+    exit 1
+}
+function no_trailing_slash() {
+    echo -n "$@" | sed 's/^[[:space:]]\+//g' | sed 's/[[:space:]]\+$//g'  | sed 's/\/\+$//g'
+}
+
+function display_colored() {
+    color=$1
+    if [ -z "$color" ]; then
+        1>&2 echo -e "display_colored: first argument must be a number, actual is empty"
+    elif [ $color -gt 255 ]; then
+        1>&2 echo -e "display_colored: first argument max value should be 256, actual: ${color}"
+    elif [ $color -lt 0 ]; then
+        1>&2 echo -e "display_colored: first argument min value should be 0, actual: ${color}"
+    fi
+    shift
+    desc="$1"
+    1>&2 echo -en "\x1b[1;48;5;${color}m\x1b[1;38;5;16m${desc}\x1b[0m"
+    shift
+    msg="$@"
+    1>&2 echo -e "\x1b[1;48;5;16m\x1b[1;38;5;${color}m${msg}\x1b[0m"
+}
+function display_error() {
+    desc="$1"
+    shift
+    msg="$@"
+    display_colored 196 "\n$desc" "$msg"
+}
+function error() {
+    desc="$1"
+    shift
+    msg="$@"
+    display_error "$desc" "$msg"
+    exit 1
+}
+function dbg() {
+    padby=43
+    desc="$1"
+    shift
+    msg="$@"
+    display_colored 206 "${desc}\t" "$msg"
+}
+function dbg2() {
+    padby=43
+    desc="$1"
+    shift
+    msg="$@"
+    display_colored 82 "${desc}\t" "$msg"
+}
+function debug() {
+    lineno="$1"
+    padby=$(( ${#LINECOUNT} - ${#lineno} ));
+    lineno="$(indent $padby "${lineno}")"
+    # echo -en "\n\x1b[1;48;5;231m\x1b[1;38;5;16m${lineno}\x1b[0m"
+    shift
+    padby=43
+    desc="$1"
+    desc=$(indent_rev $padby "$desc")
+    shift
+    msg="$@"
+    display_colored 202 "$desc" "$msg"
+}
+function calc_indent_text() {
+    requested=$1;
+    padby=$1;
+    shift
+    text="$@"
+    text_width=${#text}
+    if [ -z "$text" ]; then
+        display_error "calc_indent_text" "MISSING TEXT"
+        exit 1
+    fi
+    if [ $text_width -gt 3 ]; then
+        dbg2 "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
+    fi
+    if [ ${padby} -gt ${text_width} ]; then
+        padby=$(( $padby - ${text_width} ))
+    elif [ ${padby} -lt ${text_width} ]; then
+        padby=$(( ${text_width} - $padby ))
+    elif [ ${text_width} -eq ${padby} ]; then
+        padby=0
+    fi
+    if [ $padby -lt $requested ]; then
+        padby=$requested
+    fi
+    if [ $padby -lt 0 ]; then
+        padby=0
+    fi
+    if [ $text_width -gt 3 ]; then
+        dbg "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
+    fi
+    echo -n $padby
+}
+function make_indent() {
+    padby=$1;
+    echo -en "$(seq $padby | sed 's/[0-9]\+/@/g' | tr -d '[:space:]' | sed 's/@/ /g')"
+    # IyBlY2hvIC1lbiAiJChzZXEgJHBhZGJ5IHwgc2VkICdzL15bWzpzcGFjZTpdXSpbMC05XVwrW1s6c3BhY2U6XV0qJC9AL2cnIHwgdHIgLWQgJ1s6c3BhY2U6XScgfCBzZWQgJ3MvQC8gL2cnKSI=
+}
+function indent() {
+    padby=$1;
+    shift
+    text="$@"
+    padby=$(calc_indent_text $padby "${text}")
+    echo -n "$(make_indent $padby)${text}"
+}
+function indent_rev() {
+    padby=$1;
+    shift
+    text="$@"
+    padby=$(calc_indent_text $padby "${text}")
+    echo -n "${text}$(make_indent $padby)"
+}
+
+# # sandbox
+# target_folder="${USERLAND_HOME}/Documents/Backup/$(hostname)-HOME-${USER}"
+# production
+USERLAND_USERNAME=gabrielfalcao
+USERLAND_HOME=/Users/gabrielfalcao
+TARGET_BASE=/Volumes/WaveMandala
+LOG_FOLDER=$USERLAND_HOME/opt/var/log
+mkdir -p "$LOG_FOLDER"
+LOG_PATH="${LOG_FOLDER}/$(slugify-string "$0")-$(t16g)"
+LOG_PATH_OUT="${LOG_PATH}.out.log"
+LOG_PATH_ERR="${LOG_PATH}.err.log"
+LINECOUNT=$(cat "${BASH_SOURCE[0]}" | wc -l)
+LINENO_WIDTH=${#LINECOUNT}
+
+
+touch "$LOG_PATH_OUT"
+touch "$LOG_PATH_ERR"
+chown -R $USERLAND_USERNAME "$USERLAND_HOME/opt/var"
+cd "$USERLAND_HOME"
+
+log_timestamp() {
+    echo -e "\x1b[1;38;5;151m[$(date +"%Y-%m-%d@%H:%M:%S")]\x1b[0m"
+}
+log_out() {
+    echo -e "$(log_timestamp) $@ -" | tee -a "$LOG_PATH_OUT"
+}
+log_err() {
+    # display_error "ERROR" "$@"
+    1>&2 echo -e "$(log_timestamp) $@ -" | tee -a "$LOG_PATH_ERR"
+}
+not_dry_run() {
+    if [ "$BACKUP_DRY_RUN" == "5" ]; then
+        return 1
+    else
+        return 0
+    fi
+}
+if not_dry_run; then
+    mounted_target_base="$(df -h | grep "$TARGET_BASE" | lastcol)"
+    if [ "$mounted_target_base" != "$TARGET_BASE" ]; then
+        log_err "\x1b[1;38;5;220m${TARGET_BASE}\x1b[1;38;5;160m does not appear to be mounted\x1b[0m"
+        exit 1
+    fi
+fi
+
+function resolve_path() {
+    opt="$(path canon "$@")"
+    debug "${LINENO}" "resolve_path" "opt=${opt}"
+    opt="$(no_trailing_slash "$opt")"
+    debug "${LINENO}" "resolve_path:noslash" "opt=${opt}"
+    if [ "${opt/#\//}" == "${opt}" ]; then
+        item="$(path canon "${USERLAND_HOME}/${opt}")"
+    debug "${LINENO}" "resolve_path" "item=${item}"
+        item="$(no_trailing_slash "$item")"
+    debug "${LINENO}" "resolve_path:noslash" "item=${item}"
+    else
+        item="$(path canon "${opt}")"
+    debug "${LINENO}" "resolve_path" "item=${item}"
+        item="$(no_trailing_slash "$item")"
+    debug "${LINENO}" "resolve_path:noslash" "item=${item}"
+    fi
+    if [ ! -e "$opt" ]; then
+        mkdir -p "$opt"
+        # log_err "\x1b[1;38;5;202m!!!!!WARNING!!!!! \x1b[1;38;5;160m$opt does not exist\x1b[0m"
+        # exit 1
+    fi
+    if [ -d "$item" ]; then
+        if [ "${item/%\//}" == "${item}" ]; then
+            debug "${LINENO}" "resolve_path" "item=${item}"
+            item="$(no_trailing_slash "$item")"
+            debug "${LINENO}" "resolve_path:noslash" "item=${item}"
+        fi
+        log_err "\x1b[1;38;5;202m$opt\x1b[0m is a \x1b[1;38;5;202mfolder\x1b[0m, resolved by backup script as \x1b[1;38;5;231m${item}\x1b[0m its backup location is \x1b[1;38;5;220m$(2>/dev/null resolve_target_location "$item")\x1b[0m"
+    else
+        log_err "\x1b[1;38;5;142m$opt\x1b[0m is a \x1b[1;38;5;142mfile\x1b[0m, resolved by backup script as \x1b[1;38;5;231m${item}\x1b[0m its backup location is \x1b[1;38;5;220m$(2>/dev/null resolve_target_location "$item")\x1b[0m"
+    fi
+    echo "$item"
+}
+
+function resolve_target_folder() {
+    absopt="$(path canon "$@")"
+    debug "${LINENO}" "resolve_target_folder" "absopt=${absopt}"
+    absopt="$(no_trailing_slash "$absopt")"
+    debug "${LINENO}" "resolve_target_folder:noslash" "absopt=${absopt}"
+    opt="$(path unshift "$absopt" $(path canon ~/))"
+    debug "${LINENO}" "resolve_target_folder" "opt=${opt}"
+    opt="$(no_trailing_slash "$opt")"
+    debug "${LINENO}" "resolve_target_folder:noslash" "opt=${opt}"
+    # log_err "resolving target folder for \x1b[1;38;5;71m$(path canon -f "$@")\x1b[0m"
+    if [ "${opt/#\//}" == "${opt}" ]; then
+        item="${TARGET_BASE}/Langley"
+        debug "${LINENO}" "resolve_target_folder" "item=${item}"
+        item="$(no_trailing_slash "$item")"
+        debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
+        color="118"
+    else
+        if [ "${opt/#\/System/}" == "${opt}" ]; then
+            log_err "\x1b[1;38;5;170m\"$opt\" does not appear to start with /System\x1b[0m"
+            item="${TARGET_BASE}/Langley_Root"
+            debug "${LINENO}" "resolve_target_folder" "item=${item}"
+            item="$(no_trailing_slash "$item")"
+            debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
+            color="33"
+        else
+            log_err "\x1b[1;38;5;160m\"$opt\" appears to start with /System\x1b[0m"
+            item="${TARGET_BASE}/Langley_System"
+            debug "${LINENO}" "resolve_target_folder" "item=${item}"
+            item="$(no_trailing_slash "$item")"
+            debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
+            color="160"
+        fi
+    fi
+    # log_err "target folder for \x1b[1;38;5;33m\"$(path canon -f "$@")\"\x1b[0m resolved to \x1b[1;38;5;${color}m\"$item\"\x1b[0m"
+    echo "$item"
+}
+function resolve_target_location() {
+    arg="$(path canon $@)"
+    debug "${LINENO}" "resolve_target_location" "arg=${arg}"
+    arg="$(no_trailing_slash "$arg")"
+    debug "${LINENO}" "resolve_target_location:noslash" "arg=${arg}"
+    target_folder="$(path join -a "$(resolve_target_folder "$arg")")"
+    debug "${LINENO}" "resolve_target_location" "target_folder=${target_folder}"
+    target_folder="$(no_trailing_slash "$folder")"
+    debug "${LINENO}" "resolve_target_location:noslash" "target_folder=${target_folder}"
+    if not_dry_run; then
+        # -c ensure target folder exists
+        target_folder="$(path join -ca "$(resolve_target_folder "$arg")")"
+        debug "${LINENO}" "resolve_target_location:not_dry_run" "target_folder=${target_folder}"
+        target_folder="$(no_trailing_slash "$folder")"
+        debug "${LINENO}" "resolve_target_location:not_dry_run:noslash" "target_folder=${target_folder}"
+    fi
+    relative_path="$(path unshift "$(path canon $arg)" "$(path canon ~/)")"
+    debug "${LINENO}" "resolve_target_location" "relative_path=${relative_path}"
+    relative_path="$(no_trailing_slash "$path")"
+    debug "${LINENO}" "resolve_target_location:noslash" "relative_path=${relative_path}"
+    target_path="$(path join "$target_folder" $relative_path)"
+    debug "${LINENO}" "resolve_target_location" "target_path=${target_path}"
+    target_path="$(no_trailing_slash "$path")"
+    debug "${LINENO}" "resolve_target_location:noslash" "target_path=${target_path}"
+    # log_err "target location for \x1b[1;38;5;33m\"$(path canon -f "$arg")\"\x1b[0m resolved to \x1b[1;38;5;${color}m\"$target_path\"\x1b[0m"
+    echo "$target_path"
+}
+function sync() {
+    if not_dry_run; then
+        TAG="SYNC"
+    else
+        TAG="DRY-RUN SYNC"
+    fi
+    # log_err "======= $TAG BEGINS ======="
+    if not_dry_run; then
+        2>>"$LOG_PATH_ERR" rsync -puacvot --ignore-errors --progress  "${1}" "${2}" >> "$LOG_PATH_OUT"
+    else
+        log_err "\x1b[1;38;5;79mwould sync from \"${1}\" to \"${2}\"\x1b[0m" | tee -a "$LOG_PATH_ERR"
+    fi
+    # log_err "======= $TAG FINISH ======="
+}
+
+function do_backup_home_item() {
+    src="$(resolve_path "$@")"
+    src="$(no_trailing_slash "$src")"
+    if [ ! -e "$src" ]; then
+        display_error "do_backup_home_item" "src '${src}' does not exist"
+        exit 1
+    fi
+    echo -en "\x1b[1;38;5;196m"
+    find "$src" -type f -name .DS_Store -exec rm -fv {} \;
+    find "$src" -type d -name target | xargs rm -rfv
+    find "$src" -type d -name node_modules | xargs rm -rfv
+    echo -en "\x1b[0m"
+    # log_out "backing-up \x1b[1;38;5;220m\"$src\"\x1b[0m"
+    target_path="$(resolve_target_location "$src")"
+    target_path="$(no_trailing_slash "$path")"
+    log_out "syncing \x1b[1;38;5;71m${src}\x1b[0m" to "\x1b[1;38;5;33m${target_path}\x1b[0m"
+    sync "${src}" "${target_path}"
+}
+function backup_system_library() {
+    set +e
+    for lt in "Keychain" "Keychains" "LaunchAgents" "LaunchDaemons"; do
+        back_this_up "/System/Library/$lt/"
+    done
+    set -e
+}
+function backup_macintosh_hd_library() {
+    set +e
+    for lt in "Audio/Plug-Ins" "Keychains" "LaunchAgents" "LaunchDaemons" "Logs" "Developer"; do
+        back_this_up "/Library/$lt/"
+    done
+    set -e
+}
+
+function back_this_up() {
+    if [ -z "$@" ]; then
+        display_error "back_this_up: first argument must be a path, actual is empty"
+        exit 1
+    fi
+    set +e
+    opt="$(path canon "$@")"
+    if do_backup_home_item "${opt}"; then
+        log_out "\"${opt}\" backed up"
+    else
+        log_err "Error while backing up \"${opt}\"" | tee -a $LOG_FILE
+        exit 1
+    fi
+    set -e
+}
+function backup_home_items() {
+    set +e
+    for src in $(find $USERLAND_HOME/ -name '.*' -type d -maxdepth 1); do
+        back_this_up "$(path canon "${src}")"
+    done
+
+    for src in $(find $USERLAND_HOME/ -type f -maxdepth 1); do
+        back_this_up "$(path canon "${src}")"
+    done
+    set -e
+}
+
+back_this_up "/usr/local"
+back_this_up "/opt"
+back_this_up "/var/log"
+back_this_up "/Applications"
+back_this_up "*scratch*" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+back_this_up "projects"
+back_this_up "*scratch*/Data"
+back_this_up "__sandbox__"
+back_this_up "*sandbox*"
+back_this_up "*nons*"
+back_this_up ".wezterm.lua"
+back_this_up "SDKs"
+back_this_up ".bun"
+back_this_up ".gnupg"
+back_this_up ".ssh"
+back_this_up ".shell.d"
+back_this_up ".config"
+back_this_up ".emacs.d"
+back_this_up ".nvm"
+back_this_up ".yarn"
+back_this_up ".local"
+back_this_up ".logs"
+back_this_up "Music"
+back_this_up "JUCE"
+back_this_up "Unity"
+back_this_up "Blender"
+back_this_up "Documents"
+back_this_up "Splice"
+back_this_up "Downloads"
+back_this_up "Bildern"
+back_this_up "Büchen"
+back_this_up "Kino"
+back_this_up "LOL"
+back_this_up "Publications"
+back_this_up "tmp"
+back_this_up "Desktop"
+back_this_up "Movies"
+back_this_up "Pictures"
+back_this_up "Library"
+back_this_up "Applications"
+back_this_up "go"
+back_this_up "opt"
+backup_macintosh_hd_library
+backup_home_items
+backup_system_library
+back_this_up "Library/HTTPStorages"
+back_this_up "Library/Caches"
+back_this_up "Library/LaunchAgents"
+back_this_up "Library/LaunchDaemons"
+back_this_up "Library/Logs"
+back_this_up "Library/Audio/Plug-Ins"
+2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/var-db-dslocal-nodes-default-users-$(date +"%Y%m%d-%H%M%S").zip" "/var/db/dslocal/nodes/default/users"
+2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Preferences-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Preferences"
+2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Containers-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Containers/"
+2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/keychains-$(date +"%Y%m%d-%H%M%S").zip" $(pat ~/Library/Preferences/com.apple.security.plist | jq .DLDBSearchList[].DbName | tr -d '"')
+back_this_up "Library/Application%20Support"
+
+# # # # # back_this_up ".git"
+# # # # # back_this_up ".casa"
+# # # # # back_this_up ".cups"
+# # # # # back_this_up ".ipython"
+# # # # # back_this_up ".pyenv"
+# # # # # back_this_up ".vim"
+# # # # # back_this_up "sec"
+# # # # # back_this_up "src"
+# # # # # back_this_up "usr"
+# # # # # back_this_up "unknown-dated"
+# # # # # back_this_up "default.etcd"
+# # # # # back_this_up "HUAWEI-E3372"
+# # # # # back_this_up "Backups"
+# # # # # back_this_up "Obiz"
+# # # # # back_this_up "DropBox"
+# # # # # back_this_up "album-covers"
+# # # # # back_this_up "srv"
+
+if not_dry_run; then
+    set +e
+    2>/dev/null diskutil unmount "${TARGET_BASE}";
+    2>/dev/null diskutil unmount force "${TARGET_BASE}";
+    2>/dev/null 1>/dev/null which g;
+    eject-disks
+    eject-usb-disks
+fi

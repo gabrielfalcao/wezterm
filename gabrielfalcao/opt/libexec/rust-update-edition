@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+. ${HOME}/opt/lib/ansi.sh
+
+for project_path in $(find-rust-projects ${HOME}/projects); do
+    manifest="${project_path}/Cargo.toml"
+    manifest_display=$(get_display_path "${manifest}")
+    project_path_display=$(get_display_path "${project_path}")
+
+    if git_repo_path=$(2>/dev/null 1>/dev/null cd "${project_path}" && 2>/dev/random git rev-parse --show-toplevel); then
+        if manifest_git_changed=$(2>/dev/null 1>/dev/null cd "${project_path}" && 2>/dev/random git status --porcelain | grep '^[A-Za-z]\+[[:space:]]\+Cargo[.]toml$'); then
+            if [ -z "${manifest_git_changed}" ]; then
+                if (cd "${project_path}" && bar_text_left 231 27 "updating manifest ${manifest}" && sed 's/^edition[[:space:]]*=[[:space:]]*"2021"/edition = "2024"/g' -i ${manifest}); then
+                    bar_text_left 82 16 "updated $(ansi_spaced 16 82 "${manifest_display}")"
+                    if (cd "${project_path}" && git add Cargo.toml && git commit Cargo.toml -m 'edition="2024"'); then
+                        ansi_up
+                        bar_text_left 82 16 "updated $(ansi_spaced 16 82 "${manifest_display}") $(ansi_spaced 82 16 "git")"
+                    fi
+                else
+                    bar_text_left 231 196 "failed to update $(ansi_spaced 16 82 "${manifest_display}")"
+                fi
+            elif sed 's/^edition[[:space:]]*=[[:space:]]*"2021"/edition = "2024"/g' -i ${manifest}; then
+                1>&2 bar_text_left 154 16 "updated: $(ansi 16 231 "${manifest}")"
+            fi
+        else
+            1>&2 bar_text_left 231 16 "skipping non-git directory: $(ansi 16 231 "${project_path_display}")"
+        fi
+    fi
+done

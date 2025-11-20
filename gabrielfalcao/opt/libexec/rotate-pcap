@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -ex
+filename="$@"
+
+gzip -42 "$filename"
+rm -f "$filename"
+
+ts="$(/bin/ls -l -D "%s" "$filename" | awk '{ print $6 }')"
+
+mv -f "${filename}.gz" "${filename}.${ts}.gz"

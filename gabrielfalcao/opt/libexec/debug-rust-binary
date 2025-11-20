@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+target=$1
+shift
+breakpoint_file=$1
+shift
+breakpoint_line=$1
+shift
+lldb "${target}" --one-line "br set -f ${breakpoint_file} -l ${breakpoint_line}"

@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import re
+import click
+
+
+@click.command()
+@click.argument('color')
+def main(color):
+    valid = re.search(r'^([^a-f0-9]*|\b)[#]?(?P<color>[a-f0-9]{6})([^a-f0-9]*|\b)$', color, re.I)
+    if not valid:
+        click.echo(f"invalid RGB hex code: {color}")
+        raise SystemExit(1)
+    color = valid.groupdict()['color']
+
+    r, g, b = color[0:2], color[2:4], color[4:]
+    print(" ".join([str(int(x, 16)) for x in (r, g, b)]))
+
+
+if __name__ == '__main__':
+    main()

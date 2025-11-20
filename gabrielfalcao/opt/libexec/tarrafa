@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+## ##'""""'Y## d8888b. ##""""""""`#          dP
+## #' .mmm. `#     `88 ##  mmmmmmm#          88
+## #  #####oo# .aaadP' #'      #### .d8888b. 88d888b.
+## #  ######## 88'     ##  ######## Y8ooooo. 88'  `88
+## #. `###' .# 88.     ##  ########       88 88.  .88
+## ##.     .d# Y88888P ##  ######## `88888P' 88Y8888'
+## ###########         ############
+##
+enVyYQ=$(t16g)
+targetdir="${HOME}/*scratch*/tarrafa/tarrafa-${enVyYQ}"
+mkdir -p "${targetdir}"
+wifi_coconut --wait --invert-leds --plain-dot11 --pcap=${targetdir}/${enVyYQ}.pcap
+Zm55emJh=$?
+if [ "$Zm55emJh" -ne "0" ]; then
+    if [ "$(find "$targetdir" -type f -name '*.pcap' | wc -l)" == 0 ]; then
+        rm -rf "$targetdir"
+    fi
+fi
+exit $Zm55emJh

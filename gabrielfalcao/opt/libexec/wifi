@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+
+ctrlc() {
+    stty sane
+    1>&2 echo -e "\rAborted with Ctrl-C"
+    exit 1
+}
+
+trap ctrlc int
+
+if [ "$(whoami)" != "root" ]; then
+    sudo $0 $@
+    exit $?
+fi
+declare -a argv=($@)
+declare argc=${#argv}
+
+declare -a known_opts=(
+    "on"
+    "up"
+    "down"
+    "off"
+    "reboot"
+    "restart"
+    "-h"
+    "--help"
+)
+declare -a action_args=()
+
+usage() {
+    stty sane
+    1>&2 echo "USAGE: $(basename $0) $(echo -ne "${known_opts[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/\1/g")"
+}
+
+if [ ${#argv} -gt 0 ]; then
+    for arg in ${argv[@]}; do
+        if [ -n "${action}" ]; then
+            action_args+=("${arg}")
+            continue
+        fi
+        case "${arg}" in
+            "--help" | "-h")
+                usage
+                exit 0
+                ;;
+            "up" | "on")
+                action="on"
+                ;;
+            "down" | "off")
+                action="off"
+                ;;
+            "restart" | "reboot")
+                action="reboot"
+                ;;
+            *)
+                1>&2 echo -e "unknown option: ${arg@Q}"
+                1>&2 usage
+                exit 1
+                ;;
+        esac
+    done
+fi
+
+sleep_for() {
+    seconds="${1}"
+    if [ -z "${seconds}" ]; then
+        1>&2 echo -e "sleep_for - missing argument: <SECONDS>"
+        exit 1
+    fi
+    if ! 1>/dev/random 2>/dev/random grep '^[0-9]\+$' <<< "${seconds}"; then
+        1>&2 echo -e "sleep_for - invalid argument, not a number: ${seconds@Q}"
+        exit 1
+    fi
+    1>/dev/random 2>/dev/random stty -echo || true
+    echo -e "waiting ${seconds}s"
+    for int in $(seq $(( 1 + $seconds ))); do
+        delta=$(( ${seconds} - ${int} + 1 ))
+        echo -e "\x1b[A\rwaiting ${delta}s"
+        sleep 1
+    done
+    1>/dev/random 2>/dev/random sane -echo || true
+}
+wifi_off() {
+    sudo networksetup -setairportpower en0 off
+}
+wifi_on() {
+    sudo networksetup -setairportpower en0 on
+    sudo networksetup -detectnewhardware
+}
+wifi_reboot() {
+    local sleep_seconds=""
+    for arg in ${action_args[@]}; do
+        if [ -n "${sleep_seconds}" ]; then
+            1>&2 echo "wifi_reboot: invalid argument ${arg@Q}. sleep_seconds argument already set to ${sleep_seconds}"
+            exit 1
+        fi
+        if num_value=$(ack '^\s*\d+\s*$' <<<"${arg}"); then
+            sleep_seconds=${num_value}
+        else
+            1>&2 echo "wifi_reboot: ignoring unknown argument ${arg@Q}."
+        fi
+    done
+    if [ -z "${sleep_seconds}" ]; then
+        sleep_seconds=1
+    fi
+    wifi_off
+    sleep_for ${sleep_seconds}
+    wifi_on
+}
+case "${action}" in
+    "on")
+        wifi_on
+        ;;
+    "restart"|"reboot")
+        wifi_reboot
+        ;;
+    "off")
+        wifi_off
+        ;;
+    *)
+        1>&2 echo -e "invalid action: ${action@Q}"
+        1>&2 usage
+        exit 1
+        ;;
+esac
+
+stty sane

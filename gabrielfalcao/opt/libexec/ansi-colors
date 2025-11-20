@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# prints all ansi color codes
+declare -i ceiling=4
+
+if [ ! -z "${1}" ]; then
+    ceiling=${1}
+fi
+
+
+declare -a lines
+
+for code in $(seq 1 257); do
+    # pad="                 "
+    example="$(printf "%-3sm" "${code}")"
+    # trim=16
+    # lines+=("\x1b[48;5;${code}m${example}\x1b[0m")
+    lines+=("\x1b[0;30m\x1b[48;5;${code}m${example}\x1b[0m")
+    if [[ $((code % 16)) == 0 ]]; then
+        lines+=("\x1b[0;47m")
+    fi
+
+    lines+=("\x1b[38;5;${code}m${example}\x1b[0m")
+    if [[ $((code % ceiling)) == 0 ]]; then
+        lines+=("\r\n")
+    fi
+done
+echo -e " ${lines[*]}" | less -r

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+find . -type f -name '*#' -or -name '.*#*' -or  -name '*~' -or  -name '.DS_Store' -or  -name '.localized' | xargs-each rm -f

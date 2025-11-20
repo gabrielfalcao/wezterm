@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+. ${HOME}/opt/lib/ansi.sh
+
+for project_path in $(find-rust-projects ${HOME}/projects); do
+    toolchain_config_display=$(get_display_path "${toolchain_config}")
+    project_path_display=$(get_display_path "${project_path}")
+    toolchain_config="${project_path}/rust-toolchain.toml"
+    if [ ! -e "${toolchain_config}" ]; then
+        1>&2 bar_text_left 231 16 "skipping rust project missing rust-update-toolchain.toml: $(ansi 16 231 "${project_path_display}")"
+        continue
+    fi
+
+    if git_repo_path=$(2>/dev/null 1>/dev/null cd "${project_path}" && 2>/dev/random git rev-parse --show-toplevel); then
+        git-autocommit-plumbing "${git_repo_path}"
+    else
+        1>&2 bar_text_left 231 16 "skipping non-git directory: $(ansi 16 231 "${project_path_display}")"
+    fi
+done

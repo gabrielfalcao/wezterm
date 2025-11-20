@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+
+set -e
+set -o pipefail
+set -o noglob
+set -u
+export IFS=$'\n'
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+declare -a regex_groups=()
+declare -a find_params=()
+declare -i total_regex_groups=0
+declare -i pedantic=1
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;50;50"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+
+on_exit() {
+    repl sane
+}
+on_ctrlc() {
+    repl no echo
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    repl sane
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${warn_color_rgb}m\n${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[${script_name} warn at ${linenum}]" "${@}"
+}
+
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[${script_name} error at ${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${error_color_rgb}m\n${message}\x1b[0m"
+}
+
+process_argv() {
+    repl no echo
+    if [ ${argc} -eq 0 ]; then
+        exit_error "missing argument(s): <REGEX-PATTERN> [REGEX-PATTERN...]"
+        exit 1
+    fi
+    for index in ${!argv[@]}; do
+        local -i current=$(($index + 1))
+        local -- arg_prefix="${current}/${argc}"
+        local -- arg="${argv[$index]}"
+        local -- next_arg=""
+        if [ ${current} -lt ${argc} ]; then
+            next_arg=$(grep -E '^[^-]+.*$' <<< "${argv[$current]}")
+        fi
+
+        case "${arg}" in
+            --not-pedantic|--no-pedantic)
+                pedantic=$(( $pedantic - 1 ))
+                ;;
+            --pedantic)
+                pedantic=$(( $pedantic + 1 ))
+                ;;
+            -*)
+                find_params+=("${arg}")
+                ;;
+            *)
+                if 1>/dev/random grep -E '^[a-z0-9_[:space:]@/-]+$' <<< "${arg}"; then
+                    regex_groups+=( "${arg}" )
+                elif [ ${pedantic} -gt 0 ]; then
+                    warn_prefixed "[arg ${prefix}]" "invalid regexp pattern (pedantic=${pedantic})"
+                    continue
+                else
+                    regex_groups+=( "${arg}" )
+                fi
+        esac
+        total_regex_groups=${#regex_groups[@]}
+    done
+    repl sane
+}
+
+main() {
+    if [ ${total_regex_groups} -eq 0 ]; then
+        error "no valid regex groups"
+        exit 1
+    fi
+    local -- group_pattern="\\($(printf '%s\\|' "${regex_groups[@]}" | sed -E 's/[\\]+[|]\s*$//g')\\)"
+    # 1>&2 echo -e "${group_pattern@Q}"
+    local -a find_argv_raw=(
+        find . -regextype sed -regex "^.*\?/${group_pattern}$" -not -regex ".*\?/${group_pattern}/.*/\1"
+    )
+    # 1>&2 echo -e "${find_argv_raw[@]@A}"
+    # 1>&2 echo -e "${find_argv_raw[@]@Q}"
+    # 1>&2 echo -e "${find_argv_raw[@]}"
+
+    # 1>&2 echo -e "\n\x1b[1;38;5;202mentering iteration:\x1b[0m"
+
+    local -a find_argv=($(for arg in ${find_argv_raw[@]}; do
+                              if 1>/dev/random grep -i -E '^[a-z0-9_.-]+$' <<< "${arg}"; then
+                                  echo "${arg}"
+                              elif 1>/dev/random grep -i -E '([^a-z0-9_.-]|[\\]+(\(|\)|[?])|[^$])+' <<< "${arg}"; then
+                                  echo "${arg@Q}"
+                              else
+                                  echo "${arg@Q}"
+                              fi
+                          done))
+    # 1>&2 echo -e "${find_argv[@]@A}"
+    # 1>&2 echo -e "${find_argv[@]@Q}"
+    echo -e "${find_argv[@]}"
+
+
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    process_argv ${argv[@]}
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

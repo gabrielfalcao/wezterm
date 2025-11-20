@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+
+path="$(tr -d '[:space:]' <<< "$@")"
+
+if [ -z "${path}" ]; then
+    path="$HOME/projects"
+fi
+
+if [ ! -e "$path" ]; then
+    exit_error 101 "$path does not exist"
+fi
+
+if [ ! -d "$path" ]; then
+    exit_error 101 "$path is not a directory"
+fi
+
+path="$(2>/dev/random 1>/dev/random cd "${path}" && pwd)"
+
+cleanup_log_filename=$(basename $0)
+cleanup_log_path="$HOME/opt/var/log/${cleanup_log_path}.log"
+
+ansi_clear
+bar_text_left 237 231 "scanning rust projects in $(ansi_spaced 220 237 "$(get_display_path ${path})")$(ansi 237 231)"
+for path in $(find-rust-projects "${path}"); do
+    delete_path="${path}/target"
+    if [ -d "${delete_path}" ]; then
+        bar_text_center 124 231 "deleting ${delete_path}"
+        rm -rfv "${delete_path}" >> ${cleanup_log_path}
+    fi
+done

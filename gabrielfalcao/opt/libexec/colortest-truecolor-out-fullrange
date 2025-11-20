@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+
+for r in range(255):
+    for g in range(255):
+        for b in range(255):
+            bg = "\033[48;2;%d;%d;%dm" % (r,g,b )
+            fg = "\033[38;2;%d;%d;%dm" % (255-r,255-g,255-b)
+            pad = " " * 40
+            code = f"#{r:02x}{g:02x}{b:02x}"
+            reset = f"{pad}{code}{pad}\033[0m"
+            print(f"{bg}{fg}{reset}")
+
+
+# for colnum in range(77):
+#     r = 255-(colnum*255/76)
+#     g = (colnum*510/76)
+#     b = (colnum*255/76)
+#     if g>255:
+#         g = 510-g
+#     bg = "\033[48;2;%d;%d;%dm" % (r,g,b )
+#     fg = "\033[38;2;%d;%d;%dm" % (255-r,255-g,255-b)
+#     pad = " " * 50
+#     code = f"{colnum+1:03d}"
+#     reset = f"{pad}{code}{pad}\033[0m"
+#     print(f"{bg}{fg}{reset}")

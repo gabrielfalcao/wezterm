@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+export IFS="
+"
+target_path="$1"
+if [ -z "${target_path}" ]; then
+    target_path=$HOME/projects
+fi
+
+if [ ! -e "${target_path}" ]; then
+    1>&2 bar_text_left 231 196 "ERROR: $(ansi_spaced 196 231 "path does not exist $(ansi_underline "${target_path}")")"
+    exit 1
+fi
+
+find ~/projects -type f -name .todelete -or -type f -name todelete -exec tag-path-for-deletion {} \;
+
+tags_path="$(tag-path-for-deletion --show-path)"
+
+if [ ! -e "${tags_path}" ]; then
+    1>&2 bar_text_left 231 196 "ERROR: $(ansi_spaced 196 231 "tags path does not exist $(ansi_underline "${tags_path}")")"
+    exit 1
+fi
+if [ ! -r "${tags_path}" ]; then
+    1>&2 bar_text_left 231 196 "ERROR: $(ansi_spaced 196 231 "tags path not readable $(ansi_underline "${tags_path}")")"
+    exit 1
+fi
+
+declare -a paths_for_deletion=( $(grep "[^[:space:]]" tags_path) )
+
+for path in ${paths_for_deletion[@]}; do
+    if [ -e "${path}" ]; then
+        bar_text_left  235 220 "DELETING $(ansi_spaced 220 235 "path does not exist $(ansi_spaced 220 235 "${path}")")"
+        stderr=$(mktemp)
+        stdout=$(mktemp)
+        if 2>${stderr} 1>${stdout} rm -rfv "${path}"; then
+            ansi_up
+            bar_text_left  235 82 "DELETED $(ansi_spaced 82 235 "path does not exist $(ansi_spaced 82 235 "${path}")")"
+            sed "/${path//\//\\\/}/d" -i ${tags_path}
+        else
+            ansi_up
+            bar_text_left  216 196 "ERROR DELETING $(ansi_spaced 196 216 "path does not exist $(ansi_spaced 196 216 "${path}")")"
+            cat ${stderr}
+        fi
+    else
+        bar_text_left  233 222 "skipping $(ansi_spaced 222 233 "$(ansi_spaced 222 233 "${path}") path does not exist")"
+    fi
+
+done
+
+disown -h

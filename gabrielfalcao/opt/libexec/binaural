@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+set -e
+open -a VLC $HOME/Sound/binaural-operator.aif

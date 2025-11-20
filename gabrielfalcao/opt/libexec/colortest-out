@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+
+def fg(code):
+    return f"1;38;5;{code}m"
+
+
+def bg(code):
+    return f"1;48;5;{code}m"
+
+
+def m(code):
+    return f"{code}m"
+
+
+def color_fg(text, code, h=None):
+    return "".join([f"{set(fg(code))}", f"{text}", f"{reset}"])
+
+def color_bg(text, code, h=None):
+    return "".join([f"{set(bg(0xff))}" if (code <= 0xf or (code >= 0xe8 and code <= 0xf6)) else f"{set(fg(16))}", f"{set(bg(code))}", f"{text}", f"{reset}"])
+
+
+
+def set(s):
+    return f"\x1b[{s}"
+
+
+reset = "\x1b[0m"
+
+for c in range(0x100):
+    print(f"{set(fg(c))}{m(c)}{reset} {color_fg('=>', 0xff, c)} {color_fg(hex(c), c)} {color_bg(str(c) + str('m'), c)}")

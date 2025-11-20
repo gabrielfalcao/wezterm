@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+export IFS=$'\n'
+declare -a argv=( $@ )
+declare -i argc=${#argv[@]}
+
+
+open -a VLC "${argv[@]}"

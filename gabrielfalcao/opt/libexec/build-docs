@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+
+
+declare -a candidate_working_paths=( "$(pwd)" )
+
+if 2>/dev/random git_repo_path=$(git rev-parse --show-toplevel); then
+    candidate_working_paths+=( "${git_repo_path}" )
+fi
+
+has_candidate() {
+    local -a f_argv=( $@ );
+    local f_argc=${#f_argv[@]};
+
+    if [ ${f_argc} -eq 1 ]; then
+        local filename="${1}"
+    elif [ ${f_argc} -gt 1 ]; then
+        local filename="${@}"
+    else
+        1>&2 echo -e "[has_candidate error] missing argument"
+        exit 101
+    fi
+
+    for base_path in ${candidate_working_paths[@]}; do
+        local path="${base_path}/${filename}"
+        if [ -f "${path}" ] && [ -r "${path}" ] && [ -s "${path}" ]; then
+            echo "${path}"
+            return 0
+        fi
+    done
+    return 1
+}
+build_mkdocs() {
+    config_file_path="${@}"
+    if [ ! -e "${config_file_path}" ]; then
+        1>&2 echo -e "[build_mkdocs error] path does not exist: ${config_file_path@Q}"
+        exit 101
+    fi
+    build_directory_base_path="$(dirname "${config_file_path}")"
+    venv_path="$(dirname "${config_file_path}")"
+    venv_activate_path="${venv_path}/bin/activate"
+
+    if [ ! -e "${venv_path}" ]; then
+        python -mvenv "${venv_path}"
+        . "${venv_activate_path}"
+
+}
+
+if full_path=$(has_candidate "mkdocs.yml"); then
+    build_mkdocs "${full_path}"
+elif full_path=$(has_candidate "Cargo.toml"); then
+    build_cargo_docs "${full_path}"
+else
+    1>&2 echo -e "[has_candidate error] missing argument"
+fi

@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -u
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+declare -- info_prefix_color_rgb="0;66;255"
+declare -- info_color_rgb="62;92;255"
+declare -- debug_prefix_color_rgb="50;255;106"
+declare -- debug_color_rgb="50;255;161"
+
+on_exit() {
+    repl sane
+}
+on_ctrlc() {
+    repl no echo
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    repl sane
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+count() {
+    local -- ansi_code_reset="\x1b[0m"
+    local -- input_source="$1"
+    local -- input_color=""
+    local -- type_color=""
+    local -- ansi_code_input="\x1b[1;38;5;231m"
+    case "${input_source@L}" in
+        std*in)
+            input_color="5;49";
+            type_color="5;220";
+            ;;
+        *arg*)
+            input_color="5;220";
+            type_color="5;49";
+            ;;
+        *)
+            error "unknown input source: ${input_source@Q}"
+            exit 33
+            ;;
+    esac
+    ansi_code_input="\x1b[1;38;${input_color}m";
+    ansi_code_type="\x1b[1;38;${type_color}m";
+    sed -n '/^.*[^[:space:]]+.*$/{s/[^()]\+/ /gp};t success q1; :success q0' | awk "{ { OFS=\"\"; print \"input from ${ansi_code_type}${input_source}${ansi_code_reset}:\n${ansi_code_input} \" \$0 \"${ansi_code_reset}\" }; openpar=0;closepar=0; for (par=1;par<=NF;par++) {if (\$par ~ /[\(]/) openpar+=1; else if (\$par ~ /[\)]/) closepar+=1; } print \"\n${ansi_code_type}open${ansi_code_reset} parenthesis=${ansi_code_input}\" openpar \"${ansi_code_reset}\n${ansi_code_type}close${ansi_code_reset} parenthesis=${ansi_code_input}\" closepar \"${ansi_code_reset}\"}"
+}
+
+main() {
+    local -i code=0
+    #set -x
+    if [ ! -t 0 ]; then
+        count stdin
+        code=$((($code << $?) ^ $?))
+    fi
+    if [ ${argc} -gt 0 ]; then
+        count argv <<<"${argv[@]}"
+        code=$((($code << $?) ^ $?))
+    fi
+
+    exit $code
+    # if [ ${argc} -eq 0 ] && [ ! -t 0 ]; then
+    #     count
+    # elif [ ${argc} -gt 0 ] && [ -t 0 ]; then
+    #     count <<< "$@"
+    # elif [ ${argc} -gt 0 ] && [ ! -t 0 ]; then
+    #     count
+    #     count <<< "$@"
+    # elif [ ${argc} -eq 0 ]; then
+    #     error "no input from stdin or args"
+    #     exit
+    # else
+    #     count
+    #     count <<< "$@"
+    # fi
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

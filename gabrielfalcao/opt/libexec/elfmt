@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+. $HOME/opt/lib/git.sh
+
+prog=$(basename $0)
+declare -a argv=( $@ )
+declare    argc=${#argv[@]}
+
+error_message() {
+    1>&2 echo -e $@
+}
+usage() {
+    error_message "USAGE: ${prog} <ELISP-FILE>"
+}
+abort() {
+    local -a parts=($@)
+    if [ ${#parts[@]} -gt 0 ]; then
+        error_message ${parts[@]}
+        error_message ""
+    fi
+    usage
+    exit 1
+}
+if [ ${argc} -eq 0 ]; then
+    abort
+fi
+
+
+declare -a elisp_files=()
+stdout=$(mktemp)
+
+for index in ${!argv[@]}; do
+    current=$(( $index + 1 ))
+    arg=${argv[$index]}
+    if [ ! -e "${arg}" ]; then
+        abort "${arg@Q} does not exist"
+    elif [ ! -f "${arg}" ]; then
+        abort "${arg@Q} is not a file"
+    elif [ "${arg/.el/}" == "${arg}" ]; then
+        abort "${arg@Q} is not an emacs lisp file"
+    else
+        elisp_files+=( "${arg}" )
+    fi
+done
+
+for el in ${elisp_files[@]}; do
+    stderr=$(mktemp)
+    surrogate=$(mktemp)
+ #    declare -a in_git_changes=$(git_status_list_commitable_paths | grep "${el}")
+ #    if [ ${#in_git_changes[@]} -gt 0 ]; then
+ #        declare -a all_staged_files=$(git_status_list_all_staged)
+ #        declare -a in_git_staged_files=$(git_status_list_all_staged | grep "${el}")
+
+ #        if [ ${#in_git_staged_files[@]} -gt 0 ]; then
+ #            if [ ${#all_staged_files[@]} -eq 1 ]; then
+ #                # only the current file has been staged, so commit without pathspec
+ # 1>${stdout} git commit -m "[${prog}] commits staged changes to ${el@Q} prior to auto-formatting"
+ #            else
+ # 1>${stdout} git commit "${el}" -m "[${prog}] commits staged changes to ${el@Q} prior to auto-formatting"
+ #            fi
+ #        fi
+ #        declare -a in_git_tracked_files=$(git_status_list_all_tracked | grep "${el}")
+ #        if [ ${#in_git_tracked_files[@]} -gt 0 ]; then
+ # 1>${stdout} git commit "${el}" -m "[${prog}] commits tracked changes to ${el@Q} prior to auto-formatting"
+ #        fi
+
+ #        declare -a in_git_untracked_files=$(git_status_list_untracked | grep "${el}")
+
+ #        if [ ${#in_git_untracked_files[@]} -gt 0 ]; then
+ #            git add -f "${el}" && 1>${stdout} git commit "${el}" -m "[${prog}] tracks and commits ${el@Q} prior to auto-formatting"
+ #        fi
+ #    fi
+
+    if 2>${stderr} 1>${surrogate} $HOME/opt/libexec/lisp-format "$el"; then
+        mv -f ${surrogate} ${el}
+        # declare -a in_git_changes=$(git_status_list_commitable_paths | grep "${el}")
+        # if [ ${#in_git_changes[@]} -gt 0 ]; then
+        #     git add -f "${el}" && 1>${stdout} git commit -am "[${prog}] auto-formatted ${el}"
+        # fi
+        rm -f ${stderr}
+    else
+        error_message "failed to format ${el@Q} (${surrogate})"
+        1>&2 cat ${stderr}
+    fi
+done

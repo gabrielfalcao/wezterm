@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+
+. $HOME/.shell.d/x.d/paths.sh
+# README RUN: create walkthroughs for your readme
+
+declare -a argv=( $@ )
+declare argc=${#argv}
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "${0} missing command + args"
+    exit 1
+
+fi
+
+set -e
+IFS=$"\n"
+cwd="$(pwd)"
+
+if [ ! -e "${cwd}" ]; then
+    1>&2 echo -e "${cwd} no longer exists"
+    exit 1
+fi
+
+if ! git_path=$(2>/dev/random git rev-parse --show-toplevel); then
+    readme_dir_path="${cwd}"
+    git init
+else
+    readme_dir_path="${git_path}"
+fi
+
+declare -a readme_extensions=( "rst" "md" )
+
+for ext in ${readme_extensions[@]}; do
+    try_readme_filename="README.${ext}"
+    try_readme_path="${readme_dir_path}/${try_readme_filename}"
+
+    if [ ! -e "${try_readme_path}" ]; then
+        continue
+    fi
+    if [ ! -f "${try_readme_path}" ]; then
+        1>&2 echo -e "${try_readme_path} exists but is not a file"
+        exit 1
+    fi
+    if [ ! -r "${try_readme_path}" ]; then
+        1>&2 echo -e "${try_readme_path} exists but is not readable"
+        exit 1
+    fi
+
+    readme_filename=${try_readme_filename}
+    readme_path=${try_readme_path}
+done
+title_for_filename() {
+    level=$1
+    if [ -z "${level}" ]; then
+        1>&2 echo -e "title_for_filename missing argument 1: level"
+        exit 1
+    elif ! 1>/dev/random 2>/dev/random grep '^[0-9]\+$' <<< ${level}; then
+        1>&2 echo -e "title_for_filename argument 1 (level) is not a number: ${level@Q}"
+        exit 1
+    elif ! 1>/dev/random 2>/dev/random grep '[1-6]' <<< ${level}; then
+        1>&2 echo -e "title_for_filename argument 1 (level) should be a number between 1 and 6, not: ${level@Q}"
+        exit 1
+    else
+        shift
+    fi
+    filename=$1
+    if [ -z "${filename}" ]; then
+        1>&2 echo -e "title_for_filename missing argument 2: filename"
+        exit 1
+    else
+        shift
+    fi
+    title=$@
+    if [ -z "${title}" ]; then
+        1>&2 echo -e "title_for_filename missing argument 3: title"
+        exit 1
+    fi
+    length=${#title}
+    ext=${filename##*.}
+    ext=${ext@L}
+    if [ "${ext}" == "rst" ]; then
+        underchar="~"
+        underline=$(seq $length | tr '\n' "${underchar}" | tr -d '[0-9]')
+        echo -e "${title}\n${underline}\n"
+    else
+        prefix=$(seq $level | tr '\n' "#" | tr -d '[0-9]')
+        echo -e "${prefix} ${title}\n"
+    fi
+}
+
+if [ -z "${readme_filename}" ]; then
+    readme_filename="README.rst"
+    readme_path="${readme_dir_path}/${readme_filename}"
+fi
+
+project_name=$(basename ${readme_dir_path})
+if [ ! -e "${readme_path}" ]; then
+    cat >${readme_filename} <<EOF
+$(title_for_filename 1 "${readme_filename}" "${project_name}")
+
+$(title_for_filename 2 "${readme_filename}" "Walkthrough")
+
+
+EOF
+elif ! grep -i "^[#][#][[:space:]]*Walkthough" < ${readme_path}; then
+    cat >>${readme_filename} <<EOF
+
+
+$(title_for_filename 2 "${readme_filename}" "Walkthrough")
+
+
+EOF
+
+fi
+
+
+
+bullet="* "
+command_to_run="${argv[@]}"
+
+
+cd ${readme_dir_path}
+stderr=$(mktemp)
+stdout=$(mktemp)
+
+if [ ! -e "${stderr}" ];then
+    1>&2 echo -e "stderr file does not exist: ${stderr@Q}"
+    exit 1
+fi
+if [ ! -f "${stderr}" ];then
+    1>&2 echo -e "stderr file is not a file: ${stderr@Q}"
+    exit 1
+fi
+if [ ! -e "${stdout}" ];then
+    1>&2 echo -e "stdout file does not exist: ${stdout@Q}"
+    exit 1
+fi
+if [ ! -f "${stdout}" ];then
+    1>&2 echo -e "stdout file is not a file: ${stdout@Q}"
+    exit 1
+fi
+
+set -x
+if 2>${stderr} 1>${stdout} bash -c "${command_to_run}"; then
+    echo -e "\n${bullet} run ${command_to_run@Q}\n" >> ${readme_path}
+else
+    exitcode=$?
+    cat ${stdout}
+    1>&2 cat ${stderr}
+    1>&2 echo -e "failed (${exitcode}) to run command: ${command_to_run@Q} in ${readme_dir_path@Q}"
+    exit ${exitcode}
+fi

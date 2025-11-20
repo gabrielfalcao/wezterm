@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+
+export IFS="
+"
+wd=$(pwd)
+declare only_base="false"
+declare -a argv=( $@ )
+# process args
+
+src_path=""
+for arg in ${@}; do
+
+    case "${arg}" in
+        "--base"|"-b")
+            only_base="true"
+            ;;
+        *)
+            if [ -e "${arg}" ]; then
+                if [ -d "$src_path" ]; then
+                    1>&2 echo "ERROR: invalid file-system path argument: '${arg}'"
+                    1>&2 echo "CAUSE: lookup path already set to: '${src_path}'"
+                    exit 1
+                fi
+                src_path="${arg}"
+            fi
+            ;;
+    esac
+done
+
+if [ -z "${src_path}" ]; then
+    src_path="$(pwd)"
+fi
+
+if [ -d "${src_path}" ]; then
+    src_path="$(cd "${src_path}" && pwd)"
+elif [ ! -d "${src_path}" ]; then
+    src_path="$(cd "$(dirname "${src_path}")" && pwd)"
+fi
+
+normalized_path() {
+    path="$1"
+    if [ ! -e "$path" ]; then
+        1>&2 echo "ERROR: path '$path' does not exist"
+        1>&2 echo "in ${BASH_SOURCE[0]}:${BASH_LINENO[0]}"
+        exit 1
+    elif [ -d "$path" ]; then
+        path="$(cd "$path" && pwd)"
+    else
+        parent_path="$(cd "$(dirname "$path")" && pwd)"
+        base_path="$(basename "$path")"
+        path="${parent_path}/${base_path}"
+    fi
+    path="${path/#$wd\//./}"
+    path="${path/%\//}"
+    path="$(echo "${path}" | sed -z 's,\/\+,/,g')"
+
+    echo "${path}"
+}
+
+src_path="$(normalized_path "${src_path}")"
+
+
+for path in $(find "${src_path}/" -type f -name "*.3g2" \
+        -or -type f -name "*.3gp" \
+        -or -type f -name "*.M2TS" \
+        -or -type f -name "*.MTS" \
+        -or -type f -name "*.TS" \
+        -or -type f -name "*.amv" \
+        -or -type f -name "*.asf" \
+        -or -type f -name "*.avi" \
+        -or -type f -name "*.drc" \
+        -or -type f -name "*.f4a" \
+        -or -type f -name "*.f4b" \
+        -or -type f -name "*.f4p" \
+        -or -type f -name "*.f4v" \
+        -or -type f -name "*.flv" \
+        -or -type f -name "*.flv" \
+        -or -type f -name "*.flv" \
+        -or -type f -name "*.gifv" \
+        -or -type f -name "*.m2v" \
+        -or -type f -name "*.m4p" \
+        -or -type f -name "*.m4v" \
+        -or -type f -name "*.m4v" \
+        -or -type f -name "*.mkv" \
+        -or -type f -name "*.mng" \
+        -or -type f -name "*.mov" \
+        -or -type f -name "*.mp2" \
+        -or -type f -name "*.mp4" \
+        -or -type f -name "*.mpe" \
+        -or -type f -name "*.mpeg" \
+        -or -type f -name "*.mpeg" \
+        -or -type f -name "*.mpg" \
+        -or -type f -name "*.mpg" \
+        -or -type f -name "*.mpv" \
+        -or -type f -name "*.mxf" \
+        -or -type f -name "*.nsv" \
+        -or -type f -name "*.ogg" \
+        -or -type f -name "*.ogv" \
+        -or -type f -name "*.qt" \
+        -or -type f -name "*.rm" \
+        -or -type f -name "*.rmvb" \
+        -or -type f -name "*.roq" \
+        -or -type f -name "*.svi" \
+        -or -type f -name "*.viv" \
+        -or -type f -name "*.vob" \
+        -or -type f -name "*.webm" \
+        -or -type f -name "*.wmv" \
+        -or -type f -name "*.yuv"); do
+    path=$(normalized_path "$path")
+    if [ "$only_base" == "true" ]; then
+        basename "$path"
+    else
+        echo "$path"
+    fi
+
+    # echo "${path}" | sed 's,\/\+,/,g'
+done

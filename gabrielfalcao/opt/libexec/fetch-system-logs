@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+if [ "$(whoami)" != "root" ]; then
+    set -e
+    sudo $0
+    exit $?
+fi
+
+export HOME=/Users/gabrielfalcao
+
+. $HOME/opt/lib/ansi.sh
+
+export IFS="
+"
+sudo echo -n
+
+set -e
+stamp_glob="$(date +"%Y")*.log"
+globs={.log,.log_${stamp_glob}}
+backup_base_path="$HOME/backup/system-logs"
+timestamp() {
+    date +"%Y-%m-%dT%H%M%S"
+}
+backup_timestamp=$(timestamp)
+backup_dir_path="${backup_base_path}/logs_from_${backup_timestamp}"
+backup_file_basepath="${backup_base_path}/${backup_timestamp}"
+stderr_log_path=${backup_file_basepath}.stderr.log
+stdout_log_path=${backup_file_basepath}.stdout.log
+
+declare -a log_path_prefixes=(
+    /private/var/log/shutdown_monitor
+    /private/var/log/kernel-shutdown
+    /private/var/log/install
+    /private/var/log/fsck_hfs
+    /private/var/log/system
+    /private/var/log/CoreSimulator
+    /private/var/log/DiscRecording
+    /private/var/log/alf
+    /private/var/log/wifi
+    /private/var/log/dnsmasq
+    /private/var/log/MCXTools
+    /private/var/log/dnsmasq.stderr
+    /private/var/log/dnsmasq.stdout
+)
+declare -a log_files_stamped=()
+declare -a log_files_unstamped=()
+declare -a log_files_all=()
+
+for prefix in ${log_path_prefixes[@]}; do
+    declare -a tmp_log_files_stamped=( $(2>/dev/random sudo /bin/ls ${prefix}${stamp_glob}) )
+    declare -a tmp_log_files_unstamped=( $(2>/dev/random sudo /bin/ls ${prefix}.log) )
+    declare -a tmp_log_files_all=( ${tmp_log_files_stamped[@]} ${tmp_log_files_unstamped[@]} )
+
+    log_files_stamped+=( ${tmp_log_files_stamped[@]} )
+    log_files_unstamped+=( ${tmp_log_files_unstamped[@]} )
+    log_files_all+=( ${tmp_log_files_all[@]} )
+done
+mkdir -p ${backup_dir_path}
+for log_path in ${log_files_all[@]}; do
+    sudo cp -f ${log_path} ${backup_dir_path}
+done
+for path in $(sudo /bin/ls ${backup_dir_path}/*); do
+    stat $path > ${path}.stat
+    ls -latrh $path > ${path}.ls
+done
+
+sudo chown -R gabrielfalcao: ${backup_dir_path}
+tarball_path=${backup_file_basepath}.tar.xz
+zip_path=${backup_file_basepath}.zip
+
+
+set -e
+sudo tar cJvf "${tarball_path}" "${backup_dir_path}"
+sudo zip -q -r "${zip_path}" "${backup_dir_path}"
+sudo chown -Rv gabrielfalcao: "${backup_dir_path}" "${tarball_path}" "${zip_path}"
+sudo chmod -Rv 640 "${backup_dir_path}" "${tarball_path}" "${zip_path}"
+sudo rm -rf "${backup_dir_path}"
+echo "logs saved to ${backup_dir_path}"
+echo "logs saved to ${tarball_path}"
+echo "logs saved to ${zip_path}"
+
+# declare -a backup_commands=(
+#     "sudo tar cJvf ${tarball_path} ${backup_dir_path}"
+#     "sudo zip -q -r ${zip_path} ${backup_dir_path}"
+#     "sudo chown -Rv gabrielfalcao: ${backup_dir_path}*"
+#     "sudo chmod -Rv 640 ${backup_dir_path}*"
+# )
+
+
+# run_command()
+
+# for cmd in ${backup_commands[@]}; do
+#     logline=$(echo -en "--- [$(timestamp)] ${cmd} ---")
+
+#     stdout=$(mktemp)
+#     stderr=$(mktemp)
+#     1>&2 echo -e "${cmd}\n"
+
+#     if 2>${stderr} 1>${stdout} ${cmd}; then
+#         echo -e "\n${logline}\n$(cat ${stderr})" >> ${stderr_log_path}
+#         echo -e "\n${logline}\n$(cat ${stdout})" >> ${stdout_log_path}
+#         ansi_up
+#         1>&2 bar_text_left 82 233 "$(ansi 82 233 "      DONE     ")$(ansi_spaced 233 82 "${cmd}")$(ansi 233 82 "")"
+#     else
+#         echo -e "\n${logline}\n$(cat ${stderr})" >> ${stderr_log_path}
+#         echo -e "\n${logline}\n$(cat ${stdout})" >> ${stdout_log_path}
+#         ansi_up
+#         1>&2 bar_text_left 196 216 "$(ansi 196 216 "     ERROR    ")$(ansi_spaced 216 196 "${cmd}")$(ansi 216 196 "")"
+#         cat $stdout
+#         cat $stderr
+#         exit 1
+#     fi
+
+# done

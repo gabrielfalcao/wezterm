@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -o noglob
+set -u
+export IFS=$'\n'
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+declare -- stderr=$(mktemp)
+declare -- stdout=$(mktemp)
+
+declare -a supported_brew_commands=(
+    $(grep -E '^cli_proxy_command_brew_' "${BASH_SOURCE[0]}" | sed -E 's/^cli_proxy_command_brew_([a-z_]+)[^a-z_]+.*$/\1/g')
+)
+error_prefix_color_rgb="255;0;66"
+error_color_rgb="255;62;92"
+error_color_rgb_secondary="255;92;122"
+warn_prefix_color_rgb="255;106;50"
+warn_color_rgb="255;161;50"
+
+declare -- cli_command_name=""
+declare -a cli_command_args=()
+
+dump_file() {
+    local -- path="${@}"
+    if [ -z "${path}" ]; then
+        error_prefixed "[function call error] dump_file" "missing argument <PATH>"
+        exit 1
+    fi
+
+    if [ -f "${path}" ] && [ -r "${path}" ] && [ -s "${path}" ]; then
+        cat "${path}"
+        return 0
+    fi
+}
+dump_stderr() {
+    {
+        dump_file "${stderr}" | sed -E "s/^([Ee]rror:.*)\$/\x1b[1;38;2;${error_color_rgb_secondary}m\1\x1b[0m/g"
+    } 1>&2
+}
+dump_stdout() {
+    dump_file "${stdout}"
+}
+on_exit() {
+    teardown
+}
+on_ctrlc() {
+    repl no echo
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    teardown
+    exit 1
+}
+teardown() {
+    rm -f "${stderr}"
+    rm -f "${stdout}"
+    repl sane
+}
+
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[1]}"
+    warn_prefixed "${script_name} warn at ${linenum}" "${@}"
+}
+
+error() {
+    local -- linenum="${BASH_LINENO[1]}"
+    error_prefixed "${script_name} error at ${linenum}" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+
+process_argv() {
+    repl no echo
+    if [ ${argc} -eq 0 ]; then
+        error_prefixed "[brew porcelain error]" "missing argument <COMMAND>"
+        exit 1
+    fi
+    for current in ${!argv[@]}; do
+        arg="${argv[$current]}"
+        if [ ${current} -eq 0 ]; then
+            local -- valid_name=""
+            if {
+                local -- valid_name=$(command grep -E '^[a-zA-Z0-9_-]+$' <<<"${arg}")
+                builtin printf "%s\n" "${supported_brew_commands[@]}" \
+                    | grep -E "${cli_command_name}"
+            } 2>/dev/random 1>/dev/random; then
+                cli_command_name="${arg}"
+            elif [ -z "${valid_name}" ]; then
+                error_prefixed "invalid command name" "${arg}"
+                exit 1
+            else
+                error_prefixed "unsupported brew command" "${arg}"
+                exit 1
+            fi
+        else
+            cli_command_args+=("${arg}")
+        fi
+    done
+
+    repl sane
+}
+subcommand_failed_with_code() {
+    local -i code=${1}
+    if [ ${code} -eq 0 ]; then
+        code=1
+    fi
+    if [ ${#cli_command_args[@]} -gt 0 ]; then
+        local -- suffix=" ${cli_command_args[@]}"
+    else
+        local -- suffix=""
+    fi
+    local -- stderr_contents=""
+    local -- prefix="\x1b[1;38;2;${error_color_rgb_secondary}m[error in \x1b[1;38;2;${error_color_rgb}mbrew ${cli_command_name}${suffix}\x1b[1;38;2;${error_color_rgb_secondary}m]\x1b[1;38;2;${error_color_rgb}m"
+    if stderr_contents=$(2>/dev/random grep -E '^Error:' "${stderr}") && [ -n "${stderr_contents}" ]; then
+        dump_stdout
+        1>&2 sed -E "s/^([Ee]rror:\s*)(\s*[^:]+:\s*)?(.*)\$/${prefix} \L\2\E\3\x1b[0m/g" <<<"${stderr_contents}"
+        # 1>&2 sed -E "s/^([Ee]rror:\s*)(.*)\$/\x1b[1;38;2;\${error_color_rgb_secondary}m\2\x1b[0m/g" <<< "${stderr_contents}"
+    else
+        dump_stdout
+        dump_stderr
+        error_prefixed "[${prefix}]" "(output above)"
+    fi
+    exit ${code}
+}
+cli_proxy_command_brew_search() {
+    if ! 2>${stderr} 1>${stdout} /opt/homebrew/bin/brew search ${cli_command_args[@]}; then
+        subcommand_failed_with_code $?
+    else
+        #sed -n -E -e 's/[^a-zA-Z0-9_.-]+/ /g' -e 's/\s+/\n/g' -e '/^[^[:space:]]+$/p'
+        if ! (2>${stderr} sed -E -e 's/[^a-zA-Z0-9_.-]+/ /g' -e 's/\s+/\n/g' ${stdout} | grep -E -v '^[[:space:]]*$'); then
+            error_prefixed "[error parsing output of brew ${cli_command_name}]" "$(cat "${stderr}")"
+            exit 1
+        fi
+    fi
+}
+main() {
+    cli_proxy_command_brew_${cli_command_name}
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    process_argv ${argv[@]}
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane
+#     1  [2025/11/06 16:28:35 UTC]  ack /notes .shell.d/
+#     2  [2025/11/06 16:28:44 UTC]  ack /wip .shell.d/
+#     3  [2025/11/06 16:28:51 UTC]  ack /wip .shell.d/ ~/opt/lib*
+#     4  [2025/11/06 19:57:26 UTC]  cdmkd workbench
+#     5  [2025/11/06 19:57:57 UTC]  ack '(/?notes)?/wip' ~/opt/ ~/.*rc ~/.*_profile ~/.shell.d/ ~/projects/personal/ ~/projects/work/poems.codes/ | ack-notes-$(now).log
+#     6  [2025/11/06 22:29:09 UTC]  ack '(/?notes)?/wip' ~/opt/ ~/.*rc ~/.*_profile ~/.shell.d/ ~/projects/personal/ ~/projects/work/poems.codes/ | ack-notes-$(now).log
+#     7  [2025/11/06 22:29:19 UTC]  ack '(/?notes)?/wip' ~/opt/ ~/.*rc ~/.*_profile ~/.shell.d/ ~/projects/personal/ ~/projects/work/poems.codes/ | tee ack-notes-$(now).log
+#     8  [2025/11/06 22:29:36 UTC]  ack --shell '(/?notes)?/wip' ~/opt/ ~/.*rc ~/.*_profile ~/.shell.d/ ~/projects/personal/ ~/projects/work/poems.codes/ | tee ack-notes-$(now).log
+#     9  [2025/11/06 22:48:44 UTC]  lsusb
+#    10  [2025/11/06 23:18:26 UTC]  which lsof| pbcopy
+#    11  [2025/11/06 23:27:06 UTC]  cdmkd ./$(today)
+#    12  [2025/11/06 23:27:06 UTC]  pwd
+#    13  [2025/11/06 23:29:28 UTC]  pbpaste | tee brew-search-usb | sed -E 's/[^a-zA-Z0-9_-]+//g' | tee brew-search-usb-ascii | sed -E 's/[[:space:]]+/\n/g' | grep -E -v '^[[:space:]]*$'
+#    14  [2025/11/06 23:29:47 UTC]  pbpaste | tee brew-search-usb | sed -E 's/[^a-zA-Z0-9_[:space:]-]+//g' | tee brew-search-usb-ascii | sed -E 's/[[:space:]]+/\n/g' | grep -E -v '^[[:space:]]*$'
+#    15  [2025/11/06 23:30:50 UTC]  pbpaste | tee brew-search-usb | sed -E 's/[^a-zA-Z0-9_[:space:]-]+//g' | tee brew-search-usb-ascii | sed -E 's/[[:space:]]+/\n/g' | grep -E -v '^[[:space:]]*$' | tee brew-search-usb.list;for formula in $(cat brew-search-usb.list); do brew info ${formula}; brew home ${formula} & done
+#    16  [2025/11/06 23:53:29 UTC]  brew search --format=json usb
+#    17  [2025/11/06 23:53:35 UTC]  brew search --help
+#    18  [2025/11/06 23:53:58 UTC]  brew --help
+#    19  [2025/11/06 23:54:01 UTC]  brew --help
+#    20  [2025/11/06 23:54:03 UTC]  brew help
+#    21  [2025/11/06 23:54:07 UTC]  brew help search
+#    22  [2025/11/06 23:54:37 UTC]  brew search --verbose usb
+#    23  [2025/11/06 23:54:50 UTC]  brew search --debug usb
+#    24  [2025/11/06 23:55:19 UTC]  brew help info
+#    25  [2025/11/06 23:55:28 UTC]  brew search --json usb
+#    26  [2025/11/06 23:55:39 UTC]  brew info --json lsusb
+#    27  [2025/11/06 23:55:49 UTC]  brew help list
+#    28  [2025/11/07 00:00:08 UTC]  pwd
+#    29  [2025/11/07 00:00:09 UTC]  ll
+#    30  [2025/11/07 00:00:12 UTC]  bat brew-search-usb*
+#    31  [2025/11/07 00:00:20 UTC]  unset BAT_STYLE
+#    32  [2025/11/07 00:00:22 UTC]  bat brew-search-usb*
+#    33  [2025/11/07 00:00:53 UTC]  history
+#    34  [2025/11/07 00:02:55 UTC]  for formula in $(cat brew-search-usb.list); do figlet -f small ${formula};echo ${formula}; brew info ${formula}; bash -c '2>/dev/random 1>/dev/random brew home ${formula} &
+# '; echo -e "\x1b[0\x1b[1;48;5;235m$(seq $(term-columns) | tr -d '[:digit:]' | tr '\n' ' ')\x1b[0m'
+# "; '
+#    35  [2025/11/07 00:06:02 UTC]  for formula in $(cat brew-search-usb.list); do figlet -f small ${formula};echo ${formula}; brew info ${formula}; bash -c '2>/dev/random 1>/dev/random brew home ${formula} &
+#'; echo -e "\x1b[0\x1b[1;48;5;235m$(seq $(term-columns) | tr -d '[:digit:]' | tr '\n' ' ')\x1b[0m"; done
+#    36  [2025/11/07 00:06:54 UTC]  history
+#    37  [2025/11/07 00:07:08 UTC]  ll
+#    38  [2025/11/07 00:07:10 UTC]  cat brew-search-usb
+#    39  [2025/11/07 00:09:29 UTC]  sed -E -e 's/[^a-zA-Z0-9_.-]+/ /g' -e 's/\s+/\n/g' brew-search-usb | grep -E -v '^[[:space:]]*$'
+#   40  [2025/11/07 00:11:19 UTC]  brew search usb | sed -E -e 's/[^a-zA-Z0-9_.-]+/ /g' -e 's/\s+/\n/g' | grep -E -v '^[[:space:]]*$'

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -o noglob
+set -u
+
+if [ ! -e "package.json" ]; then
+    1>&2 echo -e "package.json does not exist in $(pwd)"
+    exit 1
+elif [ ! -f "package.json" ]; then
+    1>&2 echo -e "$(pwd)/package.json exists but is not a regular file"
+    exit 1
+elif [ ! -r "package.json" ]; then
+    1>&2 echo -e "$(pwd)/package.json exists but is not readable"
+    exit 1
+elif [ ! -s "package.json" ]; then
+    1>&2 echo -e "$(pwd)/package.json exists but is empty"
+    exit 1
+fi
+export IFS=$'\n'
+
+declare -a package_json_dependency_keys=(
+    "dependencies"
+    "devDependencies"
+)
+
+declare -i fchar=97 # a
+declare -i index=0
+declare -a jq_alias_expressions=()
+declare -a jq_key_concatenation_expressions=()
+
+for index in ${!package_json_dependency_keys[@]}; do
+    declare -i current=$(( $index + 1 ))
+    declare -- key=${package_json_dependency_keys[$index]}
+    declare -- jq_alias_char_decimal=$(($fchar + $index))
+    declare -- jq_alias_char_hex=$(printf '%x' ${jq_alias_char_decimal})
+    if [ $current -lt ${#package_json_dependency_keys[@]} ]; then
+        declare -- alias_suffix=" |"
+        declare -- concat_suffix=" +"
+    else
+        declare -- alias_suffix=""
+        declare -- concat_suffix=""
+    fi
+    declare -- key_alias="$(echo -e "\$\x${jq_alias_char_hex}")"
+    jq_alias_expressions+=( ".${key} as ${key_alias}${alias_suffix}" )
+    jq_key_concatenation_expressions+=( "(${key_alias}|keys)${concat_suffix}" )
+done
+
+declare -- jq_expression="${jq_alias_expressions[@]} | ${jq_key_concatenation_expressions[@]} | .[]"
+
+declare -a all_dependency_names=$(jq -r "${jq_expression}" package.json)
+declare -a all_dependency_npm_urls=$(for dep in ${all_dependency_names[@]}; do
+                                         sed -E 's/^([a-z][a-z0-9-]+)$/https:\/\/www.npmjs.com\/package\/\1/g' <<< "${dep}";
+                                     done)
+for url in ${all_dependency_npm_urls[@]}; do
+    if grep -E '(webpack-plugin|[-]loader)' <<< "${url}"; then
+        echo "${url}"
+    fi
+done

@@ -1,0 +1,20 @@
+declare -A ack_colors=(
+    ["451"]="000"
+    ["514"]="000"
+    ["503"]="000"
+    ["402"]="000"
+    ["401"]="000"
+    ["504"]="000"
+    ["533"]="000"
+)
+
+sorted_keys() {
+    local -a local_argv=( $@ )
+    local -i local_argc=${#local_argv[@]}
+    if [ ${argc} -eq 0 ]; then
+
+    fi
+    local -- array_name="$1"
+    shift
+    local -- array_name="$1"
+}

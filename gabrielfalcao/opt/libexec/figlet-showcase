@@ -1,0 +1,30 @@
+#!/bin/bash
+
+TEXT="$@"
+
+if [ -z "$TEXT" ]; then
+    TEXT="Hello World"
+fi
+
+function display()  {
+    local -r lpath="$(brew --prefix figlet)/share/figlet/fonts"
+    for font in $(find "$lpath" -name "*.flf" -not -path '*C64*'); do
+        directory=$(dirname $font)
+        group_name=$(basename $directory)
+        filename=$(basename $font)
+        relative_path=${font##$lpath/}
+
+        name="${filename%.*}"
+        cmd="figlet -w 160 -f ${font} ${TEXT}"
+        printf "\x1b[1;38;5;51m\"${TEXT}\" \x1b[0mwith font \x1b[1;38;5;220m${name} (${group_name}) \x1b[1;38;5;250m${relative_path} \x1b[1;38;5;237m${font}\x1b[0m\n\n\n"
+        $cmd
+        printf "\n\n"
+        if [ "$?" != "0" ]; then
+            exit 1
+        fi;
+    done
+}
+
+
+display | bat --style grid
+reset

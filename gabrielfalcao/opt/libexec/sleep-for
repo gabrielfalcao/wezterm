@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+
+export IFS=$'\n'
+error_color_rgb="$(("0xFF"));$((0x00));$((0x42))"
+
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+set -e
+set -o pipefail
+
+ctrlc() {
+    repl no echo
+    1>&2 echo -e "[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C[0m"
+    exit 1
+}
+trap ctrlc int
+
+repl() {
+    local -a stty_args=()
+    case "$1" in
+        -*no*stdin | no*stdin | -*no*echo | no*echo | capture)
+            args+=('-echo')
+            ;;
+        *)
+            args+=('sane')
+            ;;
+    esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <SECONDS>"
+    repl sane
+}
+
+main() {
+    repl no echo
+    local -i seconds=-1
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "missing argument"
+        usage
+        repl sane
+        exit 1
+    else
+        for arg in ${argv[@]}; do
+            if seconds=$(sed -n 's/^\s*\([1-9][0-9]*\)\s*s\?\s*$/\1/gip' "${arg}"); then
+		    sleep ${seconds}
+		    fi	
+        done
+    fi
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    main ${argv[@]}
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

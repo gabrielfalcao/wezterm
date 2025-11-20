@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+email="$@"
+target="${HOME}/.ssh/${email}"
+
+function terminate_fail() {
+    2>&1 echo -e "\x1b[1;38;5;160m${@}\x1b[0m"
+    show_usage
+    exit 1
+}
+
+function show_usage() {
+    2>&1 echo -e "\n\x1b[1;38;5;220mUSAGE:\n\t\x1b[1;38;5;33m$(basename $0) <EMAIL>\x1b[0m"
+    exit 1
+}
+
+function validate() {
+    if [ -z "${email}" ]; then
+        terminate_fail missing EMAIL
+    elif ! 2>/dev/null echo -n "${email}" | 1>/dev/null grep @; then
+        terminate_fail invalid EMAIL
+    fi
+}
+function main() {
+    validate
+    if [ ! -e "${target}.art" ] || [ ! -e "${target}" ] ; then
+        ssh-keygen -t ed25519 -C "${email}" -N "" -f "${target}" | tail -11 > "${target}.art"
+    # elif [ -e "${target}" ]; then
+    #     g o -n # ...TK ask whether user wants to retry
+    fi
+    # echo "${target/$HOME/\~}.pub: "
+    cat "${target}.pub"
+}
+
+main

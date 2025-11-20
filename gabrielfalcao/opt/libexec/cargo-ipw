@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+declare current_working_dir="$(pwd)"
+declare manifest_path="${current_working_dir}/Cargo.toml"
+declare manifest_directory=""
+
+set -e
+set -o pipefail
+
+on_exit() {
+    stty sane
+}
+trap ctrlc int
+ctrlc() {
+    1>&2 echo -e "\rAborted with Ctrl-C"
+    exit 1
+}
+trap on_exit exit
+trap ctrlc int
+
+wipe_target() {
+    if target_path=$(cargo metadata --format-version 1 | jq .target_directory | tr -d '"'); then
+        if [ -d "${target_path}" ]; then
+            rm -rf "${target_path}"
+            1>&2 echo -e "deleted: ${target_path}"
+            return 0
+        fi
+    else
+        1>&2 echo -e "no target path found for ${manifest_path}"
+    fi
+}
+declare git_repo_path=""
+
+if git_repo_path=$(2>/dev/random git rev-parse --show-toplevel); then
+    if [ -f "${git_repo_path}/Cargo.toml" ]; then
+        manifest_path="${git_repo_path}/Cargo.toml"
+        manifest_directory="$(dirname "${manifest_path}")"
+    fi
+elif [ ! -f "${manifest_path}" ]; then
+    1>&2 echo -e "no Cargo.toml in ${current_working_dir@Q} and no git repo detected"
+    exit 1
+else
+    manifest_directory="$(dirname "${manifest_path}")"
+fi
+
+declare -a installable_manifest_paths=($(cargo metadata --format-version 1 | jq ".packages[] | select(.manifest_path | contains(\"${git_repo_path}\")) | select(.targets[].kind[] | contains(\"bin\")) | .manifest_path" | tr -d '"'))
+
+declare -i installable_manifest_path_count=${#installable_manifest_paths[@]}
+
+stty -echo
+for index in ${!installable_manifest_paths[@]}; do
+    current=$(($index + 1))
+    installable_manifest_toml=${installable_manifest_paths[$index]}
+    installable_manifest_path="$(dirname "${installable_manifest_toml}")"
+    1>&2 echo "[${current}/${installable_manifest_path_count}] ${installable_manifest_path}"
+
+    1>&2 echo -e "[${current}/${installable_manifest_path_count}] cargo install --offline --path ${installable_manifest_path}"
+    if (cargo install --offline --path "${installable_manifest_path}"); then
+        wipe_target "${working_dir}"
+        exit 0
+    fi
+    1>&2 echo -e "[${current}/${installable_manifest_path_count}] cargo install --path ${installable_manifest_path}"
+    if (cargo install --path "${installable_manifest_path}"); then
+        wipe_target "${working_dir}"
+        exit 0
+    fi
+done
+
+for manifest_path in ${installable_manifest_paths[@]}; do
+    1>&2 echo "does not exist: ${manifest_path}"
+done
+exit 1

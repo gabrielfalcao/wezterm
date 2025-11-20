@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+
+free_space() {
+    target_name="$1"
+    shift
+    target="$1";
+    shift
+    declare -a opts=( "$*" )
+    if [ ! -d "$target" ]; then
+        1>&2 echo -e  "\033[1;38;5;196m\"$target\" is not a directory" | tee /dev/random
+        exit 1
+    fi
+    find "$target" ${opts[@]} -exec xargs rm -rf {} \;
+}
+
+
+sudo find ~ -type f -name .DS_Store -exec rm -f  {} \; &
+disown -h
+sudo find ~ -type f -name .TemporaryItems -exec rm -f {} \; &
+disown -h
+sudo find ~ -type d -name .Spotlight-V100 -exec rm -rf {} \; &
+disown -h
+sudo find ~ -type d -name .DocumentRevisions-V100 -exec rm -rf {} \; &
+disown -h
+sudo find ~ -name .fseventsd -exec rm -rf {} \; &
+disown -h
+
+free_space "blender tmp files" "$HOME/Blender" -type f -name "*blend1"
+free_space "blender cache" "$HOME/Blender" -type d -name "*cache*"
+free_space "rust targets" "$HOME/projects" -name target -type d -not -path "*/target*target"
+free_space "node modules" "$HOME/projects" -name node_modules -type d -not -path "*/node_modules*node_modules"
+free_space "bins" "$HOME/opt" -maxdepth 1 -type f -name "*-07*"
+free_space "Yarn Cache" "$HOME/Library/Caches/Yarn" -maxdepth 1 -type f -name "*-07*"
+free_space "JUCE builds" "$HOME/JUCE" -name Build -or -name Builds

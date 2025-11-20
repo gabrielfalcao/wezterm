@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+
+
+set -e
+for s in ${*}; do
+    exiftool -overwrite_original_in_place -all= "$s"
+done

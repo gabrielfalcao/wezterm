@@ -1,0 +1,17 @@
+#!/bin/bash
+
+name=$(slugify-string "${@}$(pwd)" | md5sum | awk '{print $1}')
+logfile="${HOME}/Desktop/dedupes-todo.${name}.dupe-list.txt"
+
+echo -e "running fdupes on ${*}"
+echo -e "logging duplicates at:"
+echo -e "    \x1b[1;33m${logfile}\x1b[0m"
+g o
+echo -e "wait for this script to run"
+echo -e "then delete all files listed in the logs"
+g o
+touch "${logfile}"
+
+set -e
+echo -e "\x1b[1;32mfdupes -rf \x1b[1;33m${@} \x1b[1;30m>> ${logfile} 2>${errfile}\x1b[1;31m"
+fdupes -rf ${@}  >> "${logfile}"

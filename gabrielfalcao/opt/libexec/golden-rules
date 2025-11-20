@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+
+swat() {
+    echo -e "
+1. Treat everyone with dignity and respect. In today’s world, doing so is like having a rarely possessed superpower, and it will pay great dividends.
+
+2. Get acquainted with and deal with the people on your beat as if they are your slightly dysfunctional extended family. Your real family will eventually grow to discover that you treat people fairly and assimilate this trait from you. Your street family also will also notice and remember.
+
+3. You need to become tough. Don’t act tough, be tough.
+
+4. Be physically fit; your fitness level will be tested regularly by the people you police. Make sure you are always in peak physical condition.
+
+5. It’s OK to care. Caring does not make you a weak cop, it makes you a better cop.
+" | sed '/^\s*$/d'
+}
+
+
+swat

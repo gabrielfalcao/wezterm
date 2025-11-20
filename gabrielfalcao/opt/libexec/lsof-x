@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+export IFS=$'\n'
+
+declare -A pids=()
+
+for pid in $(ps aux | ack '(rsync|bash.*smart|ssh)' | ack -v ack | awk '{ print $2 }'); do
+    pids+=(["${pid}"]="${pid}")
+done
+
+for pid in $(g p -r '(rsync|bash.*smart|ssh|bash)' | awk '{ print $1 " " $2}' | xargs-each echo | sort -u | ack '\d{3,}'); do
+    pids+=(["${pid}"]="${pid}")
+done
+
+echo "${!pids[@]}" | sed -n 's/\s\+/,/gp' | xargs lsof -p | ack -v '(/usr/(share/locale|lib/dyld)|/opt/homebrew/Cellar)' | sed -n 's/^[^[:space:]]\+\s\+\([^[:space:]]\+\).*\s\+\(.\+\)$/\2 #\1/gp'

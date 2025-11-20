@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+do_open="false"
+do_print="false"
+
+declare -a hackernews_pages=(
+    "https://news.ycombinator.com"
+    "https://news.ycombinator.com/show"
+    "https://news.ycombinator.com/newest"
+)
+
+target_dir="$HOME/*scratch*/Data/websites/hackernews/$(date +"%Y/%m/%d/%H/%M")"
+log_path=${target_dir}/news.ycombinator.com.$(nowz).txt
+mkdir -p "${target_dir}"
+css_selector='table#hnmain tbody tr td table tbody tr[id] td a'
+
+build_command() {
+    page="$1"
+    shift
+    if [ -z "${page}" ]; then
+        1>&2 echo -e "[build_command error] missing argument <PAGE>"
+        return 1
+    fi
+    echo "css-select web \"${page}\" \"${css_selector}\" --attr href | ack '^https:' | ack -v '[.](ycombinator|algolia)'"
+    # echo "css-select web \"${page}\" \"${css_selector}\" --attr href | ack '^https:' | ack -v '[.](ycombinator|algolia)'"
+}
+
+for arg in ${argv[@]}; do
+    case "${arg}" in
+        -s | -*select* | css*select | selector | show*selector | show*css*select)
+            echo -e "${css_selector@Q}"
+            exit 0
+            ;;
+        -c | -*command* | show*command | show*css*command)
+            for page in ${hackernews_pages[@]}; do
+                build_command "${page}"
+                exit 0
+            done
+            exit 0
+            ;;
+        open | browse)
+            do_open="true"
+            ;;
+        -*no*open | dont*open | no*open)
+            do_open="false"
+            ;;
+        -*no*print | dont*print | no*print)
+            do_print="false"
+            ;;
+        -*no | no | -*n)
+            do_open="false"
+            do_print="false"
+            ;;
+        *) ;;
+    esac
+done
+error_prefix_color_rgb="$((0xFF));$((0x00));$((0x42))"
+error_color_rgb="$((0xFF));$((0x32));$((0x32))"
+error_color_rgb="$((0xFF));$((0x3E));$((0x5C))"
+warn_prefix_color_rgb="$((0xFF));$((0x6A));$((0x32))"
+warn_color_rgb="$((0xFF));$((0xA1));$((0x32))"
+
+on_exit() {
+    stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    repl sane
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn() {
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m[warn]\x1b[1;38;2;${warn_color_rgb}m ${@}\x1b[0m"
+}
+error() {
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m[error]\x1b[1;38;2;${error_color_rgb}m ${@}\x1b[0m"
+}
+
+unset TZ
+for page in ${hackernews_pages[@]}; do
+    log_path="${target_dir}/$(slugify-string "${page}").$(nowz).txt"
+    mkdir -p "$(dirname "${log_path}")"
+
+    for url in $(css-select web "${page}" "${css_selector}" --attr href | ack '^https:' | ack -v '[.](ycombinator|algolia)' | tee "${log_path}"); do
+        if [ "${do_open}" == "true" ]; then
+            open "${url}"
+        fi
+        if [ "${do_print}" == "true" ]; then
+            echo "${url}"
+        fi
+    done
+done

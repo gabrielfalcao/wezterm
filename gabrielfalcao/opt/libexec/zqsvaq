@@ -1,0 +1,3 @@
+#!/bin/sh
+
+mdfind 'kMDItemContentModificationDate >= $time.now(-79200)'

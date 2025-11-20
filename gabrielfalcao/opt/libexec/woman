@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+export IFS=$'\n'
+
+# . $HOME/opt/lib/ansi.sh
+# . $HOME/.shell.d/entrypoint.sh
+
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a argv=($@)
+declare argc=${#argv[@]}
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;50;50"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+
+on_exit() {
+    repl sane
+}
+on_ctrlc() {
+    repl no echo
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    repl sane
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${warn_color_rgb}m\n${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[${script_name} warn at ${linenum}]" "${@}"
+}
+
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[${script_name} error at ${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m[${prefix}]\x1b[1;38;2;${error_color_rgb}m\n${message}\x1b[0m"
+}
+
+export IFS=$'\n'
+set -e
+base_log_path=$HOME/projects/notes/wip/bash-cwd
+log_path=${base_log_path}.$(nowz).txt
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -- default_help_arg="--help"
+declare -- help_arg=""
+declare -- prog_target=""
+declare -a prog_target_args=()
+declare -- prog_target_all=""
+declare -a helpy_opts=(
+    "-h"
+    "-help"
+    "--help"
+    "help"
+)
+
+usage() {
+    1>&2 bar_text_left 233 231 "USAGE: $(basename $0) $(echo -ne "${helpy_opts[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/$(ansi 233 222 "[\1]")$(ansi 233 231)/g")"
+}
+colorize_help() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+
+    if [ ${argc} -eq 0 ]; then
+        local -- bat_file_name_option=""
+    elif [ ${argc} -eq 1 ]; then
+        local -- bat_file_name_option="$1"
+    else
+        error "colorize_help called with invalid arguments ${argv[@]@Q}"
+        exit 2
+    fi
+    if [ -n "${bat_file_name_option}" ]; then
+        bat -l man --color always --file-name "${bat_file_name_option}"
+    else
+        bat -l man --color always
+    fi
+
+}
+bat_man() {
+    local -a argv=( $@ )
+    local -i argc=${#argv[@]}
+    local -a bat_args=(
+        '-l'
+        'man'
+    )
+    local -- filename=""
+
+    case ${argc} in
+        0)
+            ;;
+        1)
+            filename="${argv[0]}"
+            ;;
+        *)
+            filename="${argv[0]}"
+            warn_prefixed "[parsing argv]" "too many arguments (${argc}): ${argv@Q}"
+            ;;
+    esac
+    if [ -n "${filename}" ]; then
+        bat_args+=("--file-name" "${filename}")
+    fi
+    ansistrip < /dev/stdin | bat ${bat_args[@]}
+    return $?
+}
+
+
+echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+if [ ${argc} -eq 0 ]; then
+    error "missing argument: PROGRAM-NAME"
+    usage
+    exit 1
+
+else
+    for arg in ${argv[@]}; do
+        case "${arg}" in
+            "-h" | "-help" | "--help" | "help")
+                if [ -z "${prog_target}" ]; then
+                    prog_target="${arg}"
+                else
+                    if [ -z "${help_arg}" ]; then
+                        help_arg="${arg}"
+                    else
+                        error "help_arg already set to ${help_arg@Q}"
+                        usage
+                        exit 1
+                    fi
+                fi
+                ;;
+            *)
+                if 1>/dev/random 2>/dev/random grep -E -i '^[a-z0-9_+-]+$' <<<"${arg}"; then
+                    if [ -z "${prog_target}" ]; then
+                        prog_target="${arg}"
+                    else
+                        prog_target_args+=("${arg}")
+                    fi
+                else
+                    error "invalid program name: ${arg@Q}"
+                    usage
+                    exit 1
+                fi
+                ;;
+        esac
+    done
+fi
+
+if [ -z "${prog_target}" ]; then
+    error "missing argument: <PROGRAM_NAME>\n${argv[@]@A}"
+    exit 1
+fi
+
+if [ ${#prog_target_args[@]} -eq 0 ]; then
+    prog_target_all="${prog_target}"
+else
+    prog_target_all="${prog_target} ${prog_target_args[@]}"
+fi
+
+if [ -z "${help_arg}" ]; then
+    help_arg="${default_help_arg}"
+fi
+
+export BAT_STYLE="plain"
+
+if prog_path=$(2>/dev/random which "${prog_target}"); then
+    declare -a prog_help_call=(${prog_path} ${prog_target_args[@]} ${help_arg})
+    if prog_help=$(2>&1 ${prog_help_call[@]}); then
+        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+    elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
+        echo "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+    elif prog_help=$(2>/dev/random man "${prog_target}"); then
+        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+    else
+        error "error invoking help command \"${prog_help_call[@]}\":\n${prog_help}"
+        exit 1
+    fi
+elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
+    echo "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+elif 2>/dev/random 1>/dev/random declare -F "${prog_target}"; then
+    declare -a prog_help_call=(${prog_target} ${prog_target_args[@]} ${help_arg})
+    if prog_help=$(2>&1 ${prog_help_call[@]}); then
+        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+    else
+        how=$(echo "(via \`\`${prog_help_call[@]}\`\`)")
+        error "error attempting to invoke \"help\" of bash function \"${prog_target}\"${how}:\n${prog_help}"
+        exit 1
+    fi
+elif prog_help=$(2>/dev/random man "${prog_target}"); then
+    echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+else
+    error "it seems that ${prog_target@Q} is neither a shell builtin nor an executable file in \$PATH"
+    exit 1
+fi

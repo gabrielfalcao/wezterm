@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+exit
+if 1>/dev/random 2>/dev/random which css-select-http; then
+
+    1>&2 bar 235
+    1>&2 bar_text_left 235 231 "$(ansi 235 250 "command")$(ansi_spaced 235 202 "quick-css-select")$(ansi 235 250 "is deprecated:")$(ansi_spaced 235 231 "use")$(ansi 235 220 "css-select-http")$(ansi_spaced 235 231 "instead")$(ansi 235 231)"
+    1>&2 bar 235
+
+    css-select-http $@
+else
+    1>&2 bar 235
+    1>&2 bar_text_left 235 202 "$(ansi_spaced 235 202 crate)$(ansi 235 231 "quick-css-select")$(ansi_spaced 235 202 "is not installed")$(ansi 235 202)"
+    1>&2 bar 235
+    exit 1
+fi

@@ -1,0 +1,239 @@
+#!/usr/bin/env bash
+
+if [ "$(whoami)" != "root" ]; then
+    sudo $0 $@
+    exit $?
+fi
+unset IFS
+set -e
+
+set -o pipefail
+error_prefix_color_rgb="$((0xFF));$((0x00));$((0x42))"
+error_color_rgb="$((0xFF));$((0x32));$((0x32))"
+error_color_rgb="$((0xFF));$((0x3E));$((0x5C))"
+warn_prefix_color_rgb="$((0xFF));$((0x6A));$((0x32))"
+warn_color_rgb="$((0xFF));$((0xA1));$((0x32))"
+
+declare dnsmasq_log_path=/var/log/dnsmasq.log
+
+on_exit() {
+    2>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    2>/dev/random stty sane
+    exit 1
+}
+
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+function binary-exists() {
+    binary_name="${1}"
+    2>&1 which "${binary_name}" >/dev/null
+    return $?
+}
+
+function execute-if-exists() {
+    binary_name="${1}"
+    args=${*}
+    if binary-exists "${binary_name}"; then
+        echo -e "\x1b[1;38;5;237m# ${args[*]}\x1b[0m"
+        2>/dev/null ${args[*]}
+    fi
+}
+
+stop() {
+    2>/dev/null 1>/dev/null g p -qr dns -k
+    2>/dev/null 1>/dev/null g p -qr tcpdump -k
+    1>&2 echo -e "dns-server stopped"
+}
+start() {
+    if ! 2>/dev/null 1>/dev/null g p -qr dnsmasq; then
+        bash -c "
+/opt/homebrew/opt/dnsmasq/sbin/dnsmasq '--keep-in-foreground' '-C' '/opt/homebrew/etc/dnsmasq.conf' '-7' '/opt/homebrew/etc/dnsmasq.d,*.conf' &
+disown -ha
+"
+        1>&2 echo -e "dns-server started"
+    fi
+}
+restart() {
+    logrotate_path="/var/log/dnsmasq.$(now).log"
+    if [ -r "${dnsmasq_log_path}" ] || [ -s "${dnsmasq_log_path}" ]; then
+        mv -f "${dnsmasq_log_path}" "$logrotate_path"
+    fi
+    if [ ! -e "${dnsmasq_log_path}" ]; then
+        touch "${dnsmasq_log_path}"
+        chmod 644 "${dnsmasq_log_path}"
+    fi
+    dnsmasq --test -C /opt/homebrew/etc/dnsmasq.conf \
+        && stop \
+        && start \
+        && start \
+        && refresh $@
+    if [ -f "${logrotate_path}" ]; then
+        gzip "$logrotate_path" &
+        disown -ha
+    fi
+}
+restart_help() {
+    1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m restart \x1b[0m"
+}
+
+logs() {
+    if [ -f "${dnsmasq_log_path}" ]; then
+        chmod 644 "${dnsmasq_log_path}"
+    else
+        1>&2 echo -e "cannot read dnsmasq logs, file does not exist: ${log_path@Q}"
+        exit 1
+    fi
+    local -i amount=0
+
+    if 1>/dev/random ack '^[0-9]+$' <<< "${1}"; then
+        local -i amount="${1}"
+    fi
+    local -a args=()
+    if [ ${amount} -gt 0 ]; then
+        args=("-${amount}f")
+    else
+        args=("-f")
+    fi
+    local regexp_exclusions="$(rot13 <<<'/Gq6JSbNNNGz1eETOZN+BvROStNNNNNNNNNNNATiA4xONQypXTMlo21oJmcmpTSwMGcqKIjeJmNgBHRgEzRgMy1pX1k8GyuRG01OFH5psT9hoUypsR5CERSHDIjcNNNNF4rRV6df9+ZNNIb6E9arcu+2830ONNNNNNEMJt==' | base64 -d | unxz)"
+    tail ${args[@]} "${dnsmasq_log_path}" | grep -v "${regexp_exclusions}"
+}
+logs_help() {
+    1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m logs \x1b[1;38;5;241m[#log lines]\x1b[0m"
+}
+
+refresh() {
+    dscacheutil -flushcache
+    g p -S 1 -qr mDNSResponder -k
+    killall -HUP mDNSResponder
+    if [ -n "$1" ] && [ "$(($1 + 0))" -gt 0 ]; then
+        logs "${1}"
+    fi
+}
+refresh_help() {
+    1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m refresh \x1b[1;38;5;241m[#log lines]\x1b[0m"
+}
+
+help() {
+    fn=""
+    if [ -n "$1" ]; then
+        fn=" ($1) "
+    fi
+
+    echo -e "\x1b[1;38;5;241mUSAGE\x1b[1;38;5;241m${fn}\n\t"
+
+    if [ -n "$1" ]; then
+        help="${1}_help"
+        if 1>/dev/null declare -f "$help"; then
+            $help
+        fi
+    else
+        1>&2 echo -e "\x1b[1;38;5;242m$(basename $0) \x1b[1;38;5;247m<$(help_args)> \x1b[1;38;5;241m[args]\x1b[0m"
+    fi
+    exit 2
+}
+help_args() {
+    grep -C 1 '%help%' "$0" | tail -1 | sed 's,[ \)]*,,g' | sed "s,',,g"
+}
+cf() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i verbosity=0
+    local -i index=0
+    local -i current=0
+
+    local -- lookup_name=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "missing argument: <NAME>"
+        exit 11
+    fi
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        case "${arg}" in
+            "-v" | "--verbose")
+                verbosity=$(($verbosity + 1))
+                ;;
+            "-q" | "--quiet")
+                verbosity=$(($verbosity - 1))
+                ;;
+            *)
+                if [ -z "${lookup_name}" ]; then
+                    lookup_name="${arg}"
+                else
+                    1>&2 echo -e "argument ${current}/${argc} is invalid"
+                    1>&2 echo -e "lookup_name already set: ${lookup_name@Q}"
+                    exit 11
+                fi
+                ;;
+        esac
+    done
+    local -- url="https://1.1.1.1/dns-query?name=${lookup_name}"
+    if ! /usr/bin/curl -s --http2 -H "accept: application/dns-json" "${url}"; then
+        code=$?
+        1>&2 echo -e "request failed: ${url@Q}"
+        return ${code}
+    fi
+}
+cf_prettified_json() {
+    cf ${@} | jq .
+}
+cfquery() {
+    local -- response=""
+    local -- filtered=""
+    local -- stderr=$(mktemp)
+    local -- jq_args=('-M' '-r' '.Answer[].data')
+
+    response="$(cf_prettified_json "${@}")"
+    if ! filtered=$(2>${stderr} jq ${jq_args[@]} <<< "${response}"); then
+        code=$?
+        1>&2 echo -e "command failed: jq ${jq_args[@]} with input=${response@Q}"
+        1>&2 echo -e "stdin: ${response@Q}"
+        1>&2 cat "${stderr}"
+        exit $${code}
+    else
+        if ! rg '[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+' <<< "${filtered}"; then
+            exit $?
+        fi
+    fi
+
+}
+wl() {
+    name="$1"
+    if [ -z "$name" ]; then
+        exit 11
+    fi
+    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<< "${name}")
+    data=$(cfquery "$name")
+    for row in ${data}; do
+        echo -e "\n# <$name $(date +%s)>\naddress=/$name/$row\n# </$name $(date +%Y%m%d)>" >>/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+    done
+    echo $data
+    restart
+}
+
+case $1 in
+    #%help%
+    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl')
+        invoke=$1
+        shift
+        declare -a argv=(${@})
+        if [ ${#argv[@]} -eq 0 ]; then
+            if clipboard="$(pbpaste)" \
+                && 1>/dev/random ack '^(https?://)?([^/]+)([/].*)?$' <<< "${clipboard}" \
+                && 1>/dev/random ack -i '^[a-z0-9_.-]+$' <<< "${clipboard}"; then
+                argv+=("${clipboard}")
+            fi
+        fi
+        ${invoke} ${argv[@]}
+        ;;
+    *) help ;;
+esac

@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/tools.sh
+. $HOME/opt/lib/ansi.sh
+
+path=""
+
+list_type=""
+
+for arg in ${@}; do
+    if [ -z "${list_type}" ]; then
+        case "$arg" in
+            "-m"|"--members")
+                list_type="workspace_members"
+                ;;
+            "-r"|"--root"|"--workspaces")
+                list_type="root"
+                ;;
+            "-a"|"--all")
+                list_type="all"
+                ;;
+            *)
+                if [ -z "$path" ] && [ -e "${arg}" ]; then
+                    path="${arg}"
+                fi
+                ;;
+        esac
+    elif [ "${arg}" == "-a" ] || [ "${arg}" == "--all" ]; then
+        list_type="all"
+    elif [ -z "$path" ] && [ -e "${arg}" ]; then
+        path="${arg}"
+    fi
+done
+
+if [ -z "${list_type}" ]; then
+    list_type="root"
+fi
+if [ -z "$path" ]; then
+    path="$(pwd)"
+fi
+
+if [ ! -d "$path" ]; then
+    exit_error 101 "$path is not a directory"
+fi
+
+path="$(cd "${path}" && pwd)"
+declare -a all_cargo_paths=( $(find "$path" -type f -name Cargo.toml -not -path '*/node_modules/*' -not -path '*/.venv/*' -exec dirname {} \;) )
+declare -a cargo_paths=()
+declare -a workspace_paths=()
+
+for path in ${all_cargo_paths[@]}; do
+    count=0
+    for root in ${cargo_paths[@]}; do
+        noprefix="${path/#${root}/}"
+        if [ ${#noprefix} -gt 0 ] && [ ${#noprefix} -lt ${#path} ]; then
+            count=$(( $count + 1 ))
+        fi
+    done
+    if [ $count -eq 0 ]; then
+        cargo_paths+=( "$path" )
+    else
+        workspace_paths+=( "$path" )
+    fi
+done
+
+case "${list_type}" in
+    "root")
+        for path in ${cargo_paths[@]}; do
+            echo "$path"
+        done
+        ;;
+    "workspace_members")
+        for path in ${workspace_paths[@]}; do
+            echo "$path"
+        done
+        ;;
+    "all")
+        for path in ${all_cargo_paths[@]}; do
+            echo "$path"
+        done
+        ;;
+esac

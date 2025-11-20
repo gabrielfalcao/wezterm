@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+hg phase --force --secret
+2>/dev/null hg add .hgignore
+hg commit -m `t16g`
+hg status | ansistrip | grep '[!]' | lastcol | xargs hg remove
+hg commit -m `t16g`
+hg status

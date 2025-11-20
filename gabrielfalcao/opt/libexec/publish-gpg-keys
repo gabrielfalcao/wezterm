@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+declare -a KEYSERVERS=(
+    pgp.mit.edu
+    keyring.debian.org
+    keyserver.ubuntu.com
+);
+for keyid in $(gpg --list-secret-keys --keyid-format=0xshort | grep sec | cut -d/ -f2 | awk '{ print $1 }'); do
+    publish-gpg-key "${keyid}"
+done

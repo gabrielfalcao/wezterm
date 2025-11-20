@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+. "$HOME/opt/lib/cargo-script.sh"
+
+if [ -z "${1}" ]; then
+    usage_error "missing first argument: <manifest-path>"
+else
+    manifest_path="$(path canon ${1})"
+fi
+
+if [ -d "${manifest_path}" ]; then
+    manifest_path="$(path canon "${manifest_path}/Cargo.toml")"
+fi
+
+if [ ! -f "${manifest_path}" ]; then
+    usage_error "given manifest path '${manifest_path}' is not a file"
+else
+    base=$(path base "${manifest_path}")
+    extension=$(path extension "${manifest_path}")
+    if [ "${extension/#.}" != "toml" ]; then
+        usage_error "extension of given manifest path '${manifest_path}' is not '.toml'"
+    fi
+    if [ "${base}" != "Cargo" ]; then
+        usage_error "name of given manifest path '${manifest_path}' is not 'Cargo.toml'"
+    fi
+fi
+
+shift
+
+free_space="true";
+# args="$1"
+# case "$args" in
+#     'free'|'-f'|'free-space'|'freespace'|'--free'|'--free-space')
+#         free_space="true";
+#         ;;
+#     *)
+#         free_space="false";
+#         ;;
+# esac
+
+project_path="$(path parent "$manifest_path")"
+project_name="$(cat "$manifest_path" | tomq .package.name | tr -d '"')"
+log_path="${project_path}/.logs/"
+mkdir -p "${log_path}"
+echo -e "\n.logs/" >> "${project_path}/.gitignore"
+bar_text_center 101 16 "${project_name}"
+bar_text_left 220 16 "manifest $(path relative "$manifest_path")"
+bar_text_left 237 16 "${project_name} -> invoking cargo"
+result_color=82
+result_suffix="OK"
+for cmd in 'check' 'build' 'test'; do
+    declare -a cargo_cmd=( cargo $cmd --all-features )
+    declare stderr_log_path="${log_path}/cargo-${cmd}.stderr.log"
+    declare stdout_log_path="${log_path}/cargo-${cmd}.stdout.log"
+    case $cmd in
+        'check')
+            color=79;
+            ;;
+        'build')
+            color=39;
+            ;;
+        'test')
+            color=70;
+            ;;
+        *)
+            color=239;
+            ;;
+    esac
+    ansi_reset_up
+    bar_text_left $color 16 "${project_name} -> ${cargo_cmd[@]} (${cmd}ing)"
+    if (2>/dev/null 1>/dev/null cd "$project_path" && 2>${stderr_log_path} 1>${stdout_log_path} ${cargo_cmd[@]}); then
+        success=true
+    else
+        success=false
+    fi
+done
+size="$(2>/dev/random dua "${project_path}" | ansistrip  | tail -1 | sed 's/total//g' | tr -d '[:space:]')"
+suffix="${size}"
+if [ "${free_space}" == "true" ]; then
+    1>/dev/random 2>/dev/random rm -rf "${project_path}/target"
+    suffix="${size} freed"
+fi
+
+case "$success" in
+    'false')
+        1>/dev/random 2>/dev/random rm -rf "${project_path}/target"
+        ansi_reset_up
+
+        bar_text_left 196 16 "${project_name} -> ${cargo_cmd[@]}: ERROR (${suffix}))"
+        ;;
+    *)
+        ansi_reset_up
+        bar_text_left 82 16 "${project_name} -> ${cargo_cmd[@]}: OK (${suffix})"
+        ;;
+esac

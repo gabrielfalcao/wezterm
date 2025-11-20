@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+
+. $HOME/opt/lib/ansi.sh
+ACTION=$(basename ${BASH_SOURCE[0]} | tr '[:lower:]' '[:upper:]' | tr -d '.' | sed 's/[^[:alnum:]]\+/ /g')
+
+total_columns=$(term-columns)
+script_started=$(($(date +%s)))
+started=$(($(date +%s)))
+declare -a home_subdir_names=(
+    '*scratch*'
+    'opt'
+    'projects'
+    '.shell.d'
+    '.config'
+    '__sandbox__'
+    '.cargo'
+    '*nons*'
+    '.nvm'
+    '.npm'
+    'go'
+    '.bun'
+    '.deno'
+    '.elixir-install'
+    '.local'
+    '.logs'
+    '.plastic4'
+    '.rustup'
+    '.thumbnails'
+    '.zig'
+    'Blender'
+    'Büchen'
+    'DaVinci'
+    'Desktop'
+    'Documents'
+    'Downloads'
+    'Kino'
+    'Kunst'
+    'Movies'
+    'Music'
+    'Pictures'
+    'SDKs'
+    'Sound'
+    'Splice'
+    'backup'
+    'logs'
+)
+declare -a dedup_subdir_names=('*scratch*/.x')
+
+target_volume_base_path="/Volumes/WaveMandala"
+
+ctrl_c() {
+    stty sane
+    interrupted=$(($(date +%s)))
+    took=$(($interrupted - $started))
+    script_took=$(($interrupted - $script_started))
+    echo -en "\r"
+    bar 16
+
+    last_action="$cur_action"
+    if [ -n "$cur_action" ]; then
+        case "$cur_action" in
+            "backup")
+                if [ -r "${log_file}" ]; then
+                    last_file=""
+                    for tmp_path in $(tail -15 "${log_file}" | ansistrip | awk '{ print $NF }'); do
+                        if [ -e "$tmp_path" ]; then
+                            last_file="$tmp_path"
+                        fi
+                    done
+                    if [ -z "$last_file" ]; then
+                        last_file="$cur_file"
+                    fi
+                    last_action="backup of \x1b[1;48;5;231m\x1b[1;38;5;16m ~/${last_file} \x1b[1;38;5;231m\x1b[1;48;5;196m"
+
+                fi
+                ;;
+            "chown")
+                last_action="fix permissions of ~/${cur_file}"
+                ;;
+            "waitpid")
+                last_action="wait for command ${cur_file}"
+                ;;
+            *) ;;
+        esac
+        bar_text_left 231 196 "$(ansi_spaced 231 196 "${ACTION}")$(ansi_spaced 196 231 "INTERRUPTED")$(ansi_spaced 231 196 "after")$(ansi_spaced 16 231 "$(ansi_underline "$(seconds "${script_took}")")")$(ansi_spaced 196 231 "during")$(ansi_spaced 231 196 "${last_action}")$(ansi_spaced 196 231 "(which ran for "$(seconds "${took}")")")"
+        # bar_text_left 231 196 "$(ansi_spaced 231 196 "${ACTION} ")$(ansi_spaced 196 231 "INTERRUPTED")$(ansi_spaced 231 196 " after ")$(ansi_spaced 16 231 " $(ansi_underline "$(seconds "${script_took}")") " )$(ansi_spaced 196 231 " during ")$(ansi_spaced 231 196 " ${last_action} ")$(ansi_spaced 196 231 " (which ran for $(seconds "${took}")) ")"
+        bar 16
+    fi
+    exit 1
+}
+seconds() {
+    count=$(get_number "$(require_argument "first argument (.i.e: seconds)" "${1}")")
+    if [ $count -eq 1 ]; then
+        echo -n "${count} second"
+    else
+        echo -n "${count} seconds"
+    fi
+}
+trap ctrl_c 1
+trap ctrl_c 2
+
+# if [ ! -d "${target_volume_base_path}" ]; then
+#     error "${target_volume_base_path} does not exist"
+# fi
+
+sudo echo -n
+tput clear
+reset
+
+cur_action="${ACTION}"
+log_file=""
+cur_file=""
+ts() {
+    date && time df -h / | tail -1
+}
+# echo -en "\x1b[0m\x1b[1;48;5;16m\x1b[1;38;5;202mdeleting rust targets in \x1b[1;38;5;79m~/projects/...\x1b[0m"
+# 1>/dev/random 2>/dev/random find ~/projects -maxdepth 5 -type d -name target -exec rm -rf {} \;
+# echo -e "\r\x1b[0m\x1b[1;48;5;16m\x1b[1;38;5;202mdeleting rust targets in \x1b[1;38;5;79m~/projects/... \x1b[1;38;5;82mDONE\x1b[0m\n"
+stty -echo
+set -e
+
+for name in ${home_subdir_names[@]}; do
+    source_path="/Users/gabrielfalcao/${name}/"
+    if [ "${name}" == "*scratch*" ]; then
+        target_path="${target_volume_base_path}/${name}/"
+    else
+        target_path="${target_volume_base_path}/Langley/${name}/"
+    fi
+
+    started=$(($(date +%s)))
+    cur_action="backup"
+    cur_file="${name}"
+    # sudo chown -R $USER: "/Users/gabrielfalcao/${name}/"
+    log_file="$HOME/opt/var/log/backup-${name}.log"
+    # --out-format="%f %b/%l"
+    echo -e "\x1b[0m\x1b[1;48;5;16m\x1b[1;38;5;22mbacking up \x1b[1;38;5;33m~/${name}/...\x1b[0m"
+    current_backup_start=$(($(date +%s)))
+
+    if 1>/dev/random 2>/dev/random time rsync --exclude="*/target/*" --exclude="*/node_modules/*" --exclude="*/node_modules" --exclude="*/target" --outbuf=L --log-file-format="%f %b/%l" --log-file="${log_file}" --fsync -auUN --info=all4 --ignore-errors "${source_path}" "${target_path}"; then
+        status="\x1b[1;38;5;82mOK"
+    else
+        status="\x1b[1;38;5;196mERROR"
+        exit 1
+    fi
+    current_backup_end=$(($(date +%s)))
+    current_backup_took=$(($current_backup_end - $current_backup_start))
+    echo -e "\r\x1b[A\x1b[0m\x1b[1;48;5;16m\x1b[1;38;5;22mbacking up \x1b[1;38;5;33m~/${name}/... ${status} (took $(seconds "${current_backup_took}"))\x1b[0m"
+    1>/dev/random 2>/dev/random sudo chown -R $USER: "/Volumes/WaveMandala/${name}/" &
+    echo -en "\x1b[0m"
+done
+echo -e "\x1b[0m"
+stty sane
+
+for path in $(find-vids "$HOME/*scratch*/.x/2025/"); do
+    if [ -f "$path" ]; then
+        2>/dev/random 1>/dev/random rm -f "$path" &
+        disown -h
+    fi
+done
+for pid in $(jobs -p); do
+    started=$(($(date +%s)))
+    cur_action="waitpid"
+    cur_file="(pid: ${pid}) $(ps aux | grep "^[[:alnum:]]\+[[:space:]]*${pid}" | sed 's/^[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+[^[:space:]]\+[[:space:]]\+//g')"
+
+    if [ $(($(jobs | wc -l) + 0)) -gt 0 ]; then
+        echo -e "\x1b[0m\x1b[1;48;5;16m\x1b[1;38;5;22mwaiting for \x1b[1;38;5;220m${cur_file}/\x1b[0m"
+        2>/dev/random 1>/dev/random fg || true
+    fi
+done
+for name in ${dedup_subdir_names[@]}; do
+    target_path="${target_volume_base_path}/${name}/"
+    started=$(($(date +%s)))
+    cur_action="dedup"
+    cur_file="${name}"
+
+    current_dedup_start=$(($(date +%s)))
+
+    bar_text_center 231 16 "dedupe $(ansi_spaced 231 48 "${target_path}")"
+    deleted_count=0
+    for path in $(2>/dev/random 1>/dev/random cd "${target_path}" && 2>/dev/random sudo fdupes -rf "${target_path}"); do
+        if [ -f "${path}" ]; then
+            rm -f "${path}"
+            deleted_count=$(($deleted_count + 1))
+        fi
+    done
+    bar_text_left 231 124 "dedupe $(ansi_spaced 231 48 "${target_path}")$(ansi 231 124 ": deleted")$(ansi_spaced 196 231 "${deleted_count}")$(ansi_spaced 231 124 "duplicated files")"
+
+    current_dedup_end=$(($(date +%s)))
+    current_dedup_took=$(($current_dedup_end - $current_dedup_start))
+done
+
+rm -rf $HOME/*scratch*/.x/2025/*
+
+declare -a volume_pids=($(ps aux | grep /Volumes/WaveMandala | grep -v grep | awk '{ print $2 }'))
+
+if [ ${#volume_pids} -eq 0 ]; then
+    eject
+else
+    echo "NOT EJECTING ${target_volume_base_path} because its being used by the PIDs: ${volume_pids[@]}"
+fi
+
+permfix=$(mktemp)
+cat >${permfix} <<EOF
+#!/usr/bin/env bash
+
+set -e
+
+EOF
+
+for name in ${home_subdir_names[@]}; do
+    echo -e "chown -R $USER: \"/Users/gabrielfalcao/${name}/\";
+" >>${permfix}
+done
+
+echo -e "
+# autodelete
+
+rm -f \"${permfix}\";
+
+" >>${permfix}
+
+sudo bash ${permfix} &
+disown -h
+
+rm -rf ~/.npm/_cacache/

@@ -1,0 +1,18 @@
+#!/usr/local/bin/uv run python
+import sys
+import click
+from urllib.parse import quote
+
+
+def main():
+    if len(sys.argv) > 1:
+        source = " ".join(sys.argv[1:])
+    else:
+        source = sys.stdin.readline()
+
+    result = quote(source)
+    print(result)
+
+
+if __name__ == '__main__':
+    main()

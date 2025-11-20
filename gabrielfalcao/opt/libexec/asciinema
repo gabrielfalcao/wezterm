@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+uv run --python 3.11 --with $(basename $0) $(basename $0) $*

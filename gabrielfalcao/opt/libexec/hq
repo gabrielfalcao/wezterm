@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -xe
+
+/usr/bin/env git $*

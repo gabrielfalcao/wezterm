@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -o noglob
+set -o errtrace # or set -E
+set -u
+
+export IFS=$'\n'
+unset IFS
+
+declare -a dod_root_cert_download_urls=(
+    'https://nps.edu/documents/111151326/111164251/DoD-Root-CA-3.cer/2b94718d-5f88-8eaf-3bda-92e0fc548412?t=1619469888977'
+    'https://nps.edu/documents/111151326/111164251/DoD-Root-CA-3.cer/2b94718d-5f88-8eaf-3bda-92e0fc548412?t=1619469888977'
+)
+declare -- DOD_ROOT_CERT_DOWNLOAD_URL='https://nps.edu/documents/111151326/111164251/DoD-Root-CA-3.cer/2b94718d-5f88-8eaf-3bda-92e0fc548412?t=1619469888977'
+declare -- DOD_ROOT_CERT_DOWNLOAD_URL='https://nps.edu/documents/111151326/111164251/DoD-Root-CA-3.cer/2b94718d-5f88-8eaf-3bda-92e0fc548412?t=1619469888977'

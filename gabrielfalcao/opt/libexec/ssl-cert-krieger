@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+domain="${@}"
+
+output="${domain}.chain.pem"
+
+if [ -f "${domain}.chain.pem" ]; then
+    output="${domain}.chain.$(nowz).pem"
+else
+    output="${domain}.chain.pem"
+fi
+openssl s_client -showcerts -connect "${domain}:443" </dev/null | sed -n -e '/-.BEGIN/,/-.END/ p' > "${output}"

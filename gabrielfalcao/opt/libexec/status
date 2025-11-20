@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+df -h | ack --no-color '^(.*%\s+/(Volumes/.*)?|.+\bUsed\b.+)$'

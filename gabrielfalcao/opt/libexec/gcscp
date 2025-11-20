@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gcloud storage cp --recursive --daisy-chain --preserve-posix  "$1" "$@"
