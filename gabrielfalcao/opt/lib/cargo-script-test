@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+. "$HOME/opt/lib/cargo-script.sh"
+
+if [ "${1}" == "${this_cargo_cmd_name}" ]; then
+    bar_text_left 159 16 "argv[0] => $0 $(get_location)"
+    bar_text_left 74 16 "argv[1] => $1 $(get_location)"
+    bar_text_left 74 16 "argv[@] => $@ $(get_location)"
+    shift
+    bar_text_center 82 16 "argv[0] => $0 $(get_location)"
+    bar_text_center 48 16 "argv[1] => $1 $(get_location)"
+    bar_text_center 28 16 "argv[@] => $@ $(get_location)"
+else
+    bar_text_left 231 16 "argv[0] => $0 $(get_location)"
+    bar_text_left 220 16 "argv[1] => $1 $(get_location)"
+    bar_text_left 220 16 "argv[@] => $@ $(get_location)"
+fi
