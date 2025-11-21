@@ -2,10 +2,12 @@
 import re
 import os
 import sys
+from typing import Tuple
+from pprint import pprint
 from os.path import splitext
 from pathlib import Path
 
-# regex = re.compile(r'[^a-z0-9_[:space:]-]+', re.I)
+cwd = Path(os.getcwd()).absolute()
 regex = re.compile(r'[^a-z0-9_.@^%(~) -]+', re.I)
 
 def split(path: Path) -> Path:
@@ -14,13 +16,26 @@ def split(path: Path) -> Path:
     return (parent, base, ext)
 
 
-def fix(path: Path) -> Path:
-    parent = path.parent
-    base, ext = splitext(path.name)
-    return
-cwd = Path(os.getcwd()).absolute()
-weird = list(filter(lambda path: sum(map(bool, map(regex.search, splitext(path.name)))), cwd.iterdir()))
-# weird = list(filter(lambda path: sum(map(bool, map(regex.search, splitext(path.name)))), cwd.iterdir()))
+def is_weird(tup: Tuple[Path, str, str]) -> bool:
+    parent, base, ext = tup
+    weird_base = regex.search(base)
+    weird_ext = regex.search(ext)
+    return weird_base or weird_ext
+
+def fix_string(s: str) -> str:
+    return regex.sub('-', s)
+
+def fix(tup: Tuple[Path, str, str]) -> Path:
+    parent, base, ext = tup
+    weird_base = regex.sub('-', base)
+    weird_ext = regex.sub('-', ext)
+
+    name = "".join(map(fix_string, [base, ext]))
+    return parent.join(name)
+
+files = list(map(split, cwd.iterdir()))
+weird = list(filter(is_weird, files))
+pprint(weird)
 fixed = list(map(lambda path: splitext(path.name), cwd.iterdir()))
 # weird = list(map(lambda path: (path, regex.sub('-', path.name)), cwd.iterdir()))
 
