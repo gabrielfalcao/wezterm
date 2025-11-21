@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import re
 import os
-import sys
+import shutil
 from typing import Tuple
-from pprint import pprint
 from os.path import splitext
 from pathlib import Path
 
@@ -33,13 +32,11 @@ def fix_weird(tup: Tuple[Path, str, str]) -> Path:
     return parent.joinpath(old_name), parent.joinpath(new_name)
 
 
-
-
 def main():
     files = map(split, cwd.iterdir())
     weird = filter(is_weird, files)
     for old, new in map(fix_weird, weird):
-        print(old, new)
+        shutil.move(old, new)
 
 if __name__ == '__main__':
     main()
