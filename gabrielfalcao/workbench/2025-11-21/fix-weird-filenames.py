@@ -22,27 +22,24 @@ def is_weird(tup: Tuple[Path, str, str]) -> bool:
     weird_ext = regex.search(ext)
     return weird_base or weird_ext
 
-def fix_string(s: str) -> str:
-    return regex.sub('-', s)
+def fix_string(s: str, repl: str = '-') -> str:
+    return regex.sub(repl, s).strip(repl)
 
-def fix(tup: Tuple[Path, str, str]) -> Path:
+def fix_weird(tup: Tuple[Path, str, str]) -> Path:
     parent, base, ext = tup
-    weird_base = regex.sub('-', base)
-    weird_ext = regex.sub('-', ext)
-
-    name = "".join(map(fix_string, [base, ext]))
-    return parent.join(name)
-
-files = list(map(split, cwd.iterdir()))
-weird = list(filter(is_weird, files))
-fixed = list(map(fix, weird))
-# weird = list(map(lambda path: (path, regex.sub('-', path.name)), cwd.iterdir()))
-pprint(weird)
+    comp = (base, ext)
+    old_name = "".join(comp)
+    new_name = "".join(map(fix_string, comp))
+    return parent.joinpath(old_name), parent.joinpath(new_name)
 
 
 
-# def main():
-#     print(weird)
 
-# if __name__ == '__main__':
-#     main()
+def main():
+    files = map(split, cwd.iterdir())
+    weird = filter(is_weird, files)
+    for old, new in map(fix_weird, weird):
+        print(old, new)
+
+if __name__ == '__main__':
+    main()
