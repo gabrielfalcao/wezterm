@@ -35,9 +35,9 @@ def fix(tup: Tuple[Path, str, str]) -> Path:
 
 files = list(map(split, cwd.iterdir()))
 weird = list(filter(is_weird, files))
-pprint(weird)
-fixed = list(map(lambda path: splitext(path.name), cwd.iterdir()))
+fixed = list(map(fix, weird))
 # weird = list(map(lambda path: (path, regex.sub('-', path.name)), cwd.iterdir()))
+pprint(weird)
 
 
 
