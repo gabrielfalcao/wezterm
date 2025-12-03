@@ -1,15 +1,3 @@
 #!/usr/bin/env bash
-. ${HOME}/opt/lib/ansi.sh
-unset IFS
 set -e
-
-declare -a argv=( $@ )
-declare -i argc=${#argv[@]}
-
-
-if ! git_repo_path=$(git rev-parse --show-toplevel); then
-    1>&2 echo "not a git repo dir: ${current_working_path@Q}"
-    exit 1
-fi
-
-git status --porcelain ${argv[@]} | ack '^\s*[?]' | lastcol
+git status-print-path-if untracked

@@ -46,19 +46,73 @@ function execute-if-exists() {
         2>/dev/null ${args[*]}
     fi
 }
+extract_domain() {
+    name=$(sed -E 's,^(https?://)?([^/]+)([/].*)?$,\2,g' <<< "${name}")
 
+}
 stop() {
     2>/dev/null 1>/dev/null g p -qr dns -k
     2>/dev/null 1>/dev/null g p -qr tcpdump -k
     1>&2 echo -e "dns-server stopped"
 }
+
+server_pids() {
+    export IFS=$'\n'
+    local -a running=($(ps aux | grep -v grep | grep -E '/opt/dnsmasq/sbin/dnsmasq' | awk '{print $2}'))
+    unset IFS
+    if [ ${#running[@]} -eq 0 ]; then
+        return 1
+    fi
+    printf '%s\n' ${running[@]}
+}
+start_bg() {
+    local -a pids=()
+    local -i server_pid=0
+    if ! pids=($(server_pids)); then
+        if ! dnsmasq --test -C /opt/homebrew/etc/dnsmasq.conf; then
+            return 1
+        fi
+        /opt/homebrew/opt/dnsmasq/sbin/dnsmasq '--keep-in-foreground' '-C' '/opt/homebrew/etc/dnsmasq.conf' '-7' '/opt/homebrew/etc/dnsmasq.d,*.conf' &
+        server_pid=$!
+        disown -a
+        echo "${server_pid}"
+    else
+        printf '%s\n' "${pids[@]}"
+    fi
+}
+wait_activity() {
+    local -i timeout_secs=10
+    local -i started_ts=$(date +%s)
+    local -i current_ts=${started_ts}
+    local -i prev_count=$(cat /var/log/dnsmasq.log | wc -l)
+    local -i curr_count=${prev_count}
+    local -- interval=0.314
+    local -i success=0
+    until [ $(( $current_ts - $started_ts )) -le 0 ] || [ ${curr_count} -gt ${prev_count} ]; do
+        curr_count=$(cat /var/log/dnsmasq.log | wc -l)
+        1>&2 echo -e "waiting for dnsmasq log activity"
+        2>/dev/null 1>/dev/null /usr/bin/curl --max-time ${interval} --connect-timeout ${interval} --expect100-timeout ${interval} --happy-eyeballs-timeout-ms ${interval} -q "https://nsa.gov" || sleep ${interval}
+        current_ts=$(date +%s)
+    done
+    local -i elapsed_seconds=$(( $current_ts - $started_ts ))
+    if [ ${elapsed_seconds} -gt ${timeout_secs} ]; then
+        1>&2 echo -e "dnsmasq did not appear to produce activity within ${elapsed_seconds} seconds"
+        return 1
+    fi
+
+}
 start() {
-    if ! 2>/dev/null 1>/dev/null g p -qr dnsmasq; then
-        bash -c "
-/opt/homebrew/opt/dnsmasq/sbin/dnsmasq '--keep-in-foreground' '-C' '/opt/homebrew/etc/dnsmasq.conf' '-7' '/opt/homebrew/etc/dnsmasq.d,*.conf' &
-disown -ha
-"
-        1>&2 echo -e "dns-server started"
+    local -a pids=()
+    local -i started=0
+    until pids=($(server_pids)) && [ ${#pids[@]} -gt 0 ]; do
+        if ! (( $started )); then
+            start_bg
+            started=1
+        fi
+        wait_activity
+    done
+    if pids=($(server_pids)) && [ ${#pids[@]} -gt 0 ]; then
+        1>&2 echo -e "dns-server running"
     fi
 }
 restart() {
@@ -77,7 +131,7 @@ restart() {
         && refresh $@
     if [ -f "${logrotate_path}" ]; then
         gzip "$logrotate_path" &
-        disown -ha
+        disown -a
     fi
 }
 restart_help() {
@@ -110,9 +164,11 @@ logs_help() {
 }
 
 refresh() {
+    2>/dev/random killall -HUP mDNSResponder
     dscacheutil -flushcache
+    2>/dev/random killall -HUP mDNSResponder
     g p -S 1 -qr mDNSResponder -k
-    killall -HUP mDNSResponder
+    2>/dev/random killall -HUP mDNSResponder
     if [ -n "$1" ] && [ "$(($1 + 0))" -gt 0 ]; then
         logs "${1}"
     fi
@@ -220,9 +276,20 @@ wl() {
     restart
 }
 
+block() {
+    name="$1"
+    if [ -z "$name" ]; then
+        exit 11
+    fi
+    row=23.50.77.69
+    echo -e "\n# <block $name $(date +%s)>\naddress=/$name/$row\n# </block $name $(date +%Y%m%d)>" >>/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+    echo "blocked: ${name}"
+    restart
+}
+
 case $1 in
     #%help%
-    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl')
+    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl'|'block')
         invoke=$1
         shift
         declare -a argv=(${@})

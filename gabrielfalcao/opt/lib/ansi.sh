@@ -1,3 +1,10 @@
+set -o pipefail
+# # set -o errexit # or -e
+# # set -o noglob # or -f
+# set -o errtrace # or set -E
+# set -o functrace # or set -T
+# set -o nounset # -u
+
 export IFS=$'\n'
 
 if ! declare -a TERM_WIDTH_BIN=$(2>/dev/random which term-columns); then
@@ -416,19 +423,26 @@ bar_text_center() {
     shift
     text=$(require_argument "second argument (.i.e: text)" "${@}")
     plain_text=$(echo -e "$text" | ansistrip)
-    text_width=${#plain_text}
-    cols=$(term_width)
-    bar_start=$(($cols - ${text_width}))
-    hr=$(make_indent "$bar_start")
-    half_cols=$(($cols / 2 + ($cols % 2)))
-    half_text_width=$(($text_width / 2 + ($text_width % 2)))
-    first_pad=$(($half_cols - $half_text_width))
-    text_start=$(make_indent $first_pad)
-    hr=$(make_indent $cols)
-    echo -en "\r\x1b[1;48;5;${fg_color}m${text_start}\x1b[1;38;5;${bg_color}m${text}\x1b[1;48;5;${fg_color}m"
-    first_pad=$(($half_cols - $half_text_width))
-    hr=$(make_indent "$first_pad")
-    echo -e "\x1b[1;48;5;${fg_color}m${hr}\x1b[0m"
+    export IFS=$'\n'
+    local -a lines=($(echo -e "${plain_text}"))
+    local -a result_lines=()
+    local -- text=""
+    # local -- text="STAT FORMATS"
+    for text in ${lines[@]}; do
+        local -- text_width=${#text}
+        half_cols=$(($term_cols / 2 + ($term_cols % 2)))
+        half_text_width=$(($text_width / 2 + ($text_width % 2)))
+        first_pad=$(($half_cols - $half_text_width))
+        last_pad=$(($term_cols - $text_width - $first_pad))
+        left=$(printf '%*s' $first_pad " ")
+        right=$(printf '%-*s' $last_pad " ")
+        result=$(printf "%*s%s%-*s" ${first_pad} "" "${text}" ${last_pad} "")
+        result_width=${#result}
+        result_lines+=("\x1b[0\r\x1b[1;48;5;${fg_color}m\x1b[1;38;5;${bg_color}m${result}\x1b[0m")
+    done
+    printf '%s\n' "${result_lines[@]}"
+
+    # ICAgICMgdGV4dF93aWR0aD0keyNwbGFpbl90ZXh0fQogICAgIyBjb2xzPSQodGVybV93aWR0aCkKICAgICMgaGFsZl9jb2xzPSQoKCRjb2xzIC8gMiArICgkY29scyAlIDIpKSkKICAgICMgaGFsZl90ZXh0X3dpZHRoPSQoKCR0ZXh0X3dpZHRoIC8gMiArICgkdGV4dF93aWR0aCAlIDIpKSkKICAgICMgZmlyc3RfcGFkPSQoKCRoYWxmX2NvbHMgLSAkaGFsZl90ZXh0X3dpZHRoKSkKICAgICMgdGV4dF9zdGFydD0kKG1ha2VfaW5kZW50ICRmaXJzdF9wYWQpCiAgICAjIGhyPSQobWFrZV9pbmRlbnQgJGNvbHMpCiAgICAjIGVjaG8gLWVuICJcclx4MWJbMTs0ODs1OyR7ZmdfY29sb3J9bSR7dGV4dF9zdGFydH1ceDFiWzE7Mzg7NTske2JnX2NvbG9yfW0ke3RleHR9XHgxYlsxOzQ4OzU7JHtmZ19jb2xvcn1tIgogICAgIyBmaXJzdF9wYWQ9JCgoJGhhbGZfY29scyAtICRoYWxmX3RleHRfd2lkdGgpKQogICAgIyBocj0kKG1ha2VfaW5kZW50ICIkZmlyc3RfcGFkIikKICAgICMgZWNobyAtZSAiXHgxYlsxOzQ4OzU7JHtmZ19jb2xvcn1tJHtocn1ceDFiWzBtIg==
 }
 
 usage_error() {

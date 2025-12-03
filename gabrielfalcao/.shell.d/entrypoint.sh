@@ -35,6 +35,7 @@ entrypoint() {
         "homebrew.sh" \
         "sec.sh" \
         "io.sh" \
+        "workbench.sh"
 
     unset s brew_path path gq
     . "/opt/homebrew/etc/bash_completion"
@@ -66,6 +67,8 @@ for fn in $(grep '^[a-z_]\+[(][^)]*[)]\([[:space:]]*\|\n\)[{]' "${BASH_SOURCE[0]
     2>/dev/random 1>/dev/random unset "$function_name"
 done
 
+set +o noglob
+set +u
 
 # # # # ${parameter/pattern/string}   # erstes
 # # # # ${parameter//pattern/string}  # alles

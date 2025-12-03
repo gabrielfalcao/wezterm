@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-. ~/opt/lib/ansi.sh
+
 set -e
 declare -a argv=($@)
 declare argc=${#argv}

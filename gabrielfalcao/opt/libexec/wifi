@@ -107,6 +107,7 @@ wifi_reboot() {
     wifi_off
     sleep_for ${sleep_seconds}
     wifi_on
+    networksetup -setdnsservers Wi-Fi 127.0.0.1
 }
 case "${action}" in
     "on")
