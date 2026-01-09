@@ -11,3 +11,4 @@ if ! 2>/dev/random 1>/dev/random which hackernews; then
     }
 fi
 alias hn="hackernews"
+alias shellcheck="$(which shellcheck) --rcfile $HOME/.shell.d/rc.d/shellcheck"

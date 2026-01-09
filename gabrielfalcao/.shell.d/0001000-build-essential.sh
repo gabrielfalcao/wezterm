@@ -55,7 +55,6 @@
 #                        | tr '[:space:]' ' ')
 # export DEFAULT_PKG_CONFIG_LIBS="${PKG_CONFIG_LIBS} ${BREW_LIBS}"
 
-
 # function enable_buildessential_environment_variables() {
 #     # brew uninstall ccache pyenv-ccache
 #     # brew install gnu-make colordiff cern-ndiff

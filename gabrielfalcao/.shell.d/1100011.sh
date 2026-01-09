@@ -9,12 +9,13 @@
 #
 # awk {print $1}:   make sure to only print the first "column"
 #
-unset $(set \
-            | grep -E -v '^(_|[A-Z]+|\W+)+' \
-            | cut -d= -f1 \
-            | awk '{ print $1 }' \
-            | xargs)
-
+# set -x
+# unset $(set \
+#             | grep -E -v '^(_|[A-Z]+|\W+)+' \
+#             | cut -d= -f1 \
+#             | awk '{ print $1 }' \
+#             | xargs)
+# set +x
 set +m
 # g p -qr '\bct\b'
 # if [ "$?" != "0" ]; then
@@ -22,13 +23,11 @@ set +m
 #     disown -h' &
 # fi
 
-
 # sudo bash -c '1>/dev/random 2>/dev/random $HOME/opt/lib/bash-ps-root.sh &
 # disown -h'
 
 # bash -c '1>/dev/random 2>/dev/random $HOME/opt/lib/bash-ps.sh &
 # disown -a'
-
 
 if [ -z "$(g p -r Phoenix)" ]; then
     open /Applications/Phoenix.app &

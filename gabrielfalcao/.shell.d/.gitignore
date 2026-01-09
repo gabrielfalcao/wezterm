@@ -1,2 +1,8 @@
 /.hg*
 x.d.rev.patch
+
+# <2026-01-09>
+.venv/bin/
+.venv/lib/
+.venv/share/
+# </2026-01-09>
