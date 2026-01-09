@@ -1,57 +1,26 @@
+#!/usr/bin/env bash
+set -umeTE
+set +f
 set -o pipefail
-# # set -o errexit # or -e
-# # set -o noglob # or -f
-# set -o errtrace # or set -E
-# set -o functrace # or set -T
-# set -o nounset # -u
 
 export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
 
-if ! declare -a TERM_WIDTH_BIN=$(2>/dev/random which term-columns); then
-    declare -a TERM_WIDTH_BIN=( python3 -c 'import os;print(os.get_terminal_size().columns)' )
-fi
-if ! declare -a TERM_HEIGHT_BIN=$(2>/dev/random which term-rows); then
-    declare -a TERM_HEIGHT_BIN=( python3 -c 'import os;print(os.get_terminal_size().lines)' )
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+term_libsh_path="${script_path}/term.sh"
+
+if [ -r "${term_libsh_path}" ] &&  [ -s "${term_libsh_path}" ]; then
+    builtin source "${term_libsh_path}"
 fi
 
-if [ -n "${TOOLS_LOADED_PACKAGES[@]}" ] && [ "${TOOLS_LOADED_PACKAGES@a}" == "a" ] && 1>/dev/random 2>/dev/random declare -f 'tools_array_add_unique'; then
+if [[ -v TOOLS_LOADED_PACKAGES ]] && [ -n "${TOOLS_LOADED_PACKAGES[@]}" ] && [ "${TOOLS_LOADED_PACKAGES@a}" == "a" ] && 1>/dev/random 2>/dev/random declare -f 'tools_array_add_unique'; then
     tools_array_add_unique TOOLS_LOADED_PACKAGES "ansi"
 fi
 
 # TODO: bash select
 # https://www.gnu.org/software/bash/manual/bash.html#index-select
-
-term_supports_256_colors() {
-    [ "${TERM}" == "xterm-256color" ]
-    return $?
-}
-term_supports_truecolor() {
-    [ "${COLORTERM}" == "truecolor" ]
-    return $?
-}
-get_term_width() {
-    #set +x
-    ${TERM_WIDTH_BIN[@]}
-}
-const_term_width=$(get_term_width)
-term_width() {
-    #set +x
-    echo -n "$const_term_width"
-}
-get_term_height() {
-    #set +x
-    ${TERM_WIDTH_BIN[@]}
-}
-const_term_height=$(get_term_height)
-term_height() {
-    #set +x
-    echo -n "$const_term_height"
-}
-term_reset() {
-    #set +x
-    reset
-    ansi_clear
-}
 get_number() {
     #set +x
     function=$(get_caller)
@@ -95,10 +64,10 @@ get_caller() {
 get_lineno() {
     #set +x
     offset=$((${1:-0} + 0))
-    stack_len=${#BASH_LINENO[@]}
+    stack_len=${#LINENO[@]}
     last_lineno_index=$((${stack_len} - 1 - ${offset}))
     lineno_index=$((${stack_len} - ${last_lineno_index}))
-    echo -n "${BASH_LINENO[$lineno_index]}"
+    echo -n "${LINENO[$lineno_index]}"
 }
 get_location() {
     #set +x

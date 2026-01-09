@@ -2,7 +2,7 @@ export IFS=$"\n"
 
 # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
 # https://www.gnu.org/software/bash/manual/html_node/Pattern-Matching.html
-declare TOOLS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- TOOLS_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 declare -a TOOLS_PACKAGES=( "ansi" "comp-tools" "tools" "completions" )
 declare -a TOOLS_LOADED_PACKAGES=()
 
