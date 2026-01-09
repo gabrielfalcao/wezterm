@@ -1,14 +1,3 @@
-/$
-/.hg
-elpa
-/.*
-abbrev_defs
-custom.el
-/auto-save-list
-/socket
-/sandbox
-/tramp
-/transient
-tmp.el
-/*.html
-eln-cache/
+auto-save-list/
+elpa/
+tramp
