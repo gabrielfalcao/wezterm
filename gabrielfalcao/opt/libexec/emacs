@@ -1,25 +1,133 @@
 #!/usr/bin/env bash
+. ~/.shell.d/x.d/workbench.sh
 
-socket="$HOME/.emacs.d/socket/server"
+workbench_refresh || true
 
-working_path="$(pwd)"
-log_timestamp="$(date +"%Y%m%d-%H%M%S")"
-stdout_log_path="$HOME/opt/var/log/emacs.out.${log_timestamp}.log"
-stderr_log_path="$HOME/opt/var/log/emacs.err.${log_timestamp}.log"
-exec="/Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11"
-homebrew_bin="/opt/homebrew/bin/emacs"
+unset IFS
+declare -- emacs_d_path="$HOME/.emacs.d"
+declare -- emacs_d_socket_dir="${emacs_d_path}/socket"
+declare -- socket="${emacs_d_socket_dir}/server"
+declare -- emacs_d_boot_pidfile="${emacs_d_path}/boot.info"
+declare -a pidfile_data=()
+
+declare -- working_path="$(pwd)"
+declare -- log_timestamp="$(date +"%Y%m%d-%H%M%S")"
+declare -- stdout_log_path="$HOME/opt/var/log/emacs.out.${log_timestamp}.log"
+declare -- stderr_log_path="$HOME/opt/var/log/emacs.err.${log_timestamp}.log"
+declare -- exec="/Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11"
+declare -- homebrew_bin="/opt/homebrew/bin/emacs"
 declare -a exec_args=()
+export IFS=$'\n'
+declare -a lsof_lines_socket_server_matching_emacs_command=()
+declare -a socket_pids=()
+
+require_socket_file_bound_to_any_pid() {
+    if [ ! -S "${socket}" ]; then
+        1>&2 echo -e "socket file does not exist at expected location \x1b[1;38;5;220m${socket}\x1b[0m"
+        exit 1
+    fi
+
+    if ! lsof_lines_socket_server_matching_emacs_command=($(lsof "${socket}" | grep -Ei '^emacs')); then
+        1>&2 echo -e "no \x1b[3;38;5;154memacs\x1b[0m process bound to socket file \x1b[1;38;5;220m${socket}\x1b[0m"
+        code=$?
+        exit ${code}
+    fi
+    if [ ${#lsof_lines_socket_server_matching_emacs_command[@]} -eq 0 ]; then
+        1>&2 echo -e "no \x1b[3;38;5;154memacs\x1b[0m process bound to socket file \x1b[1;38;5;220m${socket}\x1b[0m"
+        exit $((404 % 255))
+    fi
+    if ! socket_pids=($(printf '%s\n' "${lsof_lines_socket_server_matching_emacs_command[@]}" | awk '{ print $2 }')); then
+        1>&2 echo -e "no pids matching \x1b[3;38;5;154memacs\x1b[0m processed bound to socket file \x1b[1;38;5;220m${socket}\x1b[0m"
+        1>&2 printf '%s\n' "${lsof_lines_socket_server_matching_emacs_command[@]}"
+        code=$?
+        exit ${code}
+    fi
+    if [ ${#socket_pids[@]} -eq 0 ]; then
+        1>&2 echo -e "no pids matching \x1b[3;38;5;154memacs\x1b[0m processed bound to socket file \x1b[1;38;5;220m${socket}\x1b[0m"
+        exit $((404 % 255))
+    fi
+}
+
+update_pidfile() {
+    local -a up_argv=($@)
+    local -i up_argc=${!up_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -i pid=0
+    local -A pids=()
+    local -i now=$(date +%s)
+    for index in ${!up_argv[@]}; do
+        arg="${up_argv[$index]}"
+        if pid=$(awk '{ if ($pos ~ /^[0-9]+$/) { print $0; } else { exit 1; }}' <<<"${arg}") 2>/dev/random; then
+            pids+=(["${index}"]="${pid}")
+        fi
+    done
+    ps_regex="^\s*($(printf '%s|' ${pids[@]} | sed -E 's/[|]$//g'))\s+(.+)\s*\$"
+    set -x
+    local -a active_pids=($(ps axo pid,args | grep -E "${ps_regex}" | awk '{print $2}'))
+    set +x
+
+    local pidcount=${#active_pids[@]}
+    if [ ${pidcount} -gt 1 ]; then
+        1>&2 echo "[update_pidfile]" "ignoring extra pids: ${pids[@]:1}"
+        for val in ${active_pids[@]}; do
+            pid=${val}
+        done
+    fi
+    local pidfile_contents="${pid}:${now}"
+    if [ ${pid} -gt 0 ]; then
+        echo "${pidfile_contents}" >${emacs_d_boot_pidfile}
+    else
+        return 1
+    fi
+}
+read_pidfile() {
+    if [ ! -f "${emacs_d_boot_pidfile}" ] || [ ! -s "${emacs_d_boot_pidfile}" ]; then
+        update_pidfile
+        return 1
+    fi
+    regex='^([0-9]+):([0-9]+)$'
+    sed_command="/${regex}/{s/${regex}/\n\1\n\2\n/gp};t success q1;:success q0"
+    local -a pidfile_data=()
+    export IFS=$'\n'
+    pidfile_data=($(sed -n -E "${sed_command}" "${emacs_d_boot_pidfile}"))
+    if [ ${pidfile_data} -ne 2 ]; then
+        1>&2 echo "failed to read pidfile data from ${emacs_d_boot_pidfile@Q}, instead of 2 fields got $(printf '%sm ' ${pidfile_data[@]})"
+        return 1
+    else
+        printf '%s\n' ${pidfile_data[@]}
+    fi
+}
+
+get_emacs_pids() {
+    ps aux | grep -v grep | grep -E 'Emacs[.]app' | awk '{ print $2 }'
+}
+kill_emacs() {
+    local -a pidstokill=()
+    pidstokill=( $(get_emacs_pids) )
+    if [ ${#pidstokill[@]} -gt 0 ]; then
+        kill -9 ${pidstokill[@]}
+    fi
+}
 
 client() {
-    2>/dev/random /Applications/Emacs.app/Contents/MacOS/bin/emacsclient $*
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    require_socket_file_bound_to_any_pid
+    2>/dev/random /Applications/Emacs.app/Contents/MacOS/bin/emacsclient --socket-name "${socket}" ${argv[@]}
 }
 
 if [ "$0" == "${BASH_SOURCE[0]}" ]; then
-    delete_socket=
-    kill=
+    declare -- delete_socket=
+    declare -- kill=
 
     for arg in $@; do
         case "$arg" in
+            "-p")
+                echo "${exec}"
+                exit 0
+            ;;
             "-f")
                 delete_socket=true
                 kill=true
@@ -32,7 +140,7 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
                 ;;
             "-nw")
                 export EMACS_NO_SERVER=true
-                exec_args+=("${arg}")
+                declare -- exec_args+=("${arg}")
                 if [ ! -e "${homebrew_bin}" ]; then
                     1>&2 echo "${homebrew_bin@Q} does not exist"
                     exit 1
@@ -49,16 +157,16 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
                     1>&2 echo "${homebrew_bin@Q} is not executable"
                     exit 1
                 fi
-                exec=/opt/homebrew/bin/emacs
+                declare -- exec=/opt/homebrew/bin/emacs
                 ;;
             *)
-                exec_args+=("${arg}")
+                declare -- exec_args+=("${arg}")
                 ;;
         esac
     done
 
     if [ "$kill" == "true" ]; then
-        2>/dev/random 1>/dev/random g p -r Emacs -k
+        kill_emacs
     fi
     if [ "$delete_socket" == "true" ]; then
         2>/dev/random 1>/dev/random rm -f "$socket"

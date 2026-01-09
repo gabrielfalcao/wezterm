@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+
 libexec="$(dirname $BASH_SOURCE[0])/emacs"
 
 . "$libexec"
 
-client --socket-name "${socket}"  $*
+unset IFS
+
+client ${argv[@]}

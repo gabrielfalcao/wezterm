@@ -1,3 +1,1 @@
-#!/usr/bin/env bash
-set -e
-date +"%Y-%m-%d"
+/Users/gabrielfalcao/opt/libexec/now-cli

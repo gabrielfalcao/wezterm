@@ -1,6 +1,194 @@
-#!/usr/bin/env bash
-# shellcheck disable=SC2004,SC2206,SC2068,SC2086
+#!/opt/homebrew/bin/bash
 
+. ~/.shell.d/x.d/paths.sh
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -a dns_servers_ipv4=()
+if [[ -v DNS_SERVERS ]]; then
+    unset IFS
+    dns_servers_ipv4+=($(printf '%s\n' ${DNS_SERVERS[@]}))
+    export IFS=$'\n'
+fi
+
+declare -- action=""
+declare -a action_args=()
+declare -- backup_path="$HOME/*scratch*/Data/Backups/$(slugify-string '/Library/Preferences/SystemConfiguration')"
+declare -a filenames=("com.apple.airport.preferences.plist" "com.apple.wifi.message-tracer.plist" "com.apple.network.identification.plist" "com.apple.network.eapolclient.configuration.plist" "NetworkInterfaces.plist" "preferences.plist")
+declare -a backed_up=()
+declare -a not_found=()
+declare -- diagnostic_path="$HOME/workbench/$(date +'%Y-%M-%d')/wifi-diagnostic"
+declare -a known_opts=(
+    "on"
+    "up"
+    "down"
+    "off"
+    "reboot"
+    "restart"
+    "-h"
+    "--help"
+)
+
+export IFS=$'\n'
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+declare -- info_prefix_color_rgb="0;66;255"
+declare -- info_color_rgb="62;92;255"
+declare -- debug_prefix_color_rgb="50;255;106"
+declare -- debug_color_rgb="50;255;161"
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+unset TZ
+2>/dev/random mkdir -p "${diagnostic_path}"
+
+wifi_enable_all_logs() {
+    sudo wdutil log +dhcp +od +dns +eapol +wifi
+}
+
+wifi_diagnose() {
+    local -i started=0
+    local -i finished=0
+    local -- stderr=$(mktemp)
+    local -- stdout=$(mktemp)
+    local -- log_filename=""
+    local -i code=0
+    set -o pipefail
+    started=$(date +%s)
+
+    warn_prefixed 'wifi_diagnose' "2>${stderr} sudo wdutil diagnose -f \"${diagnostic_path}\" 1>${stdout}"
+    if ! 2>${stderr} sudo wdutil diagnose -f "${diagnostic_path}" | tee ${stdout}; then
+        code=$?
+    fi
+    finished=$(date +%s)
+    elapsed=$(($finished - $started))
+    log_basename="wifi-diagnostic-$(gdate +'%Y-%m-%d_%H-%M-%S_%Z' --date=@${started})"
+    log_stderr_filename="${log_basename}.stderr.log"
+    log_stdout_filename="${log_basename}.stdout.log"
+    stderr_dest_path="${diagnostic_path}/${log_stderr_filename}"
+    stdout_dest_path="${diagnostic_path}/${log_stdout_filename}"
+    mkdir -p $(dirname "${stderr_dest_path}")
+    if cp -f "${stderr}" "${stderr_dest_path}" && cp -f "${stderr}" "${stderr_dest_path}"; then
+        1>&2 echo -e "diagnostic saved to ${stderr_dest_path@Q} and ${stdout_dest_path@Q}"
+    else
+        mv_code=$?
+        1>&2 echo -e "error ${mv_code} moving stderr and stdout logs to destination paths:"
+        1>&2 echo -e "\t${stderr@Q} to ${stderr_dest_path@Q}"
+        1>&2 echo -e "\t${stdout@Q} to ${stdout_dest_path@Q}"
+    fi
+    git add -f "${diagnostic_path}" || true
+    return ${code}
+}
+
+wifi_fix() {
+    # https://www.reddit.com/r/MacOS/comments/1ijn5n9/comment/mhpvh9u/
+
+    # Open a Finder window. Press Command + Shift + G. Type the
+    # following path into the search box:
+    # /Library/Preferences/SystemConfiguration/ Delete the following
+    # files: com.apple.airport.preferences.plist
+    # com.apple.wifi.message-tracer.plist
+    # com.apple.network.identification.plist
+    # com.apple.network.eapolclient.configuration.plist
+    # NetworkInterfaces.plist preferences.plist
+
+    # FIRST, BACKUP
+    # mkdir -p
+
+    for name in ${filenames[@]}; do
+        plist_path="/Library/Preferences/SystemConfiguration/${name}"
+        if [ -f "${plist_path}" ]; then
+            if ! sudo cp -fv "${plist_path}" "${backup_path}"; then
+                break
+            else
+                backed_up+=("${plist_path}")
+            fi
+        else
+            not_found+=("${plist_path}")
+        fi
+    done
+
+    for index in ${!backed_up[@]}; do
+        path=${backed_up[$index]}
+        sudo rm -fv "${path}"
+    done
+    setmac
+    wifi_reboot
+}
 ctrlc() {
     stty sane
     1>&2 echo -e "\rAborted with Ctrl-C"
@@ -13,20 +201,7 @@ if [ "$(whoami)" != "root" ]; then
     sudo $0 $@
     exit $?
 fi
-declare -a argv=($@)
-declare argc=${#argv}
 
-declare -a known_opts=(
-    "on"
-    "up"
-    "down"
-    "off"
-    "reboot"
-    "restart"
-    "-h"
-    "--help"
-)
-declare -a action_args=()
 
 usage() {
     stty sane
@@ -35,10 +210,7 @@ usage() {
 
 if [ ${#argv} -gt 0 ]; then
     for arg in ${argv[@]}; do
-        if [ -n "${action}" ]; then
-            action_args+=("${arg}")
-            continue
-        fi
+        arg=$(sed -E 's/(^\s*|\s*$)//g' <<<"${arg}")
         case "${arg}" in
             "--help" | "-h")
                 usage
@@ -47,20 +219,36 @@ if [ ${#argv} -gt 0 ]; then
             "up" | "on")
                 action="on"
                 ;;
+            setup*log* | log*setup | configure*log* | enable*all*log*)
+                action="enable_all_logs"
+                ;;
+            "diag" | "diagnose" | "diagnostic" | "diagnostics")
+                action="diagnose"
+                ;;
             "down" | "off")
                 action="off"
+                ;;
+            "fix")
+                action="fix"
                 ;;
             "restart" | "reboot")
                 action="reboot"
                 ;;
             *)
-                1>&2 echo -e "unknown option: ${arg@Q}"
-                1>&2 usage
-                exit 1
+                if 2>/dev/random 1>/dev/random grep -E '^([0-9]{1,3}[.])+([0-9]{1,3})' <<<"${arg}"; then
+                    dns_servers_ipv4+=("${arg}")
+                else
+                    action_args+=("${arg}")
+                fi
+                continue
                 ;;
         esac
     done
 fi
+if [ ${#dns_servers_ipv4[@]} -eq 0 ]; then
+    dns_servers_ipv4+=("127.0.0.1")
+fi
+
 
 sleep_for() {
     seconds="${1}"
@@ -68,14 +256,14 @@ sleep_for() {
         1>&2 echo -e "sleep_for - missing argument: <SECONDS>"
         exit 1
     fi
-    if ! 1>/dev/random 2>/dev/random grep '^[0-9]\+$' <<< "${seconds}"; then
+    if ! 1>/dev/random 2>/dev/random grep '^[0-9]\+$' <<<"${seconds}"; then
         1>&2 echo -e "sleep_for - invalid argument, not a number: ${seconds@Q}"
         exit 1
     fi
     1>/dev/random 2>/dev/random stty -echo || true
     echo -e "waiting ${seconds}s"
-    for int in $(seq $(( 1 + $seconds ))); do
-        delta=$(( ${seconds} - ${int} + 1 ))
+    for int in $(seq $((1 + $seconds))); do
+        delta=$((${seconds} - ${int} + 1))
         echo -e "\x1b[A\rwaiting ${delta}s"
         sleep 1
     done
@@ -90,7 +278,8 @@ wifi_on() {
 }
 wifi_reboot() {
     local sleep_seconds=""
-    for arg in ${action_args[@]}; do
+    for index in ${!action_args[@]}; do
+        arg=${action_args[$index]}
         if [ -n "${sleep_seconds}" ]; then
             1>&2 echo "wifi_reboot: invalid argument ${arg@Q}. sleep_seconds argument already set to ${sleep_seconds}"
             exit 1
@@ -98,7 +287,7 @@ wifi_reboot() {
         if num_value=$(ack '^\s*\d+\s*$' <<<"${arg}"); then
             sleep_seconds=${num_value}
         else
-            1>&2 echo "wifi_reboot: ignoring unknown argument ${arg@Q}."
+            1>&2 echo "wifi_reboot: ignoring unknown argument ${arg}."
         fi
     done
     if [ -z "${sleep_seconds}" ]; then
@@ -107,20 +296,30 @@ wifi_reboot() {
     wifi_off
     sleep_for ${sleep_seconds}
     wifi_on
-    networksetup -setdnsservers Wi-Fi 127.0.0.1
+    networksetup -setdnsservers Wi-Fi ${dns_servers_ipv4[@]}
 }
+
 case "${action}" in
     "on")
         wifi_on
         ;;
-    "restart"|"reboot")
+    "enable_all_logs")
+        wifi_enable_all_logs
+        ;;
+    "diagnose")
+        wifi_diagnose
+        ;;
+    "restart" | "reboot")
         wifi_reboot
         ;;
     "off")
         wifi_off
         ;;
+    "fix")
+        wifi_fix
+        ;;
     *)
-        1>&2 echo -e "invalid action: ${action@Q}"
+        1>&2 echo -e "invalid action: ${action[@]@Q}"
         1>&2 usage
         exit 1
         ;;

@@ -4,4 +4,5 @@ set -e
 set -o pipefail
 set -u
 
-wifi reboot 1
+wifi reboot 0
+setmac

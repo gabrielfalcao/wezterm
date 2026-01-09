@@ -1,7 +1,1 @@
-#!/bin/sh
-
-if [ -t 1 ]; then
-    date +"%Y-%m-%d at %H.%M.%S %p"
-else
-    date +"%Y-%m-%d at %H.%M.%S %p" | sed 's/\s*$//g'
-fi
+/Users/gabrielfalcao/opt/libexec/now-cli

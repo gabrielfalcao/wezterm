@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+export PATH=/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/Users/gabrielfalcao/.dotnet/tools:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/openssl@3/3.3.2/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/opt/g/libexec:/opt/libexec:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:/Applications/Ghostty.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+umask 000
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
 
 if [ "$(whoami)" != "root" ]; then
     sudo $0 $@
@@ -7,16 +20,32 @@ fi
 unset IFS
 set -e
 
+declare -a main_argv=($@)
+declare -i main_argc=${#main_argv[@]}
+declare -i code=0
 set -o pipefail
 error_prefix_color_rgb="$((0xFF));$((0x00));$((0x42))"
 error_color_rgb="$((0xFF));$((0x32));$((0x32))"
 error_color_rgb="$((0xFF));$((0x3E));$((0x5C))"
 warn_prefix_color_rgb="$((0xFF));$((0x6A));$((0x32))"
 warn_color_rgb="$((0xFF));$((0xA1));$((0x32))"
+declare -i now=$(date +%s)
+declare -i report_status_running=1
+declare -- dnsmasq_log_path=/var/log/dnsmasq.log
+declare -- function_log_dir="$HOME/opt/var/log/dns-server"
+declare -- stderr="${function_log_dir}/stderr.${now}.log"
+declare -- dnsmasq_conf_path=/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+declare -- conf_parent_path=$(dirname "${dnsmasq_conf_path}")
+declare -- conf_filename=$(basename "${dnsmasq_conf_path}")
 
-declare dnsmasq_log_path=/var/log/dnsmasq.log
-
+mkdir -p "${function_log_dir}"
 on_exit() {
+    chown -R gabrielfalcao ${function_log_dir} /opt/homebrew/etc/
+    find ${dnsmasq_log_path} -type d -exec chmod 755 {} \;
+    find ${dnsmasq_log_path} -type f -exec chmod 755 {} \;
+    find ${function_log_dir} -type d -exec chmod 755 {} \;
+    find ${function_log_dir} -type f -exec chmod 755 {} \;
+
     2>/dev/random stty sane
 }
 on_ctrlc() {
@@ -47,17 +76,20 @@ function execute-if-exists() {
     fi
 }
 extract_domain() {
-    name=$(sed -E 's,^(https?://)?([^/]+)([/].*)?$,\2,g' <<< "${name}")
-
+    name=$(sed -E 's,^(https?://)?([^/]+)([/].*)?$,\2,g' <<< "${@}")
+    echo "${name}"
 }
 stop() {
-    2>/dev/null 1>/dev/null g p -qr dns -k
+    2>/dev/null 1>/dev/null g p -qr dnsmasq -k
     2>/dev/null 1>/dev/null g p -qr tcpdump -k
     1>&2 echo -e "dns-server stopped"
 }
 
 server_pids() {
     export IFS=$'\n'
+    # 1>&2 echo -e "\x1b[1;38;5;220m${FUNCNAME[@]@A}\x1b[0m"
+    # 1>&2 echo -e "\x1b[1;38;5;231m${LINENO[@]@A}\x1b[0m"
+    # 1>&2 echo -e "\x1b[1;38;5;242m${BASH_LINENO[@]@A}\x1b[0m"
     local -a running=($(ps aux | grep -v grep | grep -E '/opt/dnsmasq/sbin/dnsmasq' | awk '{print $2}'))
     unset IFS
     if [ ${#running[@]} -eq 0 ]; then
@@ -68,8 +100,9 @@ server_pids() {
 start_bg() {
     local -a pids=()
     local -i server_pid=0
+    local -- stderr=$(mktemp)
     if ! pids=($(server_pids)); then
-        if ! dnsmasq --test -C /opt/homebrew/etc/dnsmasq.conf; then
+        if ! validate_main_conf; then
             return 1
         fi
         /opt/homebrew/opt/dnsmasq/sbin/dnsmasq '--keep-in-foreground' '-C' '/opt/homebrew/etc/dnsmasq.conf' '-7' '/opt/homebrew/etc/dnsmasq.d,*.conf' &
@@ -82,7 +115,7 @@ start_bg() {
 }
 wait_activity() {
     local -i timeout_secs=10
-    local -i started_ts=$(date +%s)
+    local -i started_ts=${now}
     local -i current_ts=${started_ts}
     local -i prev_count=$(cat /var/log/dnsmasq.log | wc -l)
     local -i curr_count=${prev_count}
@@ -92,7 +125,7 @@ wait_activity() {
         curr_count=$(cat /var/log/dnsmasq.log | wc -l)
         1>&2 echo -e "waiting for dnsmasq log activity"
         2>/dev/null 1>/dev/null /usr/bin/curl --max-time ${interval} --connect-timeout ${interval} --expect100-timeout ${interval} --happy-eyeballs-timeout-ms ${interval} -q "https://nsa.gov" || sleep ${interval}
-        current_ts=$(date +%s)
+        current_ts=${now}
     done
     local -i elapsed_seconds=$(( $current_ts - $started_ts ))
     if [ ${elapsed_seconds} -gt ${timeout_secs} ]; then
@@ -103,19 +136,34 @@ wait_activity() {
 }
 start() {
     local -a pids=()
+    pids=($(server_pids))
     local -i started=0
-    until pids=($(server_pids)) && [ ${#pids[@]} -gt 0 ]; do
+    # local -i started=${#pids[@]}
+
+    until [ ${#pids[@]} -gt 0 ]; do
         if ! (( $started )); then
             start_bg
             started=1
         fi
         wait_activity
+        pids=($(server_pids))
     done
-    if pids=($(server_pids)) && [ ${#pids[@]} -gt 0 ]; then
+    if [ ${#pids[@]} -gt 0 ] && (( $report_status_running )); then
         1>&2 echo -e "dns-server running"
+        report_status_running=0
     fi
 }
+validate_main_conf() {
+    local -- stderr=$(mktemp)
+    local -i code=0
+    if ! 2>${stderr} dnsmasq --test -C /opt/homebrew/etc/dnsmasq.conf; then
+        1>&2 echo -e "dnsmasq config error: $(cat ${stderr})"
+        code=$?
+    fi
+    return ${code}
+}
 restart() {
+
     logrotate_path="/var/log/dnsmasq.$(now).log"
     if [ -r "${dnsmasq_log_path}" ] || [ -s "${dnsmasq_log_path}" ]; then
         mv -f "${dnsmasq_log_path}" "$logrotate_path"
@@ -124,9 +172,8 @@ restart() {
         touch "${dnsmasq_log_path}"
         chmod 644 "${dnsmasq_log_path}"
     fi
-    dnsmasq --test -C /opt/homebrew/etc/dnsmasq.conf \
+    validate_main_conf \
         && stop \
-        && start \
         && start \
         && refresh $@
     if [ -f "${logrotate_path}" ]; then
@@ -139,38 +186,49 @@ restart_help() {
 }
 
 logs() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+
+
     if [ -f "${dnsmasq_log_path}" ]; then
         chmod 644 "${dnsmasq_log_path}"
     else
         1>&2 echo -e "cannot read dnsmasq logs, file does not exist: ${log_path@Q}"
         exit 1
     fi
-    local -i amount=0
+    local -i amount=37
 
-    if 1>/dev/random ack '^[0-9]+$' <<< "${1}"; then
-        local -i amount="${1}"
+    if [ ${argc} -gt 0 ] && [[ "${argv[0]}" =~ ^[0-9]+$ ]]; then
+        amount=${argv[@]:0:1}
     fi
-    local -a args=()
+    local -a tail_call=("$(builtin type -t -P tail)")
     if [ ${amount} -gt 0 ]; then
-        args=("-${amount}f")
+        tail_call+=("-${amount}f")
     else
-        args=("-f")
+        tail_call+=("-f")
     fi
-    local regexp_exclusions="$(rot13 <<<'/Gq6JSbNNNGz1eETOZN+BvROStNNNNNNNNNNNATiA4xONQypXTMlo21oJmcmpTSwMGcqKIjeJmNgBHRgEzRgMy1pX1k8GyuRG01OFH5psT9hoUypsR5CERSHDIjcNNNNF4rRV6df9+ZNNIb6E9arcu+2830ONNNNNNEMJt==' | base64 -d | unxz)"
-    tail ${args[@]} "${dnsmasq_log_path}" | grep -v "${regexp_exclusions}"
+    tail_call+=("${dnsmasq_log_path}")
+    local -- regexp_exclusions='(from[[:space:]]+[0-9A-Fa-f]+|NXDOMAIN|only|NODATA)'
+    ${tail_call[@]} | grep -v -E  "${regexp_exclusions}"
 }
 logs_help() {
     1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m logs \x1b[1;38;5;241m[#log lines]\x1b[0m"
 }
 
 refresh() {
-    2>/dev/random killall -HUP mDNSResponder
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    1>/dev/random 2>/dev/random killall -HUP mDNSResponder
     dscacheutil -flushcache
-    2>/dev/random killall -HUP mDNSResponder
+    1>/dev/random 2>/dev/random killall -HUP mDNSResponder
     g p -S 1 -qr mDNSResponder -k
     2>/dev/random killall -HUP mDNSResponder
-    if [ -n "$1" ] && [ "$(($1 + 0))" -gt 0 ]; then
-        logs "${1}"
+    if [ ${argc} -gt 0 ]; then
+        logs ${argv[@]}
     fi
 }
 refresh_help() {
@@ -245,10 +303,18 @@ cf_prettified_json() {
 cfquery() {
     local -- response=""
     local -- filtered=""
-    local -- stderr=$(mktemp)
     local -- jq_args=('-M' '-r' '.Answer[].data')
 
-    response="$(cf_prettified_json "${@}")"
+    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<< "${@}")
+
+    slug=cfquery/$(slugify-string "${name}")
+    response="$(cf_prettified_json "${name}")"
+
+    json_path="${function_log_dir}/${slug}.${now}.json"
+    log_path="${function_log_dir}/${slug}.${now}.log"
+    echo "${response}" > "${json_path}"
+    echo "jq ${jq_args[@]} <<< \"${response}\"" > "${log_path}"
+
     if ! filtered=$(2>${stderr} jq ${jq_args[@]} <<< "${response}"); then
         code=$?
         1>&2 echo -e "command failed: jq ${jq_args[@]} with input=${response@Q}"
@@ -256,23 +322,163 @@ cfquery() {
         1>&2 cat "${stderr}"
         exit $${code}
     else
-        if ! rg '[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+' <<< "${filtered}"; then
-            exit $?
-        fi
+        echo -e "${name}"
+        echo -e "${filtered}"
+        # if ! rg '[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+' <<< "${filtered}"; then
+        #     exit $?
+        # fi
     fi
 
 }
-wl() {
+wl_content() {
     name="$1"
     if [ -z "$name" ]; then
         exit 11
     fi
     name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<< "${name}")
-    data=$(cfquery "$name")
-    for row in ${data}; do
-        echo -e "\n# <$name $(date +%s)>\naddress=/$name/$row\n# </$name $(date +%Y%m%d)>" >>/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+    slug=wl/$(slugify-string "${name}")
+    local -a ipv4_addresses=()
+    local -a data=()
+    export IFS=$'\n'
+    ipv4_addresses=($(cfquery "$name" | grep -E '[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}'))
+    ts=$(gdate --iso-8601=seconds --date=@${now})
+    data=($(printf "address=/${name}/%s # ${ts}\n" ${ipv4_addresses[@]}))
+    log_path="${function_log_dir}/${slug}.${now}.log"
+
+    echo -e "\n#\n# <$name st ${ts}>\n"
+    printf '%s\n' ${data[@]}
+    echo -e "\n# </$name st ${ts}>\n"
+}
+
+git_command_at_path() {
+    local -- stderr=$(mktemp)
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- path=""
+    local -- git_command=""
+    local -- git_repo_path=""
+    local -a git_args=()
+    # 1>&2 echo -e "\x1b[1;38;5;220m${FUNCNAME} ${argv[@]}\x1b[0m"
+    # 1>&2 echo -e "\x1b[1;38;5;231m${argv[@]@A}\x1b[0m"
+    local -i index=0
+    local -i code=0
+    for index in ${!argv[@]}; do
+        current=$(( index + 1 ))
+        arg=${argv[$index]}
+        err_prefix="[${current}/${argc}]"
+        case "${index}" in
+            0)
+                path="${arg}"
+                if [ ! -d "${path}" ]; then
+                    1>&2 echo -e "${err_prefix}${FUNCNAME[0]} invalid <PATH> argument (not a directory): ${path@Q}"
+                    return 1
+                fi
+                if ! git_repo_path=$(cd "${path}" && 2>${stderr} git rev-parse --show-toplevel); then
+                    code=$?
+                    1>&2 echo -e "${err_prefix}${FUNCNAME[0]} invalid <PATH> argument (not in a git repo): ${path@Q}"
+                    1>&2 echo -e "${err_prefix}$(cat "${stderr}")"
+                    return ${code}
+                fi
+                git_prefix_path=$(cd "${path}" && git rev-parse --show-prefix)
+                if [ -n "${git_prefix_path}" ]; then
+                    path="${git_prefix_path}"
+                fi
+                ;;
+            1)
+                git_command="${arg}"
+                ;;
+            *)
+                git_args+=("${arg}")
+            ;;
+        esac
     done
-    echo $data
+    if [ -z "${path}" ]; then
+        1>&2 echo -e "${FUNCNAME[0]} missing argument <PATH>"
+        return 1
+    elif [ -z "${git_command}" ]; then
+        1>&2 echo -e "${FUNCNAME[0]} missing argument <GIT_COMMAND>"
+        return 1
+    fi
+    local -- stdout=$(mktemp)
+    local -a full_cmd=(git ${git_command} ${git_args[@]})
+    if ! (cd ${path} && 2>${stderr} 1>${stdout} ${full_cmd[@]}); then
+        code=$?
+        if [ ${code} -ne 0 ]; then
+            1>&2 echo -e "running command \`${full_cmd[@]}\' in path ${path@Q} failed exit code ${code}"
+            1>&2 echo -e "$(cat ${stderr})"
+            cat ${stdout}
+            return ${code}
+        fi
+    fi
+    cat ${stdout}
+}
+conf_file_changed() {
+    if ! changed=$(git_command_at_path "${conf_parent_path}" status --porcelain | awk '{ print $NF }' | grep -E "^${conf_filename//./[.]}\$"); then
+        return $?
+    fi
+}
+commit_conf_file() {
+    local -a prefix=()
+    local -- subject="${@}"
+    local -- message=""
+    local -a parts=()
+    local -- stderr=$(mktemp)
+    if [ -z "${subject}"  ]; then
+        prefix=(
+            "${script_name}"
+            ${main_argv[@]}
+        )
+        parts=(
+            ${prefix[@]}
+            "saves"
+            "${conf_filename}"
+        )
+    else
+        parts=(
+            "${subject}"
+        )
+    fi
+    message=$(printf "%s " ${parts[@]} | sed -E 's/\s+$//g')
+    log_path="${function_log_dir}/${FUNCNAME[0]}.${now}.log"
+    stderr="${function_log_dir}/${FUNCNAME[0]}.${now}.stderr.log"
+
+    if ! output=$(git_command_at_path "${conf_parent_path}" commit ${conf_filename} -m "${message}"); then
+        return $?
+    fi
+}
+wl() {
+    local -a wl_argv=($@)
+    local -i wl_argc=${#wl_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+    if [ ${wl_argc} -eq 0 ]; then
+        1>&2 echo -e "${script_name} ${FUNCNAME[0]}" "missing argument <NAME OR URL>"
+        exit 1
+    fi
+
+    name=$(extract_domain "${wl_argv[@]:0:1}")
+    local -- content=""
+    export IFS=$'\n'
+
+    if conf_file_changed; then
+        if ! commit_conf_file "save conf prior to running \"dns-server wl ${name@Q}\""; then
+            code=$?
+            1>&2 echo "failed (${code}) to commit ${dnsmasq_conf_path}"
+        fi
+    fi
+
+    sed -E "/address=\/${name//./[.]}\//d" -i ${dnsmasq_conf_path}
+    sed -E "/^\s*[#]\s*[<][\/]?${name//./[.]}/d" -i ${dnsmasq_conf_path}
+    wl_content "${name}" | sed -E '/^\s*$/d' | sed -E 's/^[#]$/\n/g' >>${dnsmasq_conf_path}
+    if conf_file_changed; then
+        if ! commit_conf_file "save conf after running \"dns-server wl ${name@Q}\""; then
+            code=$?
+            1>&2 echo "failed (${code}) to commit ${dnsmasq_conf_path}"
+        fi
+    fi
+
     restart
 }
 
@@ -282,7 +488,7 @@ block() {
         exit 11
     fi
     row=23.50.77.69
-    echo -e "\n# <block $name $(date +%s)>\naddress=/$name/$row\n# </block $name $(date +%Y%m%d)>" >>/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+    echo -e "\n# <block $name ${now}>\naddress=/$name/$row\n# </block $name $(gdate +%Y%m%d --date=@${now})>" >>${dnsmasq_conf_path}
     echo "blocked: ${name}"
     restart
 }

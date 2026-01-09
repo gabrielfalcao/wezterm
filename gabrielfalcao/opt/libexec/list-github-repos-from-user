@@ -2,7 +2,7 @@
 
 . $HOME/opt/lib/ansi.sh
 set -e
-
+export IFS=$'\n'
 
 base_url="https://github.com/"
 url=""
@@ -136,11 +136,11 @@ if [ ${#argv} -gt 0 ]; then
         esac
     done
 fi
-query+=( "sort=" )
+
 
 if url="$(get_url)"; then
-    set -ex
-    quick-css-select "${url}" 'h3 a[href]' --attr href
+    echo quick-css-select '"$(pbpaste)"' 'h3 a[href]' --attr href
+#     quick-css-select "${url}" 'h3 a[href]' --attr href
 else
     exit 1
 fi

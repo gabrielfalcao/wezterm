@@ -113,7 +113,7 @@ def hex_to_int(value: str) -> int:
 
 
 def get_valid_rgb_hex_bands(param: str, ctx=None) -> (str, str, str):
-    string, length = get_valid_hex_string(param)
+    string, length = get_valid_hex_string(param, ctx=ctx)
     if length == 3:
         string = "".join(
             chain(*list(map(list, (map(partial(repeat, times=2), color)))))

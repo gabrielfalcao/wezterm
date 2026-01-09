@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
+set -umeTE
+set +f
+set -o pipefail
 
 . $HOME/opt/lib/ansi.sh
-remote_name="linux"
-stty sane
+
 if ! git_repo=$(2>/dev/random git rev-parse --show-toplevel); then
     1>&2 echo -e "$(pwd) not in a git repo"
     exit 1
 fi
-
 ctrlc() {
     stty sane
     1>&2 bar_text_left 167 235 "\rCanceled with Ctrl-C"
@@ -16,7 +17,13 @@ ctrlc() {
 trap ctrlc int
 
 declare -a argv=($@)
-declare argc=${#argv}
+declare -i argc=${#argv[@]}
+declare -- ssh_host="pi"            #linux
+declare -- ssh_user="gabrielfalcao" #davinci
+declare -- ssh_host="linux"            #linux
+declare -- ssh_user="davinci" #davinci
+declare -- ssh_home_path="/home/${ssh_user}"
+declare -- remote_name="${ssh_host}"
 
 declare -a known_opts=(
     "-a"
@@ -44,11 +51,27 @@ declare -a known_opts=(
 )
 action="add"
 
-declare preferable_git_remote_bare_dot_git="$(basename ${git_repo}).git"
+if 1>/dev/random 2>/dev/random grep -E "^${HOME}/" <<< "${git_repo}"; then
+    declare -- preferable_git_remote_bare_dot_git="~$(slugify-string "${git_repo##${HOME}/}").git"
+else
+    declare -- preferable_git_remote_bare_dot_git="~$(slugify-string "${git_repo}").git"
+fi
+
+if [ ${#preferable_git_remote_bare_dot_git} -gt 250 ]; then
+    preferable_git_remote_bare_dot_git=$(sed -E 's/^([^[:space:]]{201}).*?([^[:space:]]{42})$/\1...\2/g' <<< "${preferable_git_remote_bare_dot_git}")
+fi
+
+# # export PS4='${BASH_SOURCE[0]}  ${LINENO[0]}  '
+# # set -x
+# #
+# bar_text_left 154 233 "preferable_git_remote_bare_dot_git"
+# bar_text_left 233 154 "${preferable_git_remote_bare_dot_git}"
+# exit
+
 usage() {
     bar_text_left 233 231 "USAGE: $(basename $0) [$(echo -ne "${known_opts[@]}" | sed "s/\([-]\{1,\}[a-zA-Z0-9_]\+\)/$(ansi 233 222 "[\1]")$(ansi 233 231)/g")]"
 }
-if [ ${#argv} -gt 0 ]; then
+if [ ${argc} -gt 0 ]; then
     for arg in ${argv[@]}; do
         case "${arg}" in
             "--help" | "-h")
@@ -75,6 +98,7 @@ if [ ${#argv} -gt 0 ]; then
 fi
 
 git_push_mirror() {
+    2>/dev/random 1>/dev/random ssh-ag
     local stderr=$(mktemp)
     local stdout=$(mktemp)
     local -a git_cmd=( git push --mirror ${remote_name} )
@@ -96,6 +120,7 @@ git_push_mirror() {
     fi
 }
 git_push_track() {
+    2>/dev/random 1>/dev/random ssh-ag
     local stderr=$(mktemp)
     local stdout=$(mktemp)
     local -a git_cmd=( git push -u "${remote_name}" )
@@ -140,12 +165,12 @@ git_set_default_branch_for_remote() {
     fi
 }
 ensure_preferable_remote_exists() {
-    if ! ssh linux "test -d ~/projects/${preferable_git_remote_bare_dot_git}"; then
+    if ! ssh ${ssh_host} "test -d ~/projects/${preferable_git_remote_bare_dot_git}"; then
         stty -echo
         bar_text_left 235 220 "remote repo $(ansi_spaced 220 235 "${preferable_git_remote_bare_dot_git}")$(ansi_spaced 235 220 "creating")"
         stderr=$(mktemp)
         stdout=$(mktemp)
-        if 2>${stderr} 1>${stdout} ssh linux "git init --bare ~/projects/${preferable_git_remote_bare_dot_git}"; then
+        if 2>${stderr} 1>${stdout} ssh ${ssh_host} "git init --bare ~/projects/${preferable_git_remote_bare_dot_git}"; then
             stty sane
             ansi_up
             bar_text_left 235 154 "remote repo $(ansi_spaced 154 235 "${preferable_git_remote_bare_dot_git}")$(ansi_spaced 235 154 "created")"
@@ -162,16 +187,16 @@ ensure_preferable_remote_exists() {
 }
 add_remote() {
     if current_remote="$(2> /dev/random git remote get-url "${remote_name}")"; then
-        # 1>&2 bar_text_left 235 220 "ERROR: git remote $(ansi_spaced 220 235 "${remote_name}")$(ansi_spaced 235 220 "already set to")$(ansi_spaced 220 235 "${current_remote}")$(ansi 235 220 '')"
+        1>&2 bar_text_left 235 220 "ERROR: git remote $(ansi_spaced 220 235 "${remote_name}")$(ansi_spaced 235 220 "already set to")$(ansi_spaced 220 235 "${current_remote}")$(ansi 235 220 '')"
         git_push_track
         exit 1
     fi
 
-    if ! remote_user="$(2> /dev/random ssh linux echo '$USER')"; then
+    if ! remote_user="$(2> /dev/random ssh ${ssh_host} echo '$USER')"; then
         bar_text_left 231 196 "ERROR: failed to retrieve remote username"
         exit 1
     fi
-    if ! remote_home="$(2> /dev/random ssh linux echo '$HOME')"; then
+    if ! remote_home="$(2> /dev/random ssh ${ssh_host} echo '$HOME')"; then
          1>&2 bar_text_left 231 196 "ERROR: failed to retrieve remote homename"
         exit 1
     fi
@@ -198,7 +223,7 @@ add_remote() {
                         git_push_mirror
                     fi
                     git_set_default_branch_for_remote
-                    # if ssh linux bash -c 'cd $HOME/projects/ ' && git config receive.denyCurrentBranch ignore; then
+                    # if ssh ${ssh_host} bash -c 'cd $HOME/projects/ ' && git config receive.denyCurrentBranch ignore; then
                     #     bar_text_left CONFIGURED
                     # fi
                 else
@@ -228,7 +253,7 @@ add_remote() {
                     bar_text_left 235 154 "added remote $(ansi_spaced 154 235 "${remote_name}")$(ansi_spaced 235 159 "${full_git_remote}")"
                     git_push_mirror
                     git_push_track
-                    # if ssh linux bash -c 'cd $HOME/projects/ ' && git config receive.denyCurrentBranch ignore; then
+                    # if ssh ${ssh_host} bash -c 'cd $HOME/projects/ ' && git config receive.denyCurrentBranch ignore; then
                     #     bar_text_left CONFIGURED
                     # fi
                 else
@@ -245,8 +270,8 @@ add_remote() {
 }
 list_remotes() {
     if remote_host="$(ssh-config-list connection-string "${remote_name}" -n | head -1)"; then
-        for path in $(ssh linux 'find ~/projects -type d -name "*.git" -not -name .git'); do
-            path=${path##/home/davinci/}
+        for path in $(ssh ${ssh_host} 'find ~/projects -type d -name "*.git" -not -name .git'); do
+            path=${path##${ssh_home_path}}
             echo "${remote_host}:${path}"
         done
     else

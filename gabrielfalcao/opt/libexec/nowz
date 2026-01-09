@@ -1,6 +1,1 @@
-#!/bin/sh
-if [ -t 1 ]; then
-    date +"%Y-%m-%d-%H%M%S-%Z%z"
-else
-    date +"%Y-%m-%d-%H%M%S-%Z%z" | tr -d '[:space:]'
-fi
+/Users/gabrielfalcao/opt/libexec/now-cli

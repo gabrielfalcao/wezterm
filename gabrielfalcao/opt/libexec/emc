@@ -6,9 +6,9 @@ libexec="$(dirname $BASH_SOURCE[0])/emacs"
 
 declare -a files=()
 declare -a params=()
-declare create="false"
-declare open="false"
-declare boot="false"
+declare -- create="false"
+declare -- open="false"
+declare -- boot="false"
 
 emacs_is_open() {
     if [ -z "$(ps aux | 2>/dev/random ack '(Applications/Emacs[.]app|emacs)' | ack -v ack)" ]; then
@@ -95,12 +95,12 @@ for arg in $@; do
 done
 
 if ! g p -q -r Emacs; then
-    $libexec ${params[*]} &
+    bash $libexec ${params[*]} &
     disown -h
     disown -a
     2>/dev/null 1>/dev/null wait3 command "test -S ${socket}"
 elif [ ! -S "${socket}" ]; then
-    $libexec -f &
+    bash $libexec -f &
     disown -h
     disown -a
     wait3 command "test -S ${socket}"

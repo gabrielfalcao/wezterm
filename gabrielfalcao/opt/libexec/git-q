@@ -1,3 +1,235 @@
 #!/usr/bin/env bash
 
-2>/dev/null 1>/dev/null git commit -am "$(t16g)" || 2>/dev/null 1>/dev/null git commit -am "$(t16g)"
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -- git_repo_path=""
+declare -i exit_code=0
+declare -- curdir=$(pwd)
+declare -- stderr=$(mktemp)
+declare -- stdout=$(mktemp)
+declare -- commit_message=""
+declare -- proceed=""
+declare -i skip_commit=0
+
+declare -- error_prefix_color_rgb="239;41;41"
+declare -- error_color_rgb="204;0;0"
+
+declare -- achtung_prefix_color_rgb="245;121;0"
+declare -- achtung_color_rgb="206;92;0"
+
+declare -- warn_prefix_color_rgb="252;233;79"
+declare -- warn_color_rgb="237;212;00"
+
+declare -- info_prefix_color_rgb="52;101;164"
+declare -- info_color_rgb="114;159;207;"
+
+declare -- msg_prefix_color_rgb="186;189;182"
+declare -- msg_color_rgb="136;138;133"
+
+declare -- display_prefix_color_rgb="238;238;236"
+declare -- display_color_rgb="211;215;207"
+
+declare -- debug_prefix_color_rgb="138;226;52"
+declare -- debug_color_rgb="115;210;22"
+
+on_exit() {
+    rm -f "${stderr}"
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+
+achtung_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${achtung_prefix_color_rgb}m${prefix}\x1b[1;38;2;${achtung_color_rgb}m ${message}\x1b[0m"
+}
+achtung() {
+    local -- linenum="${BASH_LINENO[0]}"
+    achtung_prefixed "[achtung]  [${script_name}:${linenum}]" "${@}"
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+msg() {
+    local -- linenum="${BASH_LINENO[0]}"
+    msg_prefixed "[msg]  [${script_name}:${linenum}]" "${@}"
+}
+msg_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${msg_prefix_color_rgb}m${prefix}\x1b[1;38;2;${msg_color_rgb}m ${message}\x1b[0m"
+}
+display() {
+    local -- linenum="${BASH_LINENO[0]}"
+    display_prefixed "[display]  [${script_name}:${linenum}]" "${@}"
+}
+display_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${display_prefix_color_rgb}m${prefix}\x1b[1;38;2;${display_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+process_argv() {
+    repl no echo
+    if ! git_repo_path=$(git rev-parse --show-toplevel); then
+        error_prefixed "[${script_name} error]" "${curdir@Q} is not a git repo"
+        exit 1
+    fi
+
+    if [ ${argc} -gt 1 ]; then
+        commit_message="$(printf '%s\n\n' "${argv[@]:0:1}")$(printf '%s\n' "${argv[@]:1}")"
+    elif [ ${argc} -eq 1 ]; then
+        commit_message=$(printf '%s\n' "${argv[@]}")
+    elif 1>${stdout} grep -E "${HOME}/workbench" <<<"${curdir}"; then
+
+        commit_message="saves state of workbench \"$(basename ${curdir})\" at $(gdate --utc +"%H:%M:%S") UTC"
+    else
+        local -- location_type=""
+
+        case "${curdir}" in
+            */projects/**/tool/*)
+                location_type="tool project"
+                ;;
+            */projects/**/sandbox/*)
+                location_type="sandbox \042project\042"
+                ;;
+            */projects/personal/*)
+                location_type="personal project"
+                ;;
+            */projects/third_party/* | */projects/**/3pty/*)
+                location_type="third-party project"
+                ;;
+            */projects/work/*)
+                location_type="work project"
+                ;;
+        esac
+        if [ -n "${location_type}" ]; then
+            location_type=$(echo -e "${location_type}")
+            commit_message="saves state of ${location_type} \"$(basename ${curdir})\" at $(gdate --utc +"%H:%M:%S") UTC"
+        else
+            commit_message="$(t16g)"
+        fi
+    fi
+    repl sane
+}
+
+main() {
+    local -a git_cmd=(git commit -am "${commit_message}")
+    # local -- result=""
+    # until [ -n "${proceed}" ] && 1>/dev/random grep -E '(y(e[ps])?|no?)' <<< "${proceed}"; do
+    #     read -p "$(echo -e "commit message will be:\n\x1b[1;48;5;220m\x1b[1;38;5;233m${commit_message@Q}\x1b[0m\n\nproceeed? [\x1b[1;38;5;112myes\x1b[0m/\x1b[1;38;5;196mno\x1b[0m]")" proceed
+    # done
+
+    # case "${proceed@L}" in
+    #     yes|yep|y)
+    #         skip_commit=0
+    #         ;;
+    #     no|n)
+    #         exit 1
+    #         ;;
+    # esac
+
+    if ! 2>${stderr} 1>${stdout} git commit -am "${commit_message}"; then
+        exit_code=$?
+        error_prefixed "[git error]" "${git_cmd[@]}"
+        error_prefixed "[git error]" "$(cat ${stderr})"
+        exit ${exit_code}
+    elif ! result=$(git log -1 --format='commited %H\n\n%B'); then
+        exit_code=$?
+        warn_prefixed "[git warn]" "git commit succeeded but git log failed with status ${exit_code}"
+    else
+        echo -e "${result}"
+    fi
+}
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+
+    if process_argv ${argv[@]}; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

@@ -44,9 +44,17 @@ if [ ! -d "$path" ]; then
 fi
 
 path="$(cd "${path}" && pwd)"
-declare -a all_cargo_paths=( $(find "$path" -type f -name Cargo.toml -not -path '*/node_modules/*' -not -path '*/.venv/*' -exec dirname {} \;) )
+
+
+unset IFS
+declare -a find_params=(
+ "$path" -mindepth 1 -type f -name Cargo.toml -not -path '*/crates/*' $(find-params-skip-paths)
+)
+export IFS=$'\n'
+declare -a all_cargo_paths=( $(find ${find_params[@]} -exec dirname {} \;) )
 declare -a cargo_paths=()
 declare -a workspace_paths=()
+unset IFS
 
 for path in ${all_cargo_paths[@]}; do
     count=0

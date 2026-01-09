@@ -19,7 +19,7 @@ fi
 path="$(2>/dev/random 1>/dev/random cd "${path}" && pwd)"
 
 cleanup_log_filename=$(basename $0)
-cleanup_log_path="$HOME/opt/var/log/${cleanup_log_path}.log"
+cleanup_log_path="$HOME/opt/var/log/${cleanup_log_filename}.log"
 
 ansi_clear
 bar_text_left 237 231 "scanning rust projects in $(ansi_spaced 220 237 "$(get_display_path ${path})")$(ansi 237 231)"
