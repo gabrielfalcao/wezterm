@@ -1,1 +1,1 @@
-/Users/gabrielfalcao/opt/etc/wezterm.lua
+/Users/gabrielfalcao/.shell.d/conf.d/.wezterm.lua
