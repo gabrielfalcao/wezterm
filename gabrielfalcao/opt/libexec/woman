@@ -202,28 +202,28 @@ export BAT_STYLE="plain"
 if prog_path=$(2>/dev/random which "${prog_target}"); then
     declare -a prog_help_call=(${prog_path} ${prog_target_args[@]} ${help_arg})
     if prog_help=$(2>&1 ${prog_help_call[@]}); then
-        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+        ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
     elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
-        echo "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+        ansistrip <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
     elif prog_help=$(2>/dev/random man "${prog_target}"); then
-        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+        ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
     else
         error "error invoking help command \"${prog_help_call[@]}\":\n${prog_help}"
         exit 1
     fi
 elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
-    echo "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+    ansistrip <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
 elif 2>/dev/random 1>/dev/random declare -F "${prog_target}"; then
     declare -a prog_help_call=(${prog_target} ${prog_target_args[@]} ${help_arg})
     if prog_help=$(2>&1 ${prog_help_call[@]}); then
-        echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+        ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
     else
         how=$(echo "(via \`\`${prog_help_call[@]}\`\`)")
         error "error attempting to invoke \"help\" of bash function \"${prog_target}\"${how}:\n${prog_help}"
         exit 1
     fi
 elif prog_help=$(2>/dev/random man "${prog_target}"); then
-    echo "${prog_help}" | bat_man "${prog_target_all}'s manual"
+    ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
 else
     error "it seems that ${prog_target@Q} is neither a shell builtin nor an executable file in \$PATH"
     exit 1

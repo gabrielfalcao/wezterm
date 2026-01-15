@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-set -umeTE
-set +f
-set -o pipefail
+
+if [[ -v shell_script_strict ]] && [[ "${shell_script_strict@a}" =~ i ]] && (( $shell_script_strict )); then
+    # USAGE:
+    # declare -i shell_script_strict=1;
+    # builtin source "$HOME/opt/lib/ansi.sh"
+    set -umeTE
+    set +f
+    set -o pipefail
+fi
 
 export IFS=$'\n'
-set -ueTE
-set +f
-set -o pipefail
 
 script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 term_libsh_path="${script_path}/term.sh"
 
-if [ -r "${term_libsh_path}" ] &&  [ -s "${term_libsh_path}" ]; then
+if [ -r "${term_libsh_path}" ] && [ -s "${term_libsh_path}" ]; then
     builtin source "${term_libsh_path}"
 fi
 
@@ -29,6 +32,8 @@ get_number() {
         panic "${function}: '${arg}' cannot be empty"
     fi
     echo -n $(($result + 0))
+    unset IFS
+    return
 }
 get_number_error() {
     #set +x
@@ -40,6 +45,8 @@ get_number_error() {
         panic "${function}: '${arg}' is not a number"
     fi
     echo -n $(($result + 0))
+    unset IFS
+    return
 }
 get_display_path() {
     #set +x
@@ -52,6 +59,8 @@ get_display_path() {
         path="~/${path}"
     fi
     echo -n "${path}"
+    unset IFS
+    return
 }
 get_caller() {
     #set +x
@@ -60,6 +69,8 @@ get_caller() {
     last_caller_index=$((${stack_len} - 2 - ${offset}))
     caller_index=$((${stack_len} - ${last_caller_index}))
     echo -n "${FUNCNAME[$caller_index]}"
+    unset IFS
+    return
 }
 get_lineno() {
     #set +x
@@ -68,10 +79,14 @@ get_lineno() {
     last_lineno_index=$((${stack_len} - 1 - ${offset}))
     lineno_index=$((${stack_len} - ${last_lineno_index}))
     echo -n "${LINENO[$lineno_index]}"
+    unset IFS
+    return
 }
 get_location() {
     #set +x
     echo -n "$(get_caller $1):$(get_lineno $1)"
+    unset IFS
+    return
 }
 get_source_filename() {
     #set +x
@@ -85,17 +100,22 @@ get_source_filename() {
             return
         fi
     done
+    unset IFS
     return 1
 }
 get_full_location() {
     #set +x
     location_index=$(get_number_error "${1:-0}")
     echo -n "line $(ansi_underline "$(get_lineno ${location_index})") of function $(ansi_underline "$(get_caller ${location_index})") in file $(ansi_underline "$(get_source_filename ${location_index})")"
+    unset IFS
+    return
 }
 bar_error_full_location() {
     #set +x
     location_index=$(get_number_error "${1:-0}")
     1>&2 bar_text_left 196 231 "$(ansi 196 231 "      ")$(ansi_spaced 196 231 "on")$(ansi_spaced 16 231 "line $(ansi_underline "$(get_lineno ${location_index})")")$(ansi_spaced 196 231 "of")$(ansi_spaced 16 231 "function $(ansi_underline "$(get_caller ${location_index})")")$(ansi 196 231 " in file $(ansi_spaced 16 231 "$(ansi_underline "$(get_source_filename ${location_index})")")")$(ansi 196 231)"
+    unset IFS
+    return
 }
 
 panic() {
@@ -128,6 +148,8 @@ panic() {
     1>&2 echo -e "\x1b[1;48;5;160m\x1b[1;38;5;231m${location_start}\x1b[1;48;5;231m\x1b[1;38;5;124m${location}\x1b[1;48;5;160m"
     1>&2 echo -e "\x1b[1;48;5;160m\x1b[1;38;5;231m${hr}\x1b[0m\n"
     exit 1
+    unset IFS
+    return
 }
 require_color_argument() {
     #set +x
@@ -146,6 +168,8 @@ require_color_argument() {
         panic "${function}: ${argument_description} must be a number between 0 and 255, actual: ${actual}"
     fi
     echo -n ${color}
+    unset IFS
+    return
 }
 require_number_argument() {
     #set +x
@@ -160,6 +184,8 @@ require_number_argument() {
         panic "${function}: ${argument_description} must be a number, actual: ${actual}"
     fi
     echo -n ${number}
+    unset IFS
+    return
 }
 require_argument() {
     #set +x
@@ -171,22 +197,30 @@ require_argument() {
         panic "${function}: ${argument_description} cannot be empty"
     fi
     echo -n "${actual}"
+    unset IFS
+    return
 }
 ansi_clear() {
     #set +x
     echo -en "\x1b[2J\x1b[3J\x1b[H"
+    unset IFS
+    return
 }
 ansi_set_fg_color() {
     #set +x
     fg_color=$(require_color_argument "first argument (.i.e: ansi foreground)" "${1}")
     shift
     echo -en "\x1b[1;38;5;${fg_color}m"
+    unset IFS
+    return
 }
 ansi_set_bg_color() {
     #set +x
     bg_color=$(require_color_argument "first argument (.i.e: ansi background)" "${1}")
     shift
     echo -en "\x1b[1;48;5;${bg_color}m"
+    unset IFS
+    return
 }
 ansi() {
     #set +x
@@ -195,6 +229,8 @@ ansi() {
     fg_color=$(require_color_argument "second argument (.i.e: ansi foreground)" "${1}")
     shift
     echo -en "\x1b[1;48;5;${bg_color}m\x1b[1;38;5;${fg_color}m${@}"
+    unset IFS
+    return
 }
 ansi_spaced() {
     #set +x
@@ -203,30 +239,42 @@ ansi_spaced() {
     fg_color=$(require_color_argument "second argument (.i.e: ansi foreground)" "${1}")
     shift
     ansi ${bg_color} ${fg_color} " $@ "
+    unset IFS
+    return
 }
 ansi_underline() {
     #set +x
     echo -en "\x1b[4m${@}\x1b[24m"
+    unset IFS
+    return
 }
 
 ansi_blink() {
     #set +x
     echo -en "\x1b[5m${@}\x1b[25m"
+    unset IFS
+    return
 }
 
 ansi_reset() {
     #set +x
     echo -en "\x1b[0m$@\x1b[0m"
+    unset IFS
+    return
 }
 ansi_up() {
     #set +x
     echo -en "\r\x1b[A"
+    unset IFS
+    return
 }
 ansi_reset_up() {
     #set +x
     ansi_reset
     ansi_up
     ansi_reset
+    unset IFS
+    return
 }
 display_colored() {
     #set +x
@@ -239,6 +287,8 @@ display_colored() {
     echo -en "\x1b[1;48;5;${fg_color}m\x1b[1;38;5;${bg_color}m${desc}\x1b[0m"
     msg="$@"
     echo -e "\x1b[1;48;5;${bg_color}m\x1b[1;38;5;${fg_color}m${msg}\x1b[0m"
+    unset IFS
+    return
 }
 display_error() {
     #set +x
@@ -249,6 +299,8 @@ display_error() {
     1>&2 bar_text_left 196 231 "ERROR" "\x1b[1;48;5;231m\x1b[1;38;5;196m $msg"
     1>&2 bar_error_full_location $location_index
     1>&2 bar 196
+    unset IFS
+    return
 }
 exit_error() {
     #set +x
@@ -268,6 +320,8 @@ exit_error() {
     1>&2 bar_error_full_location $location_index
     1>&2 bar 196
     exit $code
+    unset IFS
+    return
 }
 error() {
     #set +x
@@ -287,6 +341,8 @@ error() {
     1>&2 bar_error_full_location $location_index
     1>&2 bar 196
     exit $code
+    unset IFS
+    return
 }
 error_function() {
     #set +x
@@ -298,6 +354,8 @@ error_function() {
     1>&2 bar_text_left 196 231 "ERROR" "\x1b[1;48;5;231m\x1b[1;38;5;196m $msg"
     1>&2 bar_error_full_location $location_index
     1>&2 bar 196
+    unset IFS
+    return
 }
 calc_indent_text() {
     #set +x
@@ -325,11 +383,15 @@ calc_indent_text() {
         padby=0
     fi
     echo -n $padby
+    unset IFS
+    return
 }
 make_indent() {
     #set +x
     padby=$(require_number_argument "first argument (.i.e: indent count)" "${1}")
     echo -en "$(seq $padby | sed 's/[0-9]\+/@/g' | tr -d '[:space:]' | sed 's/@/ /g')"
+    unset IFS
+    return
 }
 indent() {
     #set +x
@@ -338,6 +400,8 @@ indent() {
     text=$(require_argument "second argument (.i.e: text)" "${@}")
     padby=$(calc_indent_text $padby "${text}")
     echo -en "$(make_indent $padby)${text}"
+    unset IFS
+    return
 }
 indent_rev() {
     #set +x
@@ -346,6 +410,8 @@ indent_rev() {
     text=$(require_argument "second argument (.i.e: text)" "${@}")
     padby=$(calc_indent_text $padby "${text}")
     echo -en "${text}$(make_indent $padby)"
+    unset IFS
+    return
 }
 
 bar() {
@@ -355,6 +421,8 @@ bar() {
     cols=$(term_width)
     hr=$(make_indent ${cols})
     echo -e "\r\x1b[0m\x1b[1;48;5;${color}m${hr}\x1b[0m"
+    unset IFS
+    return
 }
 bar_text_left() {
     #set +x
@@ -369,6 +437,8 @@ bar_text_left() {
     bar_end=$(($cols - ${text_width}))
     hr=$(make_indent "$bar_end")
     echo -e "\r\x1b[1;48;5;${fg_color}m\x1b[1;38;5;${bg_color}m${text}${hr}\x1b[0m"
+    unset IFS
+    return
 }
 bar_text_right() {
     #set +x
@@ -383,6 +453,9 @@ bar_text_right() {
     bar_start=$(($cols - ${text_width}))
     hr=$(make_indent "$bar_start")
     echo -e "\r\x1b[1;48;5;${fg_color}m\x1b[1;38;5;${bg_color}m${hr}${text}\x1b[0m"
+    unset IFS
+    unset IFS
+    return
 }
 bar_text_center() {
     #set +x
@@ -410,8 +483,10 @@ bar_text_center() {
         result_lines+=("\x1b[0\r\x1b[1;48;5;${fg_color}m\x1b[1;38;5;${bg_color}m${result}\x1b[0m")
     done
     printf '%s\n' "${result_lines[@]}"
-
     # ICAgICMgdGV4dF93aWR0aD0keyNwbGFpbl90ZXh0fQogICAgIyBjb2xzPSQodGVybV93aWR0aCkKICAgICMgaGFsZl9jb2xzPSQoKCRjb2xzIC8gMiArICgkY29scyAlIDIpKSkKICAgICMgaGFsZl90ZXh0X3dpZHRoPSQoKCR0ZXh0X3dpZHRoIC8gMiArICgkdGV4dF93aWR0aCAlIDIpKSkKICAgICMgZmlyc3RfcGFkPSQoKCRoYWxmX2NvbHMgLSAkaGFsZl90ZXh0X3dpZHRoKSkKICAgICMgdGV4dF9zdGFydD0kKG1ha2VfaW5kZW50ICRmaXJzdF9wYWQpCiAgICAjIGhyPSQobWFrZV9pbmRlbnQgJGNvbHMpCiAgICAjIGVjaG8gLWVuICJcclx4MWJbMTs0ODs1OyR7ZmdfY29sb3J9bSR7dGV4dF9zdGFydH1ceDFiWzE7Mzg7NTske2JnX2NvbG9yfW0ke3RleHR9XHgxYlsxOzQ4OzU7JHtmZ19jb2xvcn1tIgogICAgIyBmaXJzdF9wYWQ9JCgoJGhhbGZfY29scyAtICRoYWxmX3RleHRfd2lkdGgpKQogICAgIyBocj0kKG1ha2VfaW5kZW50ICIkZmlyc3RfcGFkIikKICAgICMgZWNobyAtZSAiXHgxYlsxOzQ4OzU7JHtmZ19jb2xvcn1tJHtocn1ceDFiWzBtIg==
+
+    unset IFS
+    return
 }
 
 usage_error() {
@@ -424,17 +499,23 @@ usage_error() {
     1>&2 bar 196
     1>&2 echo
     exit 1
+    unset IFS
+    return
 }
 
 ansi_unset() {
     #set +x
     unset_ansi
+    unset IFS
+    return
 }
 unset_ansi() {
     #set +x
     for fn in $(grep '^[a-z_]\+[(]' ${BASH_SOURCE[0]} | sed 's/\(function\s*\)\?\([a-z_]\+\).*[(].*/\2/g'); do
         unset $fn
     done
+    unset IFS
+    return
 }
 term_paint_full_bg() {
     #set +x
@@ -445,6 +526,8 @@ term_paint_full_bg() {
     for row in $(seq $(term_height)); do
         bar_text_center $fg_color 16 "$row"
     done
+    unset IFS
+    return
 }
 test_term_paint_full_bg() {
     #set +x
@@ -452,4 +535,7 @@ test_term_paint_full_bg() {
     for color in $(seq 255); do
         echo -en "$(term_paint_full_bg $color)\x1b[H\x1b[A"
     done
+    unset IFS
+    return
 }
+set +u

@@ -4,6 +4,8 @@ set +f
 set -o pipefail
 unset IFS
 
+declare -- gnu_bash_libexec="/opt/homebrew/bin/bash"
+
 #<TODO read/map shopts from `man bash'>
 shopt -s checkwinsize
 shopt -s cmdhist
@@ -146,14 +148,26 @@ else
 fi
 
 if [ -s "${shell_d_root_path}/.venv/bin/activate" ] && [ -x "${shell_d_root_path}/.venv/bin/python3" ]; then
+    # export PS4='\[\033[1;38;5;201m\] '
+    # set -x
     declare -- shell_d_python_root_path="${shell_d_root_path}/.venv"
     declare -- shell_d_python_bin_path="${shell_d_python_root_path}/bin"
+    # set +x
+    # unset PS4
 elif [ -n "${shell_d_python_manifest}" ]; then
-    declare -- shell_d_python_root_path=""
-    declare -- shell_d_python_bin_path=""
+    # export PS4='\[\033[1;38;5;202m\] '
+    # set -x
+    declare -- shell_d_python_root_path="$(dirname "${shell_d_python_manifest}")/.venv"
+    declare -- shell_d_python_bin_path="${shell_d_python_root_path}/bin"
+    # set +x
+    # unset PS4
 else
+    # export PS4='\[\033[1;38;5;196m\] '
+    # set -x
     declare -- shell_d_python_root_path=""
     declare -- shell_d_python_bin_path=""
+    # set +x
+    # unset PS4
 fi
 
 declare -- shell_d_python_script="$(cat ~/.shell.d/py3/shell_d.py)"
@@ -246,6 +260,8 @@ entrypoint() {
         "paths.sh" \
         "cdpaths.sh"
 
+    # debuggin error `pop_var_context: head of shell_variables not a function context`:
+    #   `rg --multiline '((uw_)?pop_(var_)?context)(\s+|\n+)*[\(][^)]*[)](\s+|\n+)*[;]'`
     xD 0000000.sh
     xD 0000010-editors.sh
     xD 0000101-functions.sh
@@ -265,9 +281,11 @@ entrypoint() {
         "workbench.sh" \
         "ansi.sh"
 
-    unset s brew_path path gq
     builtin source "${X_D_PATH}/completions.sh"
     builtin source "${X_D_PATH}/boot.sh"
+    builtin source "${X_D_PATH}/hooks.sh"
+
+    unset s brew_path path gq
 }
 
 xD() {
@@ -292,32 +310,30 @@ xD() {
             return 5
         fi
     done
-    unset sh
 }
-
+postentry() {
+    set -m
+    set +u
+    set -f
+    set +f
+    export HISTTIMEFORMAT='@%s:%Z     '
+    export PROMPT_COMMAND="history -a"
+    # 1>&2 echo -e "\x1b[0m\x1b[1;38;5;220m$(printf '%*s\x1b[0m = \x1b[1;38;5;231m%*s\x1b[0m' 18 '${0}' 18 "${0}")"
+    # 1>&2 echo -e "\x1b[0m\x1b[1;38;5;220m$(printf '%*s\x1b[0m = \x1b[1;38;5;231m%*s\x1b[0m' 18 '${BASH_SOURCE[0]}' 18 "${BASH_SOURCE[0]}")"
+}
 if [[ -v SHELL_D_DEBUG ]] && [ -n "${SHELL_D_DEBUG}" ]; then
     export PS3='${BASH_SOURCE[0]}${LINENO[0]}'
 fi
-entrypoint
+
+if [ "${0}" == "${gnu_bash_libexec}" ]; then
+    entrypoint
+    postentry
+fi
+unset entrypoint postentry
+
 # for fn in $(grep -i -E '^[a-z_]+[(][^)]*[)]([[:space:]]*|\n)[{]' "${BASH_SOURCE[0]}" | sed -E 's/^[[:space:]]*([[:space:]]*function[[:space:]]*)\?([a-zA-Z_-][a-zA-Z0-9_-]+).*[(][^)]*[)]([[:space:]]*|\n)*[{]/\2/g'); do
 #     2>/dev/random 1>/dev/random unset "$function_name"
 # done
 
-declare -i shell_d_finished_at=$(date +%s)
-
-set -m
-set +u
-set -f
-set +f
-# set +u
-
-# # # # ${parameter/pattern/string}   # erstes
-# # # # ${parameter//pattern/string}  # alles
-# # # # ${parameter/#pattern/string}  # start
-# # # # ${parameter/%pattern/string}  # end
-# export PROMPT_COMMAND="history -a;"
-# export PROMPT_COMMAND="history -n; history -r; history -a"
-# cls
-export HISTTIMEFORMAT='@%s:%Z     '
-
 umask 007
+declare -i shell_d_finished_at=$(date +%s)

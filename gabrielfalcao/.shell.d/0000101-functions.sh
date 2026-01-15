@@ -155,6 +155,7 @@ k() {
     export PS1_VARIANT=""
 }
 cls() {
+    history -a
     echo -en "\x1b[2J\x1b[3J\x1b[H"
 }
 clsreset() {
@@ -451,7 +452,9 @@ craft() {
 #     fi
 # }
 gc3() {
-    # . ~/opt/lib/ansi.sh
+    set -x
+    . ~/opt/lib/ansi.sh
+    set +ue
     export IFS=$'\n'
     repo=""
     local -a argv=($@)
@@ -1293,4 +1296,42 @@ blame_command_exit_code() {
         color=1
     fi
     echo -e "\n\n\x1b[1;38;5;248mcommand \x1b[1;38;5;220m${prog} $(printf '\x1b[1;38;5;222m%s\x1b[0m ' ${prog_args[@]})\x1b[1;38;5;248mexited with code=\x1b[1;38;5;${color}m${exit_code}\x1b[0m"
+}
+
+
+declare -rA declare_flags=()
+ # 1539  @1768444406:UTC     ord '\* &^%$#@!~:;.,?/{}[]\|/"`'"'" | sed -E 's/^"(.)"\s+[0-9]+\s+0x([a-fA-F0-9]+).*/#\2\tsed -E \x27s\x2f[\1]\x2f\\x\2\x2fg\x27/g'
+-f	restrict action or display to function names and definitions
+-F	restrict display to function names only (plus line number and source file when debugging)
+-g	create global variables when used in a shell function; otherwise ignored
+-I	if creating a local variable, inherit the attributes and value of a variable with the same name at a previous scope
+-p	display the attributes and value of each NAME
+
+
+-a	to make NAMEs indexed arrays (if supported)
+-A	to make NAMEs associative arrays (if supported)
+-i	to make NAMEs have the `integer' attribute
+-l	to convert the value of each NAME to lower case on assignment
+-n	make NAME a reference to the variable named by its value
+-r	to make NAMEs readonly
+-t	to make NAMEs have the `trace' attribute
+-u	to convert the value of each NAME to upper case on assignment
+-x	to make NAMEs export
+}
+
+
+get_bashs_command_declare_flags() {}
+
+filter_bash_variables_containing() {
+    if [ -t 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "stdin is a terminal"
+        return 1
+    fi
+
+    local -r regexp="^\s*((declare|local)\s+[-][a-zA-Z-]+\s+)?([^=]*hist[^=]*)=(.*)'
+}
+
+varnames() {
+    declare -p | grep -i -E '^declare\s+[-][a-zA-Z-]+\s+([^=]*hist[^=]*)=(.*)'
+
 }
