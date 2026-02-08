@@ -1,5 +1,5 @@
-# ps1='{220}\u{231}:{220}{cwd:name}{37}{git:branch}{220}${reset}  '
-ps1='{220}\u{231}:{220}\W{37}{git:branch}{220}${reset}  '
+# # ps1='{220}\u{231}:{220}{cwd:name}{37}{git:branch}{220}${reset}  '
+# ps1='{220}\u{231}:{220}\W{37}{git:branch}{220}${reset}  '
 ps1='{220}\u{231}@{178}\\\$\\\${231}:{220}\W{37}{git:branch}{220}${reset}  '
 ps2='$... '
 ps3='${BASH_SOURCE[0]}\x20${BASH_LINENO[0]}\x20${LINENO[0]}'
