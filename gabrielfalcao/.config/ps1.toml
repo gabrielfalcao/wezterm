@@ -1,0 +1,15 @@
+# ps1='{220}\u{231}:{220}{cwd:name}{37}{git:branch}{220}${reset}  '
+ps1='{220}\u{231}:{220}\W{37}{git:branch}{220}${reset}  '
+ps1='{220}\u{231}@{178}\\\$\\\${231}:{220}\W{37}{git:branch}{220}${reset}  '
+ps2='$... '
+ps3='${BASH_SOURCE[0]}\x20${BASH_LINENO[0]}\x20${LINENO[0]}'
+# ps1='{220}\u{231}:{220}\W{37}{git:branch}{220}${reset}'
+# [variants]
+# ps1='{178}\u{37}@{178}\W{220}{37}{git:branch}{220}${reset} '
+[paths]
+minilisp = "/Users/gabrielfalcao/projects/work/poems.codes/sandbox/minilisp"
+sandbox = "/Users/gabrielfalcao/projects/work/poems.codes/sandbox"
+tools = "/Users/gabrielfalcao/projects/work/poems.codes/tools"
+
+# ps1='{136}\u{31}@{178}\W{220}{67}{git:branch}{220}${reset} '
+# ps1='{109}\u{39}@{178}\W{57}[{git:branch}]{178}{&}{reset} '
