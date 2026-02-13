@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#. ~/.shell.d/entrypoint.sh
 . ~/.shell.d/x.d/workbench.sh
 
 workbench_refresh || true
@@ -138,9 +139,12 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
             "-d" | "-r")
                 delete_socket=true
                 ;;
+            "--debug-init")
+                exec_args+=("${arg}")
+                ;;
             "-nw")
                 export EMACS_NO_SERVER=true
-                declare -- exec_args+=("${arg}")
+                exec_args+=("${arg}")
                 if [ ! -e "${homebrew_bin}" ]; then
                     1>&2 echo "${homebrew_bin@Q} does not exist"
                     exit 1
@@ -172,16 +176,19 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
         2>/dev/random 1>/dev/random rm -f "$socket"
     fi
 
+    if [[ -v EMACS_DEBUG_INIT ]] && [ -n "EMACS_DEBUG_INIT" ]; then
+       exec_args+=('--debug-init')
+    fi
     if [ -S "${socket}" ] && [ -n "$(ps aux | 2>/dev/random grep /Applications/Emacs.app | grep -v grep)" ]; then
         export EMACS_NO_SERVER=true
         set -x
-        $exec ${exec_args[@]} --debug-init 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
+        $exec ${exec_args[@]} 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
         exit 0
         # # 1>&2 echo "emacs already running: ${socket}"
         # exit 1
     fi
 
     2>/dev/null 1>/dev/null cd "$working_path"
-    $exec ${exec_args[@]} --debug-init 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
+    $exec ${exec_args[@]} 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
     rm -f "$socket"
 fi

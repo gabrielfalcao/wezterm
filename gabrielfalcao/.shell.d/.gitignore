@@ -6,3 +6,9 @@ x.d.rev.patch
 .venv/lib/
 .venv/share/
 # </2026-01-09>
+
+*~
+
+wezterm-cli*.log
+wezterm-pane-debug.*
+

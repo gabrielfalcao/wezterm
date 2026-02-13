@@ -1,10 +1,517 @@
-declare -a deferred_prog_commands=()
-declare -A deferred_prog_pids=()
-declare -A deferred_prog_stdout=()
-declare -A deferred_prog_psaux_lines=()
-declare -A deferred_prog_stderr=()
-declare -A deferred_prog_started_at_utc=()
-declare -A deferred_prog_finished_at_utc=()
+declare -gA function_definitions=()
+declare -ga deferred_prog_commands=()
+declare -gA deferred_prog_pids=()
+declare -gA deferred_prog_stdout=()
+declare -gA deferred_prog_psaux_lines=()
+declare -gA deferred_prog_stderr=()
+declare -gA deferred_prog_started_at_utc=()
+declare -gA deferred_prog_finished_at_utc=()
+declare -ga current_caller_frame=()
+declare -gA current_caller_info=()
+
+declare -ga global_set_ifs_values=()
+declare -ga global_set_ifs_callers=()
+
+
+set_ifs() {
+    # head
+    true
+    # tail
+}
+
+declare -gA hist_commands_by_entry_id=()
+
+declare -gr hist_time_format_timestamp_tz='@%s:%Z     '
+declare -gr hist_time_regexp_timestamp_tz_no_entry_id='(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(([^\n]*[\n]|[^\n]*)+|.*)$'
+declare -gr hist_time_regexp_timestamp_tz="^\s*([0-9]+)\s*${hist_time_regexp_timestamp_tz_no_entry_id}"
+
+
+declare  -gr shell_script_value_regexp_group_wrapped_in_double_quote="(([\"])([^\"]*.*)([\"]))"
+declare  -gr shell_script_value_regexp_group_wrapped_in_single_quote="(([\'])([^\']*.*)([\']))"
+declare  -gr shell_script_value_regexp_group_wrapped_in_parenthesis="(([(])([^()]*.*)([)]))"
+declare  -gr shell_script_value_regexp_group_anything="(.*)"
+declare -gar shell_script_var_assignment_nonempty_regexp_parts=(
+    "${shell_script_value_regexp_group_wrapped_in_double_quote}"
+    "${shell_script_value_regexp_group_wrapped_in_single_quote}"
+    "${shell_script_value_regexp_group_wrapped_in_parenthesis}"
+    "${shell_script_value_regexp_group_anything}"
+)
+declare -gar shell_script_var_declaration_regexp_non_line_bound="($(export IFS=$'|';echo "${shell_script_var_assignment_nonempty_regexp_parts}"))"
+declare -gr shell_script_var_declaration_regexp_non_line_bound='(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?'
+
+declare -g shell_script_var_declaration_regexp='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?$'
+
+# TODO: regexp-tool crate accepts relaive backref in regexp pattern such that:
+#
+# the regular expression:
+# (['"])([^\1]*.*)(\1)
+#
+# can be achieved through any of the following variants:
+#
+# variant 1: backslash-g relative index
+# /
+# (['"])([^\g<-1>]*.*)([^\g<-2>])
+# /
+#
+# variant 2: backslash-g absolute index
+# /
+# (['"])([^\g<1>]*.*)([^\g<1>])
+# /
+#
+# variant 3: backslash-g named backref
+# /
+# /
+# (?P<quote>['"])([^\g<quote>]*.*)([^\g<quote>])
+# /
+#
+#
+# variant 4: dollar-sign-curly-braced relative index
+# /
+# (['"])([^${-1}]*.*)([^${-2}])
+# /
+#
+# variant 5: dollar-sign-curly-braced absolute index
+# /
+# (['"])([^${1}]*.*)([^${1}])
+# /
+#
+# variant 6: dollar-sign-curly-braced named backref
+# /
+# /
+# (?P<quote>['"])([^${quote}]*.*)([^${quote}])
+# /
+#
+#
+# variant 1: backslash-g relative index
+# /
+# (['"])([^\g<-1>]*.*)([^\g<-2>])
+# /
+#
+# variant 2: backslash-g absolute index
+# /
+# (['"])([^\g<1>]*.*)([^\g<1>])
+# /
+#
+# variant 3: backslash-g named backref
+# /
+# /
+# (?P<quote>['"])([^\g<quote>]*.*)([^\g<quote>])
+# /
+#
+
+# <emacs interactive funcall function="replace-regexp">
+# <argument name="REGEXP">
+#     \(variant \([0-9]+\)\|backslash-g\|\(\(\\g\|\|[?]P\)<\([^>]+\)>\)\)
+# </argument> <!-- argument=REGEXP -->
+#
+# <argument name="REPLACEMENT">
+
+# </argument> <!-- argument=REPLACEMENT -->
+
+
+
+#
+#
+# <WIP codegen-for="regexp_group_variable_value_variants">
+# <varname>variable_value_variants
+export IFS=$'\n'
+declare -a shell_value_variants=()
+shell_value_variants=(
+
+    # ICAgICdbXlw1XSonICAgICAgICAgICAgIyAidmFsdWUiCiAgICAnXFxcNVteXDVdKicgICAgICAgICMgIlwidmFsdWUiCiAgICAnXFxcNVteXDVdKlxcXDUnICAgICMgIlwidmFsdWVcIiIKICAgICdcXFw1W15cNV0qXFxcNScgICAgIyAidmFsdWUiCg==
+
+    '[^\5]*'            # 'value'
+    '\\\5[^\5]*'        # '\'value'
+    '\\\5[^\5]*\\\5'    # '\'value\''
+    '\\\5[^\5]*\\\5'    # 'value'
+
+    '[^\5]*'            # 'value'
+    '\\\5[^\5]*'        # '\'value'
+    '\\\5[^\5]*\\\5'    # '\'value\''
+    '\\\5[^\5]*\\\5'    # 'value'
+)
+# '\2($(echo "${shell_value_variants[*]}"))\5'
+export IFS=$'|'
+regexp_group_variable_value_variants="($(echo "${shell_value_variants[*]}"))"
+export IFS=$'\n'
+
+# regexp_group_variable_value_variants
+declare -gr shell_script_var_declaration_regexp='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*)([^=]+)?)([=]${regexp_group_variable_value_variants[*]})$'
+#()(())()()
+
+declare -gA map_pair_xcodepoint_value_by_hex_escaped=()
+map_pair_xcodepoint_value_by_hex_escaped['\x60']="$(printf '\x60')"
+map_pair_xcodepoint_value_by_hex_escaped['\x22']="$(printf '\x22')"
+map_pair_xcodepoint_value_by_hex_escaped['\x27']="$(printf '\x27')"
+map_pair_xcodepoint_value_by_hex_escaped['\x60']="$(printf '\x60')"
+declare -gr map_pair_xcodepoint_value_by_hex_escaped;
+
+declare -gA map_pair_xcodepoint_hex_escaped_by_value=()
+map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x60')"]='\x60'
+map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x22')"]='\x22'
+map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x27')"]='\x27'
+map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x60')"]='\x60'
+declare -gr map_pair_xcodepoint_hex_escaped_by_value;
+
+declare -gar list_pair_xcodepoint_escaped=(
+    '\x22'
+    '\x27'
+    '\x60'
+)
+export IFS=$'\n'
+declare -gar list_pair_xcodepoint_escaped=(
+    $(echo "${list_pair_xcodepoint_escaped[*]}")
+)
+# </WIP codegen-for"regexp_group_variable_value_variants">
+
+
+
+
+
+
+local_var_declarations() {
+#
+#
+#<input>
+#^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+)?([^=]*hist[^=]*)=(.*)$
+#</input>
+#
+#
+#
+#
+#<emacs>
+#
+#<command name="replace-regexp">
+#
+#<arg name="REGEXP">
+#\([\^]?[(]\([^()\n]+[?]?\|[(]\([^()\n]+[?]?\)[)]\)+[)][$=?]?\)
+#</arg>
+#
+#<arg name="TO-STRING">
+#(\&)\n
+#</arg>
+#
+#</command>
+#
+#</emacs>
+#
+#(replace-regexp \,{REGEXP} \,{TO-STRING}
+#    "\([\^]?[(]\([^()\n]+[?]?\|[(]\([^()\n]+[?]?\)[)]\)+[)][$=?]?\)"
+#    "(\&)\n" )
+#
+#
+# result:
+#
+#(^(\s*))
+#(((declare|local)\s+[-][a-zA-Z-]+\s+)?)
+#(([^=]*hist[^=]*)=)
+#((.*)$)
+#
+# </emacs>
+    #  ()      1
+    #  (       2
+    #      ()  3
+    #  )
+    #  ()      4
+    #  ()      5
+    local -p | sed -E "s/${shell_script_var_declaration_regexp}/\1/g"
+}
+
+git_clone_godot_oss_repos() {
+    local -- input="$@"
+    if [ -z "${input}" ]; then
+        input="$(pbpaste)"
+    fi
+    if [ -z "${input}" ] && [ ! -t 0 ]; then
+        local -a stdin_lines=()
+        export IFS=$'\n'
+        while read line; do
+            if ! stdin_lines+=("$line"); then
+                continue
+            fi
+        done </dev/stdin
+        input="$(echo "${stdin_lines[*]}")"
+    fi
+    if [ -z "${input}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing urls via argv, clipboard or stdin"
+        return 1
+    fi
+    local -A repos_to_clone=()
+    local -a urls_to_clone=()
+    local -a urls=($(printf '%s\n' "${input}" | grep -E "https://"))
+    local -a github_urls=($(printf '%s\n' "${urls[@]}" | grep -E "github[.]com"))
+    local -- gh_repo_owner=''
+    local -- gh_repo_name=''
+    local -a godot_games_oss_repos=()
+    local -- godot_github_examples_path="$HOME/godot/github_examples"
+    local -- clone_url=""
+    local -- clone_path=""
+
+    godot_games_oss_repos=($(printf '%s\n' "${github_urls[@]}" | grep -E -v 'github[.]com/topics' | grep -i -E "github[.]com/[a-z0-9_-]+/[a-z0-9_-]+"))
+    mkdir -p "${godot_github_examples_path}"
+    for url in ${godot_games_oss_repos[@]}; do
+        local -- regexp='^.*github[.]com/([^/]+)/([^/]+)([/]?([.]git)?)?$'
+        gh_repo_owner=$(sed -n -E "s,${regexp},\1,gp" <<<"${url}")
+        gh_repo_name=$(sed -n -E "s,${regexp},\2,gp" <<<"${url}")
+        if [ -z "${gh_repo_owner}" ]; then
+            1>&2 echo -e "[${FUNCNAME[0]} warning]" "could not parse gh_repo_owner from url ${url@Q}"
+            continue
+        fi
+        if [ -z "${gh_repo_name}" ]; then
+            1>&2 echo -e "[${FUNCNAME[0]} warning]" "could not parse gh_repo_name from url ${url@Q}"
+            continue
+        fi
+        local -- clone_dirname="${gh_repo_owner}__${gh_repo_name}"
+        if [[ ! "${clone_dirname}" =~ ^([a-zA-Z0-9_-]+)__([a-zA-Z0-9_-]+)$ ]]; then
+            1>&2 echo -e "[${FUNCNAME[0]} warning]" "could not parse determine clone_dirname from url ${url@Q}: ${clone_dirname@Q}"
+            continue
+        fi
+        local -- clone_url="https://github.com/${gh_repo_owner}/${gh_repo_name}.git"
+        local -- clone_path="${godot_github_examples_path}/${gh_repo_owner}__${gh_repo_name}"
+        if [[ ! -v repos_to_clone["${clone_url}"] ]]; then
+            repos_to_clone["${clone_url}"]="${clone_path}"
+            urls_to_clone+=("${clone_url}")
+        fi
+    done
+    local -i index=0
+    local -i total=${#repos_to_clone[@]}
+    local -- pos=""
+    local -- action=""
+    local -- remote=""
+    local -- branch=""
+    for index in ${!urls_to_clone[@]}; do
+        remote="origin"
+        branch=""
+        clone_url=${urls_to_clone[$index]}
+        clone_path=${repos_to_clone[${clone_url}]}
+        pos="$(printf '%-*s of %s' ${#total} $((index + 1)) ${total})"
+        if [ -d "${clone_path}/.git" ] && branch=$(cd "${clone_path}" && git branch | sed -n -E 's/[*]\s+([a-zA-Z0-9_-]+[^[:space:]]*)/\1/g; t success q1; :success p'); then
+            action="updating existing clone"
+        else
+            action="cloning"
+        fi
+
+        1>&2 echo -e "${action} from ${clone_url} in ${clone_path}"
+        if [ "${action}" == "cloning" ]; then
+            git clone --depth=1 "${clone_url}" "${clone_path}"
+        else
+            (cd "${clone_path}" && git pull --rebase "${remote}" "${branch}")
+        fi
+    done
+}
+dbg() {
+    local -- dbg_bash_rematch_value="$(dbg_bash_rematch)"
+    echo -e "${dbg_bash_rematch_value@A}"
+    local -- history_length_value="$(history_length)"
+    echo -e "${history_length_value@A}"
+    local -- get_callers_value="$(get_callers)"
+    echo -e "${get_callers_value@A}"
+}
+dbg_bash_rematch() {
+    export IFS=$'\n'
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- output=$(echo -e "\n$(history)\n")
+    local -a lines=($(echo "${output}"))
+    local -i lines_count=${#lines[@]}
+    hist_time_regexp_timestamp_tz='^\s*([0-9]+)\s+(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(.*)$'
+    # (let* ((string "^\s*([0-9]+)\s+(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(.*)$")
+    #        (regexp "\\([^(]+[^)]+\\)\\((\\([^()]*\\)+)\\)"))
+}
+
+
+get_callers() {
+    local -i count=${#LINENO[@]}
+    if [ ${count} -gt 0 ]; then
+        local -i last=$((count - 1))
+        local -i index=0
+        for index in $(seq -1 ${last} | sort -nr); do
+            get_caller "${index}"
+        done
+        return 0
+    fi
+    return 1
+}
+get_caller() {
+    local -a gc_argv=($@)
+    local -i gc_argc=${#gc_argv[@]}
+    local -- raw_printf_format=""
+    local -- printf_format=""
+    local -- raw_caller_index=""
+    if [ ${gc_argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]}]" "missing argument <CALLER_INDEX>"
+        return 1
+    fi
+    local -- raw_caller_index="${gc_argv[@]:0:1}"
+    raw_printf_format="${gc_argv[@]:1}"
+    printf_format="${raw_printf_format}"
+
+    if [[ ! "${raw_caller_index}" =~ ^[-]?[0-9]+$ ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]}]" "argument <CALLER_INDEX> got invalid non-integer value: ${raw_caller_index@Q}"
+        return 1
+    fi
+    local -i caller_index=$((raw_caller_index + 1))
+    local -- caller_function_name=""
+    local -- caller_line_number=""
+
+    current_caller_frame=()
+    current_caller_info=()
+
+    if [[ -v LINENO[$caller_index] ]]; then
+        caller_line_number="${LINENO[$caller_index]}"
+        current_caller_frame+=("${caller_line_number}")
+
+        current_caller_info["line"]="${caller_line_number}"
+        current_caller_info["lineno"]="${caller_line_number}"
+        current_caller_info["line_number"]="${caller_line_number}"
+    fi
+    if [[ -v FUNCNAME[$caller_index] ]]; then
+        caller_function_name="${FUNCNAME[$caller_index]}"
+        current_caller_frame+=("${caller_function_name}")
+
+        current_caller_info["function"]="${caller_function_name}"
+        current_caller_info["function_name"]="${caller_function_name}"
+        current_caller_info["name"]="${caller_function_name}"
+        current_caller_info["type"]="function"
+    else
+        current_caller_info["name"]="${BASH_SOURCE[0]}"
+        current_caller_info["function"]="body of ${BASH_SOURCE[0]}"
+        current_caller_info["function_name"]="body of ${BASH_SOURCE[0]}"
+        current_caller_info["type"]="shell"
+    fi
+    if [ -n "${printf_format}" ]; then
+        local -- key=""
+        local -- value=""
+        local -- raw_value=""
+        local -- regex=""
+        for key in ${!current_caller_info[@]}; do
+            regex="[\x24\x25][{]${key}[}]"
+            raw_value="${current_caller_info[${key}]}"
+            value="${raw_value//\//\\\/}"
+            local -- ctx="key=${key@Q} raw_value=${raw_value@Q} value=${value@Q}"
+            1>&2 echo -e "\r\x1b[0m\n\x1b[1;38;5;247m"
+            1>&2 echo "ctx=${ctx}"
+            1>&2 echo -e "\n"
+            1>&2 echo "before \${printf_format}=${printf_format@Q}"
+            printf_format="$(sed -E "s/${regex}/${value}/g" <<<"${printf_format}")"
+            1>&2 echo -e "\n"
+            1>&2 echo "after \${printf_format}=${printf_format@Q}"
+        done
+        echo "${printf_format}"
+    fi
+
+    1>&2 echo -e "\r\x1b[0m\n\x1b[1;38;5;220m<\${current_caller_info[@]}>\x1b[0m"
+    value="${current_caller_info[@]@A}"
+    1>&2 printf '\x1b[0m\x1b[1;38;5;233m\x1b[1;48;5;220m%-*s\x1b[0m\n' "${COLUMNS}" "${value}"
+    for key in ${!current_caller_info[@]}; do
+        value="${current_caller_info[${key}]}"
+        1>&2 printf '\x1b[0m\x1b[1;38;5;233m\x1b[1;48;5;220m%s=%-*s\x1b[0m\n' "${key}" "${COLUMNS}" "${value}"
+    done
+    1>&2 echo -e "\r\x1b[0m\x1b[1;38;5;220m</\${current_caller_info[@]}>\x1b[0m"
+}
+
+# count_regex_groups() {
+#     local -a argv=($@)
+#     local -i argc=${#argv[@]}
+#     local -- command='h;s/[^()]+//g;H;z;g;p'
+#     local -a results=()
+#     local -- result=""
+
+#     if [ ! -t 0 ]; then
+#         results=($(sed -E "${command}" < /dev/stdin))
+#     elif [ ${argc} -eq 0 ]; then
+#         1>&2 echo -e "[${FUNCNAME[0]}]" "no arguments and stdin is a tty"
+#         return 1
+#     else
+#         results=($(printf '%s\n' ${argv[@]} | sed -E "${command}"))
+#     fi
+#     for result in ${results[@]}; do
+#         1>&2 echo -e "${result}"
+#     done
+# }
+
+terminal_get_width() {
+    builtin shopt -s checkwinsize
+    local -- extecho=""
+    local -- extgetwidth=""
+    local -i width=${COLUMNS}
+
+    if [ ${width} -le 0 ]; then
+        if extecho=$(type -P echo); then
+            ${extecho} -en ""
+            width=${COLUMNS}
+        elif extgetwidth=$(which term-columns); then
+            width=$(${extgetwidth})
+        fi
+    fi
+    if [ ${width} -le 0 ]; then
+        width=130
+    fi
+
+    echo "${width}"
+}
+terminal_fill_string() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- value=""
+
+    if [ ${argc} -eq 0 ]; then
+        return 1
+    fi
+    value=$(sed -E 's/[\t\r\n]+//g' <<<"${argv[@]}")
+    local -i length=${#value}
+    local -i terminal_width=${COLUMNS}
+    if [ ${terminal_width} -eq 0 ]; then
+        terminal_width=$(terminal_get_width)
+    fi
+    if [ ${terminal_width} -gt 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "\${terminal_width} should be greater than 0 at this point"
+        return 1
+    fi
+
+    local -i total_width=${terminal_width}
+    local -i total_length=${terminal_width}
+    if [ ${length} -gt 0 ]; then
+        length=${terminal_width}
+    fi
+
+    # total_length=$(( length + (length % terminal_width) + (length / terminal_width) ))
+    # total_length=$(( (length + ( length % terminal_width )) / terminal_width))
+    total_length=$((((length + (length % terminal_width)) / terminal_width) * terminal_width))
+    printf '%-*s\n' "${total_length}" "${value}"
+}
+terminal_get_minwidth_to_string_unchecked() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- value=""
+
+    if [ ${argc} -eq 0 ]; then
+        return 0
+    fi
+    value="${argv[@]}"
+    value="${value//$'\t'/}"
+    value="${value//$'\r'/}"
+    value="${value//$'\n'/}"
+    local -i length=${#value}
+    local -i terminal_width=${COLUMNS}
+    if [ ${terminal_width} -eq 0 ]; then
+        terminal_width=$(terminal_get_width)
+    fi
+    if [ ${terminal_width} -gt 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "\${terminal_width} should be greater than 0 at this point"
+        return 1
+    fi
+
+    local -i total_width=${terminal_width}
+    local -i total_length=${terminal_width}
+    if [ ${length} -gt 0 ]; then
+        length=${terminal_width}
+    fi
+
+    # total_length=$(( length + (length % terminal_width) + (length / terminal_width) ))
+    # total_length=$(( (length + ( length % terminal_width )) / terminal_width))
+    total_length=$((((length + (length % terminal_width)) / terminal_width) * terminal_width))
+    printf '%-*s\n' "${total_length}" "${value}"
+}
 
 third_party() {
     target="${@}"
@@ -20,10 +527,10 @@ alias 3=third_party
 
 cdmkd() {
     local -- target="${@}"
-    local -- backup_cdpath="";
+    local -- backup_cdpath=""
     local -i cdpath_was_defined=0
     if [[ -v CDPATH ]]; then
-        backup_cdpath="${CDPATH}";
+        backup_cdpath="${CDPATH}"
         cdpath_was_defined=1
         unset CDPATH
     fi
@@ -143,7 +650,7 @@ alias ~shell.d.x.d="cd_shell_d_home_path x.d"
 alias ~shell.x="cd_shell_d_home_path x.d"
 
 k() {
-    set +x
+    #set +x
     if [ -n "$*" ]; then
         1>&2 echo "unexpected arguments: \"$*\""
         return 1
@@ -154,45 +661,15 @@ k() {
     reset
     export PS1_VARIANT=""
 }
+
 cls() {
-    history -a
-    echo -en "\x1b[2J\x1b[3J\x1b[H"
+    builtin history -a
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 }
+
 clsreset() {
     cls
     reset
-}
-
-history_clear_and_disable() {
-
-    history -n
-    history -a
-    mkdir -p ~/.bash_history.d/
-    set +o history
-    if [ -e ~/.bash_history ]; then
-        mv -f ~/.bash_history ~/.bash_history.d/.bash_history.$(t16g)
-    fi
-
-    if [ -e ~/.history ]; then
-        mv -f ~/.history ~/.bash_history.d/.history.$(t16g)
-    fi
-
-    if [ -n "$*" ]; then
-        1>&2 echo "unexpected arguments: \"$*\""
-        return 1
-    fi
-    set -o history
-    history -a
-}
-history_enable_and_read() {
-    if [ -n "$*" ]; then
-        1>&2 echo "unexpected arguments: \"$*\""
-        return 1
-    fi
-    set -o history
-    history -n
-    history -r
-    history -a
 }
 
 K() {
@@ -369,19 +846,19 @@ x() {
     cdmkd ~/*scratch*/.x/
 }
 l() {
-    if [ -z "$1" ]; then
+    local -- arg="${arg}"
+    if [ -z "${arg}" ]; then
         l ~/.shell.d/0000101-functions.sh
-    elif [ -f "$1" ]; then
-        path="$1"
-        echo -e "\x1b[1;48;5;234m\x1b[1;38;5;231mloading \x1b[1;38;5;220m~/${path#${HOME}/}\x1b[0m"
-        . "${path}"
-    else
-        case "$1" in
+    elif [ ! -e "${arg}" ]; then
+        case "${arg}" in
             "f" | "-f")
                 l ~/.shell.d/0000101-functions.sh
                 ;;
             "e" | "-e")
                 l ~/.shell.d/0000110-env.sh
+                ;;
+            "h" | "-h")
+                l ~/.shell.d/x.d/history.sh
                 ;;
             "ansi")
                 l ~/opt/lib/ansi.sh
@@ -396,8 +873,8 @@ l() {
                 l ~/opt/lib/tools.sh
                 ;;
             *)
-                cat <<EOF
-USAGE: l <f|e|a>
+                1>&2 cat <<EOF
+USAGE: ${FUNCNAME[0]} [path] | [FLAG]
 EOF
                 ;;
         esac
@@ -452,7 +929,7 @@ craft() {
 #     fi
 # }
 gc3() {
-    set -x
+    #set -x
     . ~/opt/lib/ansi.sh
     set +ue
     export IFS=$'\n'
@@ -765,16 +1242,16 @@ EOF
 export IFS="
 "
 rf() {
-    set -x
+    #set -x
     export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace"
     export RUST_BACKTRACE=1
-    set +x
+    #set +x
 }
 ro() {
-    set -x
+    #set -x
     unset RUSTFLAGS
     unset RUST_BACKTRACE
-    set +x
+    #set +x
 }
 ssh_ag() {
     2>/dev/random 1>/dev/random g p -r ssh -k
@@ -785,38 +1262,6 @@ ssh_ag() {
 }
 alias ssh-ag=ssh_ag
 
-wip() {
-    . ~/opt/lib/ansi.sh
-    local -- verbose="false"
-    if [ -n "$1" ]; then
-        case "$1" in
-            "-v")
-                verbose="true"
-                shift
-                ;;
-            *) ;;
-        esac
-    fi
-    local -a what=($@)
-    if [ ${#what[@]} -eq 0 ]; then
-        bar_text_left 233 231 "missing description"
-        return 1
-    fi
-    local -- bashpid="$$"
-    local -- title="WIP ON $(date +"%Y/%m/%d %H:%M:%S") (bash pid: ${bashpid})"
-    local -- under=$(echo "$(seq ${#title})" | tr -d '[:digit:]' | tr '\n' '~')
-    entries=$(lsof | ack -i "(bash | ghostty | wezterm | terminal)" | grep cwd | lastcol | ack -v "^${HOME}\$" | sort -u | sed "s/^/$(date +"%s") /g")
-    local -- note=$(echo -e "${title}\n${under}\n\n${what[@]} in directory $(pwd)\n\n${entries}\n\n$(history)\n\n")
-    base_log_path=$HOME/projects/notes/wip/mit-context
-    ts=$(nowts | xargs slugify-string)
-    log_path=${base_log_path}.${ts}.txt
-    mkdir -p $(dirname "${log_path}")
-    echo -e "${note}" >${log_path}
-
-    if [ "${verbose}" == "true" ]; then
-        1>&2 echo "wrote: ${log_path}"
-    fi
-}
 spawn_wezterm_cli() {
     if [ -n "$(ps aux | ack -i 'wezterm[.]app' | ack -v ack)" ]; then
         wezterm cli spawn ${@}
@@ -953,8 +1398,8 @@ reverse_indexed_array_by_reference() {
     local -i index=0
     local -- item=""
     for rev_index in ${!array[@]}; do
-        declare -i index=$((${length} - ${rev_index}))
-        declare -- item=${array[$index]}
+        local -i index=$((${length} - ${rev_index}))
+        local -- item=${array[$index]}
         echo "${item}"
     done
 }
@@ -968,8 +1413,8 @@ reverse_indexed_array_by_ifs_fields() {
     local -i index=0
     local -- item=""
     for rev_index in ${!array[@]}; do
-        declare -i index=$((${length} - ${rev_index}))
-        declare -- item=${array[$index]}
+        local -i index=$((${length} - ${rev_index}))
+        local -- item=${array[$index]}
         echo "${item}"
     done
 }
@@ -993,7 +1438,7 @@ state() {
 st() {
     status
 }
-stty sane
+# stty sane
 
 describe_set() {
     local -- flag=""
@@ -1105,40 +1550,595 @@ get_prog_type() {
     return 1
 }
 
+hist_regexp_for_entry_ids() {
+    unset IFS
+    local -a argv=( ${@} );
+    local -A entry_ids_unique=( );
+    local -A argv_errors_by_index=( );
+    local -a entry_ids=( );
+    local -i id=-1;
+    local -i entry=-1;
+    local -i index=0;
+    local -- arg="";
+    local -- raw="";
+    local -- value="";
+    local -- pos="";
+    local -i current=0;
+    local -i argc=${#argv[@]};
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing entry id argument(s)"
+        return 1
+    fi
+    for index in ${!argv[@]}; do
+        raw="${argv[${index}]}"
+        arg="${raw#+}"
+        pos="$(printf '%-*s of %s' ${#argc} $((index + 1)) ${argc})"
+        if [[ "${arg}" =~ ^([+])([1-9][0-9]*)$ ]]; then
+            continue
+        elif [[ "${arg}" =~ ^([-])([1-9][0-9]*)$ ]]; then
+            argv_errors_by_index["${index}"]="negative number: ${arg@Q}"
+            continue
+        elif [[ "${arg}" =~ ^([0-9]+)$ ]]; then
+            argv_errors_by_index["${index}"]="negative number: ${arg@Q}"
+            continue
+        elif [[ "${arg}" =~ ^([^0-9+-][^0-9]+|[^0-9]+)$ ]]; then
+            argv_errors_by_index["${index}"]="not a number: ${arg@Q}"
+            return 1
+    fi
+
+        if [[ -v entry_ids_unique["${arg}"] ]]; then
+            # skipping duplicate entry_id
+            entry_ids_unique["${arg}"]="${arg}"
+            continue
+        fi
+
+    done
+    # entry ids are unsigned numbers but argument ${pos} is:
+    # 1>&2 echo -e "[${FUNCNAME[0]} error]"
+
+    export IFS=$'|'
+    local -r entry_ids_regexp_group="($(echo -e "${entry_ids[*]}"))"
+    export IFS='\n'
+    local -r hist_time_entry_regexp="^\s*${entry_ids_regexp_group}\s*${hist_time_regexp_timestamp_tz_no_entry_id}"
+
+}
+
+history_entry_ids() {
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -A unique_keys=()
+    local -a entry_ids=()
+    export IFS=$'\n'
+    unique_keys=($(history | sed -n -E "s/${hist_time_regexp_timestamp_tz}/\n\1\n/gp" | grep -E '^\s*[0-9]+\s*$' | sed -E 's/(^\s+|\s+$)//g'))
+    entry_ids=($(echo "${!unique_keys[*]}" | sort -un))
+    echo "${entry_ids[*]}"
+}
+history_length() {
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- length=0
+    length=$(history | sed -n -E "s/${hist_time_regexp_timestamp_tz}/\1/gp" | wc -l)
+    echo $((length + 1))
+}
+history_entries() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -- arg=""
+    local -ar history_entry_ids=($(history_entry_ids))
+    local -ir history_len=${#history_entry_ids[@]}
+    local -ir history_last_entry_index=$((history_len - 1))
+    local -ir first_entry_id=${history_entry_ids[0]}
+    local -ir last_entry_id=${history_entry_ids[${history_last_entry_index}]}
+    local -a entry_ids=()
+    local -i entry_id=-1
+
+    if [ ${argc} -eq 0 ]; then
+        entry_id=${last_entry_id}
+    else
+        for index in ${!argv[@]}; do
+            arg="${argv[${index}]}"
+            pos="$(printf '%*s of %s' ${#argc} $((index + 1)) ${argc})"
+            if [[ ! "${arg}" =~ ^[0-9]+$ ]]; then
+                1>&2 echo -e "[${FUNCNAME[0]} error]" "argument ${pos} is invalid (not a positive number): ${arg@Q}"
+                continue
+            else
+                entry_ids+=("${arg}")
+            fi
+        done
+    fi
+    export IFS=$'|'
+    local -r entry_ids_regexp_group="($(echo -e "${entry_ids[*]}"))"
+    export IFS='\n'
+    local -r hist_time_entry_regexp="^\s*${entry_ids_regexp_group}\s*${hist_time_regexp_timestamp_tz_no_entry_id}"
+
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- length=0
+    local -a entry_lines=()
+    local -- history_output='';
+    local -- filtered_hist_output='';
+    local -- stripped_hist_output='';
+    history_output="$(history)"
+    filtered_hist_output=$(sed -n -E "s/${hist_time_entry_regexp}/\n\5\n/gp" <<< "${history_output}")
+    stripped_hist_output=$(sed -E 's/(^\s+|\s+$)//g' <<< "${filtered_hist_output}" )
+    for entry_id in ${entry_ids[@]}; do
+        entry_lines=($(history | sed -n -E "s/${hist_time_entry_regexp}/\n\5\n/gp" | sed -E 's/(^\s+|\s+$)//g'))
+        export IFS='\n'
+        hist_commands_by_entry_id["${entry_id}"]=$(echo "${entry_lines[*]}")
+    done
+}
+
+history_clear_and_disable() {
+    history -n
+    history -a
+    mkdir -p ~/.bash_history.d/
+    set +o history
+    if [ -e ~/.bash_history ]; then
+        mv -f ~/.bash_history ~/.bash_history.d/.bash_history.$(t16g)
+    fi
+
+    if [ -e ~/.history ]; then
+        mv -f ~/.history ~/.bash_history.d/.history.$(t16g)
+    fi
+
+    if [ -n "$*" ]; then
+        1>&2 echo "unexpected arguments: \"$*\""
+        return 1
+    fi
+    set -o history
+    history -a
+}
+history_enable_and_read() {
+    if [ -n "$*" ]; then
+        1>&2 echo "unexpected arguments: \"$*\""
+        return 1
+    fi
+    set -o history
+    history -n
+    history -r
+    history -a
+}
 history_show() {
     # TODO: WIP: write a func to print history neatly and accept argv to flag whether to print history commands, narrow by date range and/or entry number
-    local -Ar regex_grouped_parts_by_label=(
-        ["sav_start_lin"]='^(\s+)'
-        ["val_entry_num"]='([0-9]+)'
-        ["sav_entry_num"]='(\s+)'
-        ["entry_unix_ts"]='@([0-9]{9,}):'
-        ["entry_tz_abrv"]='([A-Za-z]+)'
-        ["sav_entry_tzo"]='([[:space:]]{5})'
-        ["sbv_comm_args"]='(\s*)'
-        ["val_comm_args"]='([^[:space:]]+.*)$'
-    )
-    local -ar regex_group_labels=(
-        'sav_start_lin' #'^(\s+)'
-        'val_entry_num' #'([0-9]+)'
-        'sav_entry_num' #'(\s+)'
-        'entry_unix_ts' #'@([0-9]{9,}):'
-        'entry_tz_abrv' #'([A-Za-z]+)'
-        'sav_entry_tzo' #'([[:space:]]{5})'
-        'sbv_comm_args' #'(\s*)'
-        'val_comm_args' #'([^[:space:]]+.*)$'
-    )
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -A history_entries_by_entry_number=()
+    local -A history_timestamps_by_entry_number=()
+    local -a history_lines=()
+    local -i ifs_set=0
+    local -- old_ifs="${IFS:-}"
+    local -a entry_numbers=()
+    if [[ -v IFS ]]; then
+        ifs_set=1
+    fi
+    export IFS=$'\n'
+    local -- line=""
+    history_lines=($(history))
 
-    local -ar regex_string_chunks=($(for label in ${regex_group_labels[@]}; do
-        echo "${regex_grouped_parts_by_label[${label}]}"
-    done))
-    local -r parse_history_regex="$(printf '%s' "${regex_string_chunks[@]}")"
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        if [[ ! "${arg}" =~ ^[0-9]+$ ]]; then
+            1>&2 echo -e "[${FUNCNAME[0]} warning]" "argument ${current} of ${argc} invalid (not a number): ${arg@Q}"
+            continue
+        fi
+        entry_numbers+=("${arg}")
+        # if [[ -v history_entries_by_entry_number["${arg}"] ]]; then
+        #     entry="${history_entries_by_entry_number["${arg}"]}";
+        #     echo -e "${entry}"
+        # fi
+    done
+    export IFS=$'|'
+    if [ ${#entry_numbers[@]} -eq 0 ]; then
+        entry_numbers=('[0-9]+')
+    fi
+    local -- regexp="^\s*($(echo "${entry_numbers[*]}"))\s+(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(.*)\$"
 
-    local -- oldfmt="${HISTTIMEFORMAT:-}"
-    unset HISTTIMEFORMAT
-    export HISTTIMEFORMAT='@%s:%Z     '
-    # .e.g: 547  @1766163293:UTC     history
-    builtin history | sed -E "/${parse_history_regex}/"
+    export IFS=$'\n'
+    local -- result_string=""
+    result_string=$(echo "${history_lines[*]}" | sed -n -E "/${regexp}/{s/${regexp}/date +'#\1 %Y/%m/%d %H:%M:%S %Z \n' --date=@\3\n\5/g;G;z;h;e;p}")
+
+    if (($ifs_set)); then
+        export IFS="${old_ifs}"
+    else
+        unset IFS
+    fi
+    echo "${result_string}"
 }
+env_keys() {
+    env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d'
+}
+env_var_names() {
+    env_keys
+}
+alias env-keys=env_keys
+alias env-var-names=env_var_names
+
+raw_bin_bash() { #WIP/broken
+    # # old code: cmF3X2Jpbl9iYXNoKCkgewogICAgIyBleHBvcnQgUFM0PSckKHByaW50ZiAiJXMgbGluZSAlLSpzXHQiICJbJHtGVU5DTkFNRVswXX0iIDQgIiR7TElORU5PWzBdfV0iKScKICAgICMgc2V0IC14CiAgICBleHBvcnQgSUZTPSQnXG4nCiAgICBsb2NhbCAtYSBlbnZfdmFyX25hbWVzPSgpCiAgICBsb2NhbCAtLSBiYXNoX2Jpbl9wYXRoPSIiCiAgICBsb2NhbCAtYSBiYXNoX3BhcmFtcz0oCiAgICAgICAgJy0tbm9yYycKICAgICAgICAnLS1yZXN0cmljdGVkJwoKICAgICAgICAnLS1kZWJ1ZycKICAgICAgICAnLS1kZWJ1Z2dlcicKICAgICkKICAgIGVudl92YXJfbmFtZXM9KAogICAgICAgICQoZW52IHwgc2VkIC1uIC1FICdzL14oW0EtWl9dK1tBLVowLTlfXSspPSguKikkL1xuXDFcbi9ncCcgfCBzb3J0IC11IHwgc2VkIC1FICcvXlxzKiQvZCcpCiAgICApCiAgICBiYXNoX2Jpbl9wYXRoPSIkKHR5cGUgLVAgYmFzaCkiCiAgICBiYXNoX2Jpbl9wYXRoPSIvb3B0L2hvbWVicmV3L2Jpbi9iYXNoIgoKICAgIGxvY2FsIC1hIHVuc2V0X3ZhcnNfc3RtdHM9KCQocHJpbnRmICd1bnNldCAlcztcbicgIiR7ZW52X3Zhcl9uYW1lc1tAXX0iKSkKICAgIGxvY2FsIC1hIGluaXRfc3RtdHM9KAogICAgICAgICR7dW5zZXRfdmFyc19zdG10c1tAXX0KICAgICAgICAnc2V0IC11bWVURScKICAgICAgICAnc2V0ICtmJwogICAgICAgICdzZXQgLW8gcGlwZWZhaWwnCiAgICAgICAgJ2V4cG9ydCBQUzE9Ilx1QFxoOlx3XFxcJCAiJwogICAgKQogICAgbG9jYWwgLS0gdG1wX2luaXRfZmlsZT0kKG1rdGVtcCkKICAgIHByaW50ZiAnJXM7XG4nICR7aW5pdF9zdG10c1tAXX0gPiR7dG1wX2luaXRfZmlsZX0KCiAgICBsb2NhbCAtYSB2YXJfbmFtZXM9KCQoZW52X3Zhcl9uYW1lcykpCgogICAgZGVjbGFyZSAtYSBiYXNoX2NvbW1hbmRfbGluZXM9KCkKICAgIGRlY2xhcmUgLWkgYmFzaF9pbnRlcmFjdGl2ZV9jYWxsX2xpbmVzPSgKICAgICAgICAiJHtiYXNoX2Jpbl9wYXRofSIKICAgICAgICAkKHByaW50ZiAnJXNcbicgJHtiYXNoX3BhcmFtc1tAXX0pCiAgICAgICAgJy0taW5pdC1maWxlJwogICAgICAgICIke3RtcF9pbml0X2ZpbGV9IgogICAgICAgICItaSIKICAgICkKICAgIGRlY2xhcmUgLS0gYmFzaF9pbnRlcmFjdGl2ZV9jYWxsPSIke2Jhc2hfaW50ZXJhY3RpdmVfY2FsbF9saW5lc1tAXX0iCiAgICBiYXNoX2NvbW1hbmRfbGluZXM9KAogICAgICAgICQocHJpbnRmICclcztcbicgJHt1bnNldF92YXJzX3N0bXRzW0BdfSkKICAgICAgICAiJHtiYXNoX2ludGVyYWN0aXZlX2NhbGx9IgogICAgKQoKICAgIGVjaG8gLWUgIlx4MWJbMTszODs1OzIyMG0ke2Jhc2hfYmluX3BhdGh9IC1jICR7YmFzaF9jb21tYW5kX2xpbmVzW0BdfVx4MWJbMG0iCiAgICBzZXQgK3gKfQo=
+    # export IFS=$'\n'
+    # local -a env_var_names=()
+    # local -- bash_bin_path=""
+    # local -a bash_params=(
+    #     '--norc'
+    #     '--restricted'
+
+    #     '--debug'
+    #     '--debugger'
+    # )
+    # local -- bin_bash_fallback_path="";
+    # local -i code=0;
+    # if ! bin_bash_fallback_path=$(type -P bash); then
+    #     code=$?;
+    #     1>&2 echo -e "[${FUNCNAME[0]} critical error]" "cannot find executable: bash"
+    #     return $(( code | 1 ))
+    # fi
+
+    # env_var_names=(
+    #     $(env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d')
+    # )
+    # # bash_bin_path="$(type -P bash)"
+    # bash_bin_path="/opt/homebrew/bin/bash"
+
+    # local -- tmp_init_file=$(mktemp);
+    # local -- indent="$(printf '%*s' 4 ' ')";
+    # local -a debug_vars_keys=();
+    # local -A debug_vars=();
+    # debug_vars["\${0}"]="${0}";
+    # debug_vars["\${0@Q}"]="${0@Q}";
+    # local -i idx=-0;
+    # local -i idxval=-0;
+    # local -- key=''
+    # local -a key_parts=()
+    # local -- s_value=''
+    # local -i i_value=-1;
+    # for idx in ${!BASH_ARGS[@]}; do
+    #     idxval=${BASH_ARGS[$idx]};
+    #     key_parts=(
+    #         '\\\$'
+    #         '{'
+    #         "${idx}"
+    #         '}'
+    #     )
+    #     key="$(printf '%s' "${key_parts[@]}")"
+    #     debug_vars["${key}"]="${idxval}";
+    #     key="\\\$${idx}";
+    #     debug_vars["${key}"]="${idxval}";
+    # done
+    # local -a init_comments=(
+    #     "shell-script auto-generated by ${script_name}"
+    #     ""
+    #     $(printf '%s%s\n' "${0}" (.i.e.: ${0@Q}) @ $(date --iso-8601=seconds --utc) ${TZ@A})
+    #     ""
+    # )
+    # local -a unset_vars_stmts=($(printf 'unset %s;\n' "${env_var_names[@]}"))
+    # local -a post_unset_init_stmts_no_semicolon=(
+    #     'set -umeTE'
+    #     'set +f'
+    #     'set -o pipefail'
+    #     'export PS1="\u@\h:\w\\\$ "'
+    # )
+    # local -a init_stmts=(
+    #     ${unset_vars_stmts[@]}
+    #     $(printf '%s;\n' "${init_stmts[@]}")
+    # );
+    # (echo -e '#!/usr/bin/env bash\n\n';
+    #  echo -e
+    # printf '%s;\n' ${init_stmts[@]} >${tmp_init_file}
+    # local -a var_names=($(env_var_names))
+
+    # if [ -z "${bash_bin_path}" ]; then
+    #     1>&2 echo -e "[!!! ${FUNCNAME[0]} warning !!!]" "${bash_bin_path} is empty ${bin_bash_fallback_path@Q}"
+    #     bash_bin_path="${bin_bash_fallback_path}"
+    # elif [ ! -x "${bash_bin_path}" ]; then
+    #     1>&2 echo -e "[!!! ${FUNCNAME[0]} warning !!!]" "${bash_bin_path} is not executable, falling back to ${bin_bash_fallback_path@Q}"
+    #     bash_bin_path="${bin_bash_fallback_path}"
+    # fi
+
+    # declare -a bash_command_lines=()
+    # declare -i bash_interactive_call_lines=(
+    #     "${bash_bin_path}"
+    #     $(printf '%s\n' ${bash_params[@]})
+    #     '--init-file'
+    #     "${tmp_init_file}"
+    #     "-i"
+    # )
+    # declare -- bash_interactive_call="${bash_interactive_call_lines[@]}"
+    # bash_command_lines=(
+    #     $(printf '%s;\n' ${unset_vars_stmts[@]})
+    #     "${bash_interactive_call}"
+    # )
+
+    # echo -e "\x1b[1;38;5;220m${bash_bin_path} -c ${bash_command_lines[@]}\x1b[0m"
+    # set +x
+    bash -c "$(printf '%s;\n' ${argv[@]} | sed -E 's/(^\s*(\s*[;]+\s*)+\s*$)//g' | sed -E 's/(^\s+|\s+$)//g')"
+}
+
+function gitdebugrevparse() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- prefix_result_string=''
+    local -- top_level_result_string=''
+    local -- final_result_string=""
+    local -- here=$(pwd)
+    local -a top_level_command=(git rev-parse '--show-toplevel')
+    local -a prefix_command=(git rev-parse '--show-prefix')
+    local -A final=()
+
+    if ! top_level_result_string="$(${top_level_command[@]})"; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "not under a git repo: ${here@Q}"
+        return 404
+    else
+        final["${top_level_command[@]}"]="${top_level_result_string}"
+    fi
+    prefix_result_string="$(${prefix_command[@]})"
+    final["${prefix_command[@]}"]="${prefix_result_string}"
+    final["${final_command[@]}"]="${final_result_string}"
+
+    local -a base_final_command=(git rev-parse '--prefix' "${prefix_result_string}")
+    local -a final_command=(${base_final_command[@]})
+
+    if (($argc)); then
+        final_command+=('--' ${argv[@]})
+    fi
+    final_result_string="$(${final_command[@]})"
+    (cd "${git_root}" && echo "${final_result_string}")
+}
+
+set_key_value_in_history_context() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -A arg_index_regexes=()
+    local -A arg_index_name=()
+
+    local -A arg_index_values=()
+    local -A arg_name_values=()
+
+    local -- varname_regexp='^([a-zA-Z_]+[a-zA-Z0-9_]+)$'
+    local -- value_regexp='^(.*)$'
+    local -- regexp=''
+    local -- arg_name=""
+    local -- varname=""
+    local -- key=""
+    local -- value=""
+    arg_index_name[0]="varname"
+    arg_index_name[1]="key"
+    arg_index_name[2]="value"
+    arg_index_regexes["varname"]="${varname_regexp}"
+    arg_index_regexes["key"]="${varname_regexp}"
+    arg_index_regexes["value"]="${value_regexp}"
+
+    if [ ${argc} -lt 3 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]}]" "missing arguments: <VARNAME> <KEY> <VALUE>"
+        return 1
+    fi
+
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        prefix=$(printf '%*s of %s' ${argc} ${current} ${argc})
+        if [ ${index} -le 3 ]; then
+            arg_name=${arg_index_name[$index]}
+            regexp=${arg_index_regexes[$index]}
+
+            if [[ "${arg}" =~ ${regexp} ]]; then
+                arg_index_values["${index}"]="${arg}"
+                arg_name_values["${arg_name}"]="${arg}"
+            else
+                1>&2 echo -e "[${FUNCNAME[0]} error in argument ${prefix}]" "${arg_name} argument does not match regexp ${regexp@Q}"
+                return 1
+            fi
+        else
+            1>&2 echo -e "[${FUNCNAME[0]} error in argument ${prefix}]" "unexpected argument ${arg@Q}"
+            return 1
+        fi
+    done
+
+    varname=${arg_name_values['varname']}
+    key=${arg_name_values['key']}
+    value=${arg_name_values['value']}
+
+    local -- surrogate_map_name="${varname}_map"
+    local -- surrogate_list_name="${varname}_list"
+    local -- surrogate_list_type="${surrogate_list_name@a}"
+    local -- surrogate_map_type="${surrogate_map_name@a}"
+
+    if [[ ! -v "${surrogate_list_name[@]}" ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "varname ${surrogate_list_name@Q} does not exist"
+        return 1
+    elif [ "${surrogate_list_name@a}" != "a" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "type variable ${surrogate_list_name@Q} should be indexed array (.i.e.: 'a') but is ${surrogate_list_type@Q} (${surrogate_list_name[@]@A})$"
+        return 1
+    fi
+    if [[ ! -v "${surrogate_map_name[@]}" ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "varname ${surrogate_map_name@Q} does not exist"
+        return 1
+    elif [ "${surrogate_map_name@a}" != "A" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "type variable ${surrogate_map_name@Q} should be indexed array (.i.e.: 'A') but is ${surrogate_map_type@Q} (${surrogate_map_name[@]@A})$"
+        return 1
+    fi
+
+    local -I -n history_context="${varname}"
+    history_context["${key}"]="${value}"
+
+}
+
+history_with_context() {
+    declare -- varname="var_pid${$}_hist_$(history_length)"
+    declare -g -A "${varname}"
+    local -I -n history_context="${varname}"
+    local -- git_repo_path=""
+    local -i in_git_repo=0
+
+    if git_repo_path=$(git rev-parse --show-toplevel); then
+        in_git_repo=1
+    fi
+
+    history_context["argv"]="${argv[@]}"
+    history_context["argc"]="${argc}"
+    if (($in_git_repo)); then
+        history_context["git_repo_path"]="${git_repo_path}"
+        history_context["git_head_commit"]="${git_repo_path}"
+        history_context["git_status_porcelain"]="${git_repo_path}"
+    fi
+    env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d'
+
+    local -a history_related_varnames=(
+        'HISTFILE'
+        'HISTFILESIZE'
+        'HISTSIZE'
+        'HISTTIMEFORMAT'
+        'HISTCONTROL'
+    )
+    local -- hist_varname=""
+    local -- hist_varval=""
+    for hist_varname in ${history_related_varnames[@]}; do
+        if [[ -v "${hist_varname}" ]]; then
+            local -I -n hist_varval="${hist_varname}"
+            history_context["${hist_varname}"]="${hist_varval}"
+        fi
+        local -- hist_varval=""
+    done
+    local -- history_pid=${$}
+
+    # export IFS=$'\n'
+    # declare -a lsof_entries=()
+    # lsof_entries=(
+    #     # $(lsof | grep -E -i "(bash|ghostty|wezterm|terminal)" | grep -E 'cwd' | awk '{print $NF}' | grep -E -v "^${HOME}\$" | sort -u | sed "s/^/$(date +"%s") /g")
+    #     $(lsof -p "${history_pid}")
+    # )
+    local -- lsof_pid=""
+    lsof_pid="$(lsof -p "${history_pid}")"
+
+    history_context["pwd"]="$(pwd)"
+    history_context["pid"]="${history_pid}"
+    history_context["lsof"]="${lsof_pid}"
+    history_context["env"]="$(env)"
+
+    if [[ -v FUNCNAME[1] ]]; then
+        history_context["caller_function_name"]="${FUNCNAME[1]}"
+        if [[ -v LINENO[1] ]]; then
+            history_context["caller_function_line_number"]="${LINENO[1]}"
+        fi
+    fi
+    if [[ -v BASH_LINENO[@] ]] && [ ${#BASH_LINENO[@]} -gt 0 ]; then
+        history_context["caller_bash_line_numbers"]="$(printf '%d\t%s\n' "${BASH_LINENO[@]@K}")"
+    fi
+    if [[ -v BASH_SOURCE[@] ]] && [ ${#BASH_SOURCE[@]} -gt 0 ]; then
+        history_context["caller_bash_sources"]="$(printf '%d\t%s\n' "${BASH_SOURCE[@]@K}")"
+    fi
+    # export IFS=$'\n'
+
+    history_context["BASH_LINENO"]=$(printf '%s\n' ${BASH_LINENO[@]})
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    history_context["history"]="$(echo "$(history)")"
+
+}
+dump_history_to_workbench() {
+    # set -x
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+    export PS4='\r\n${FUNCNAME[0]}:${LINENO[0]} '
+    local -i workbench_last_epoch=$(gdate --utc +%s)
+    local -- workbench_day=$(gdate +"${workbench_strftime_fs_day}" --date=@${workbench_last_epoch})
+    local -- workbench_fs_timestamp=$(gdate +"${workbench_strftime_fs_timestamp}" --date=@${workbench_last_epoch})
+    local -- workbench_root="$HOME/workbench"
+    local -- workbench_path="${workbench_root}/${workbench_day}"
+    local -- workbench_logs_safe_path="${workbench_root}/logs/${workbench_day}"
+    local -- workbench_logs="${workbench_path}/logs"
+    local -- workbench_stderr="${workbench_logs}/stderr.log"
+    local -- workbench_stdout="${workbench_logs}/stdout.log"
+
+    local -a hash_material=("${BASH_LINENO[@]}" "${#BASH_LINENO[@]}" "\${$}=${$}" "\${!}=${!}" "\${PWD}=${PWD@Q}")
+
+    export IFS=$'\n'
+    local -- hl_reset='\x1b[0m'
+
+    local -- hl_outer_at='\x1b[1;38;2;52;101;164m'
+    local -- hl_inner_at='\x1b[1;38;2;114;159;207m'
+
+    local -- hl_outer_star='\x1b[1;38;2;78;154;6m'
+    local -- hl_inner_star='\x1b[1;38;2;138;226;52m'
+
+    local -- hl_tag_star_open="${hl_outer_star}<\${hash_material[*]}>${hl_reset}"
+    local -- hl_content_star="${hl_inner_star}${hash_material[*]}${hl_reset}"
+    local -- hl_tag_star_close="${hl_outer_star}</\${hash_material[*]}>${hl_reset}"
+
+    local -a hl_star_lines=(
+        "$(echo -en "${hl_tag_star_open}")"
+        "$(echo -en "${hl_content_star}")"
+        "$(echo -en "${hl_tag_star_close}")"
+    )
+    echo -e "${hl_star_lines[*]}"
+
+    local -- history_with_context="$(history_with_context)"
+    local -- commit_subject="save state $(nowdz)\n" # &&
+    local -- commit_body="$(echo -e \"$(git status | grep -E -v '(^On\s+branch\s+|.*[(]\s*use.*git(\s*(add|push)).*)' | sed -E 's/^([[:space:]]{1,})([^[:space:]]+.*)$/    \2/g')\n\")"
+    local -- commit_message="$(echo -e \"${commit_subject}\n${commit_body}\n\n\")"
+
+    echo -e "\${commit_subject}=${commit_subject}"
+    # echo -e "\${commit_subject@A}=${commit_subject@A}"
+    # echo -e "\${commit_subject@Q}=${commit_subject@Q}"
+
+    echo -e "\${commit_body}=${commit_body}"
+    # echo -e "\${commit_body@A}=${commit_body@A}"
+    # echo -e "\${commit_body@Q}=${commit_body@Q}"
+
+    echo -e "\${commit_message}=${commit_message}"
+    # echo -e "\${commit_message@A}=${commit_message@A}"
+    # echo -e "\${commit_message@Q}=${commit_message@Q}"
+
+    # git add *.*;
+
+    # git commit -am "$(echo -e "${commit_message}\n")"
+    #set +x
+    unset PS4
+
+}
+
+wip() {
+    . ~/opt/lib/ansi.sh
+    local -- verbose="false"
+    if [ -n "$1" ]; then
+        case "$1" in
+            "-v")
+                verbose="true"
+                shift
+                ;;
+            *) ;;
+        esac
+    fi
+    local -a what=($@)
+    if [ ${#what[@]} -eq 0 ]; then
+        bar_text_left 233 231 "missing description"
+        return 1
+    fi
+    local -- bashpid="$$"
+    local -- title="WIP ON $(date +"%Y/%m/%d %H:%M:%S") (bash pid: ${bashpid})"
+    local -- under=$(echo "$(seq ${#title})" | tr -d '[:digit:]' | tr '\n' '~')
+    entries=$(lsof | ack -i "(bash | ghostty | wezterm | terminal)" | grep cwd | lastcol | ack -v "^${HOME}\$" | sort -u | sed "s/^/$(date +"%s") /g")
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- note=$(echo -e "${title}\n${under}\n\n${what[@]} in directory $(pwd)\n\n${entries}\n\n$(history)\n\n")
+    base_log_path=$HOME/projects/notes/wip/mit-context
+    ts=$(nowts | xargs slugify-string)
+    log_path=${base_log_path}.${ts}.txt
+    mkdir -p $(dirname "${log_path}")
+    echo -e "${note}" >${log_path}
+
+    if [ "${verbose}" == "true" ]; then
+        1>&2 echo "wrote: ${log_path}"
+    fi
+}
+
 defer() {
     local -a defer_argv=($@)
     local -i defer_argc=${#defer_argv[@]}
@@ -1298,40 +2298,116 @@ blame_command_exit_code() {
     echo -e "\n\n\x1b[1;38;5;248mcommand \x1b[1;38;5;220m${prog} $(printf '\x1b[1;38;5;222m%s\x1b[0m ' ${prog_args[@]})\x1b[1;38;5;248mexited with code=\x1b[1;38;5;${color}m${exit_code}\x1b[0m"
 }
 
-
-declare -rA declare_flags=()
- # 1539  @1768444406:UTC     ord '\* &^%$#@!~:;.,?/{}[]\|/"`'"'" | sed -E 's/^"(.)"\s+[0-9]+\s+0x([a-fA-F0-9]+).*/#\2\tsed -E \x27s\x2f[\1]\x2f\\x\2\x2fg\x27/g'
--f	restrict action or display to function names and definitions
--F	restrict display to function names only (plus line number and source file when debugging)
--g	create global variables when used in a shell function; otherwise ignored
--I	if creating a local variable, inherit the attributes and value of a variable with the same name at a previous scope
--p	display the attributes and value of each NAME
-
-
--a	to make NAMEs indexed arrays (if supported)
--A	to make NAMEs associative arrays (if supported)
--i	to make NAMEs have the `integer' attribute
--l	to convert the value of each NAME to lower case on assignment
--n	make NAME a reference to the variable named by its value
--r	to make NAMEs readonly
--t	to make NAMEs have the `trace' attribute
--u	to convert the value of each NAME to upper case on assignment
--x	to make NAMEs export
-}
-
-
-get_bashs_command_declare_flags() {}
-
-filter_bash_variables_containing() {
+gawk_prettify_stdin() {
     if [ -t 0 ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "stdin is a terminal"
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "stdin is a tty"
         return 1
     fi
 
-    local -r regexp="^\s*((declare|local)\s+[-][a-zA-Z-]+\s+)?([^=]*hist[^=]*)=(.*)'
+    #set -x
+    local -- pretty_printed_output=""
+    local -i code=0
+
+    local -- original_input="$(cat </dev/stdin)"
+    if ! pretty_printed_output="$(gawk -f - -o- <<<"${original_input}")"; then
+        code=$?
+    fi
+
+    # It seems that when feeding ``gawk --pretty-print`` with invalid
+    # syntax, rather than to exit with error gawk uses some optimistic
+    # algorithm to generate valid output.
+
+    # To mitigate that, the code below provides an extra layer of
+    # validation so that the user can at least take an educated
+    # decision in judging whether gawk's result is sound.
+
+    # The algorithm is simple: it is simply a pipeline of `sed'
+    # commands which strips as much whitespace as possible from
+    # whatever is fed into it, then further trims any remaining
+    # whitespaces from the beginning and end of each line and finally
+    # strips all blank lines.
+
+    # Simply put: the present bash function passes both versions (the
+    # output of gawk's pretty-printer and a copy of the input code fed
+    # into it) to this "minifier of sorts", naively compares the
+    # minified versions via unified diff (.i.e.: ``diff -u``) and
+    # presents the differences to the user (if any)
+
+    # it is pretty naive but is better than nothing.
+    local -r pipeline='s/[\n[:space:]]+/ /g;s/(\n\s+|\s+\n)//g;s/[{]\s+[}]/{}/g;h;p'
+
+    local -- minified_input=$(sed -E "${pipeline}" <<<"${original_input}")
+    local -- minified_output=$(sed -E "${pipeline}" <<<"${pretty_printed_output}")
+
+    local -i unix_ts=$(date --utc +'%s')
+    local -- batch_id=$(date +'%Y-%m-%d.%H-%M-%S.%s' --date=@${unix_ts})
+    local -- tmp_workdir="$(mktemp -d)"
+    local -- tmp_original_input_file="${tmp_workdir}/original_input.${batch_id}.awk"
+    local -- tmp_original_output_file="${tmp_workdir}/original_output.${batch_id}.awk"
+    local -- tmp_minified_input_file="${tmp_workdir}/minified_input.${batch_id}.awk"
+    local -- tmp_minified_output_file="${tmp_workdir}/minified_output.${batch_id}.awk"
+
+    echo "${original_input}" >${tmp_original_input_file}
+    echo "${pretty_printed_output}" >${tmp_original_output_file}
+
+    echo "${minified_input}" >${tmp_minified_input_file}
+    echo "${minified_output}" >${tmp_minified_output_file}
+
+    local -i diff_exit_code=0
+    local -- diff_output=""
+
+    if ! diff_output=$(diff -u "${minified_input}" "${minified_output}"); then
+        diff_exit_code=$?
+    fi
+
+    echo "${pretty_printed_output}"
+
+    if [ ${diff_exit_code} -ne 0 ] || [ "${diff_output}" -gt 0 ]; then
+        1>&2 echo -e "[important]" "naive check of the resulting prettified code has found a differences that you might like to be aware of. could be nothing important but that's up for you to decide."
+        diff -u --colorv "${minified_input}" "${minified_output}"
+    fi
+    return ${code}
+
 }
 
-varnames() {
-    declare -p | grep -i -E '^declare\s+[-][a-zA-Z-]+\s+([^=]*hist[^=]*)=(.*)'
+alias gawk-prettify-stdin="gawk_prettify_stdin"
 
+stty_outputs() {
+    unset PS4
+    # set +x;
+    # local -- oldps1="${PS1}";
+    # local -- oldprompt_command="${PROMPT_COMMAND}";
+    # export PS1='';
+    # export PROMPT_COMMAND='';
+    # echo -en "\x1b[2J\x1b[3J\x1b[H";
+    # set -x;
+    local -i code=0
+    local -a stty_cmd=()
+    declare -g -A stty_outputs=()
+    local -- stty=''
+    local -- tmp=''
+    local -- stderr="$(mktemp)"
+    local -- stderr_prefix=""
+    local -- sed_command=""
+    for stty in $(which -a stty); do
+        code=0
+        stty_cmd=("${stty}" '-a')
+        if ! tmp="$(2>${stderr} ${stty_cmd[@]})"; then
+            code=$?
+        fi
+        if [ "${code}" -ne 0 ]; then
+            stderr_prefix="${stty_cmd[@]} failed with exit code ${code}"
+            sed_command="s%^%${stderr_prefix}%g"
+            stty_outputs["${stty}"]="$(sed -E "${sed_command}" "${stderr}")"
+        else
+            stty_outputs["${stty}"]="${tmp}"
+        fi
+    done
+    # set +x;
+    # export PS1="${oldps1}";
+    # export PROMPT_COMMAND="${oldprompt_command}";
 }
+
+# include_wip!("funcdef.unique.sh");
+# include_wip!("funcdef.unicode_file_widest_line.sh");
+# include_wip!("misc.commented.sh");

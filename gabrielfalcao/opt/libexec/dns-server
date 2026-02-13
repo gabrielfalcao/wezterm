@@ -34,7 +34,7 @@ declare -i report_status_running=1
 declare -- dnsmasq_log_path=/var/log/dnsmasq.log
 declare -- function_log_dir="$HOME/opt/var/log/dns-server"
 declare -- stderr="${function_log_dir}/stderr.${now}.log"
-declare -- dnsmasq_conf_path=/opt/homebrew/etc/dnsmasq.07e80a212e0704.conf
+declare -- dnsmasq_conf_path=/opt/homebrew/etc/dnsmasq.main.conf
 declare -- conf_parent_path=$(dirname "${dnsmasq_conf_path}")
 declare -- conf_filename=$(basename "${dnsmasq_conf_path}")
 

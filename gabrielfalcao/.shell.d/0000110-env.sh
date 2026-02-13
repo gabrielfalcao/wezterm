@@ -1,6 +1,10 @@
 set -o pipefail
 export IFS=$'\n'
 
+declare -ga shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
+# # declare -gar shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
+# declare -r shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
+
 if [[ ! -v shell_d_path ]]; then
     declare -r shell_d_path="${HOME}/.shell.d" # revised
 fi

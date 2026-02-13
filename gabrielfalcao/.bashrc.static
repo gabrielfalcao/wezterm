@@ -99,27 +99,21 @@ declare -x TERM_PROGRAM_VERSION="20251107-060518-3c7412da";
 declare -x TMPDIR="/var/folders/5l/0pt7q7yd5md3r8888fgcksw80000gn/T/";
 declare -x TZ="UTC";
 declare -x USER="gabrielfalcao";
-declare -x WEZTERM_CONFIG_DIR="/Users/gabrielfalcao";
-declare -x WEZTERM_CONFIG_FILE="/Users/gabrielfalcao/.wezterm.lua";
-declare -x WEZTERM_EXECUTABLE="/Applications/WezTerm.app/Contents/MacOS/wezterm-gui";
-declare -x WEZTERM_EXECUTABLE_DIR="/Applications/WezTerm.app/Contents/MacOS";
-declare -x WEZTERM_PANE="129";
-declare -x WEZTERM_UNIX_SOCKET="/Users/gabrielfalcao/.local/share/wezterm/gui-sock-529";
 declare -x XPC_FLAGS="0x0";
 declare -x XPC_SERVICE_NAME="application.com.github.wez.wezterm.154016989.229292086";
 declare -- _="echo";
 declare -x __CFBundleIdentifier="com.github.wez.wezterm";
 declare -x __CF_USER_TEXT_ENCODING="0x1F5:0:0";
-declare -ir bash_expiration_seconds="21600";
-declare -r bash_interactive_lsof_output=$'COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME\nbash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d\nbash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash\nbash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE\nbash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld\nbash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1\nbash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043';
-declare -ar bash_interactive_lsof_output_lines=([0]="COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME" [1]="bash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d" [2]="bash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash" [3]="bash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE" [4]="bash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld" [5]="bash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043" [6]="bash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043" [7]="bash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043" [8]="bash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1" [9]="bash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043")
+declare -i bash_expiration_seconds="21600";
+declare - bash_interactive_lsof_output=$'COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME\nbash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d\nbash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash\nbash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE\nbash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld\nbash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1\nbash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043';
+declare -a bash_interactive_lsof_output_lines=([0]="COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME" [1]="bash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d" [2]="bash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash" [3]="bash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE" [4]="bash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld" [5]="bash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043" [6]="bash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043" [7]="bash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043" [8]="bash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1" [9]="bash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043")
 declare -i bash_static_state_last_modified="0";
 declare -i bash_static_state_last_modified_delta="1770744410";
-declare -r bash_static_state_path="/Users/gabrielfalcao/.static.bashrc";
+declare - bash_static_state_path="/Users/gabrielfalcao/.static.bashrc";
 declare -a current_caller_frame=()
 declare -A current_caller_info=()
-declare -ar default_shell_d_path=([0]="/Users/gabrielfalcao/.shell.d")
-declare -ar default_x_d_path=([0]="/Users/gabrielfalcao/.shell.d/x.d")
+declare -a default_shell_d_path=([0]="/Users/gabrielfalcao/.shell.d")
+declare -a default_x_d_path=([0]="/Users/gabrielfalcao/.shell.d/x.d")
 declare -a deferred_prog_commands=()
 declare -A deferred_prog_finished_at_utc=()
 declare -A deferred_prog_pids=()
@@ -132,11 +126,11 @@ declare -a global_set_ifs_callers=()
 declare -a global_set_ifs_values=()
 declare -- gnu_bash_libexec="/opt/homebrew/bin/bash";
 declare -A hist_commands_by_entry_id=()
-declare -r hist_time_format_timestamp_tz="@%s:%Z     ";
-declare -r hist_time_regexp_timestamp_tz="^\\s*([0-9]+)\\s*(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$";
-declare -r hist_time_regexp_timestamp_tz_no_entry_id="(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$";
+declare - hist_time_format_timestamp_tz="@%s:%Z     ";
+declare - hist_time_regexp_timestamp_tz="^\\s*([0-9]+)\\s*(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$";
+declare - hist_time_regexp_timestamp_tz_no_entry_id="(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$";
 declare -- latest_node_version="v22.18.0";
-declare -ar list_pair_xcodepoint_escaped=([0]="\\x22" [1]="\\x27" [2]="\\x60")
+declare -a list_pair_xcodepoint_escaped=([0]="\\x22" [1]="\\x27" [2]="\\x60")
 declare -Ar map_pair_xcodepoint_hex_escaped_by_value=(["'"]="\\x27" ["\""]="\\x22" ["\`"]="\\x60" )
 declare -Ar map_pair_xcodepoint_value_by_hex_escaped=(["\\x22"]="\"" ["\\x27"]="'" ["\\x60"]="\`" )
 declare -i now="1770744410";
@@ -145,33 +139,33 @@ declare -- regexp_group_variable_value_variants="([^\\5]*|\\\\\\5[^\\5]*|\\\\\\5
 declare -A shell_d_checked_shell_scripts_result_map=()
 declare -A shell_d_checked_shell_scripts_stderr_map=()
 declare -A shell_d_checked_shell_scripts_stdout_map=()
-declare -r shell_d_config_files_path="/Users/gabrielfalcao/.shell.d/conf.d";
-declare -r shell_d_entrypoint="/Users/gabrielfalcao/.shell.d/entrypoint.sh";
-declare -r shell_d_entrypoint_source_path_relative="/Users/gabrielfalcao/.shell.d/entrypoint.sh";
+declare - shell_d_config_files_path="/Users/gabrielfalcao/.shell.d/conf.d";
+declare - shell_d_entrypoint="/Users/gabrielfalcao/.shell.d/entrypoint.sh";
+declare - shell_d_entrypoint_source_path_relative="/Users/gabrielfalcao/.shell.d/entrypoint.sh";
 declare -i shell_d_finished_at="1770744411";
-declare -ir shell_d_in_linux="0";
-declare -ir shell_d_in_macos="1";
-declare -r shell_d_kernel_name="darwin";
-declare -ir shell_d_pid="64234";
+declare -i shell_d_in_linux="0";
+declare -i shell_d_in_macos="1";
+declare - shell_d_kernel_name="darwin";
+declare -i shell_d_pid="64234";
 declare -- shell_d_python_bin_path="/Users/gabrielfalcao/.shell.d/.venv/bin";
 declare -- shell_d_python_manifest="/Users/gabrielfalcao/.shell.d/pyproject.toml";
 declare -- shell_d_python_root_path="/Users/gabrielfalcao/.shell.d/.venv";
 declare -- shell_d_python_script=$'import os\nfrom argparse import ArgumentParser, ArgumentTypeError\nfrom pathlib import Path\n\nparser = ArgumentParser(prog="resolve-path")\nparser.add_argument(\n    "paths",\n    nargs="+",\n    type=lambda p: (not Path(p).exists() and ArgumentTypeError(f"does not exist {p}"))\n    or Path(p).expanduser().absolute(),\n)\n\nprint(os.getenv("IFS", "\\n").join(map(str, parser.parse_args().paths)))';
-declare -r shell_d_rc_files_path="/Users/gabrielfalcao/.shell.d/rc.d";
-declare -r shell_d_root_path="/Users/gabrielfalcao/.shell.d";
+declare - shell_d_rc_files_path="/Users/gabrielfalcao/.shell.d/rc.d";
+declare - shell_d_root_path="/Users/gabrielfalcao/.shell.d";
 declare -- shell_d_rust_bin_path="/Users/gabrielfalcao/.cargo/bin";
 declare -- shell_d_rust_env_path="/Users/gabrielfalcao/.cargo/env";
 declare -- shell_d_rust_root_path="/Users/gabrielfalcao/.cargo";
 declare -- shell_d_rust_toolchain="";
-declare -ir shell_d_started_at="1770744410";
-declare -r shell_script_value_regexp_group_anything="(.*)";
-declare -r shell_script_value_regexp_group_wrapped_in_double_quote="(([\"])([^\"]*.*)([\"]))";
-declare -r shell_script_value_regexp_group_wrapped_in_parenthesis="(([(])([^()]*.*)([)]))";
-declare -r shell_script_value_regexp_group_wrapped_in_single_quote="(([\\'])([^\\']*.*)([\\']))";
-declare -ar shell_script_var_assignment_nonempty_regexp_parts=([0]="(([\"])([^\"]*.*)([\"]))" [1]="(([\\'])([^\\']*.*)([\\']))" [2]="(([(])([^()]*.*)([)]))" [3]="(.*)")
-declare -r shell_script_var_declaration_regexp="^(\\s*)((declare|local)\\s+[-][a-zA-Z-]+\\s+|(unset|export)\\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*)([^=]+)?)([=]\${regexp_group_variable_value_variants[*]})\$";
-declare -ar shell_script_var_declaration_regexp_non_line_bound=()
-declare -r shell_state_script_path="/Users/gabrielfalcao/.shell.d/x.d/shell-state.sh";
+declare -i shell_d_started_at="1770744410";
+declare - shell_script_value_regexp_group_anything="(.*)";
+declare - shell_script_value_regexp_group_wrapped_in_double_quote="(([\"])([^\"]*.*)([\"]))";
+declare - shell_script_value_regexp_group_wrapped_in_parenthesis="(([(])([^()]*.*)([)]))";
+declare - shell_script_value_regexp_group_wrapped_in_single_quote="(([\\'])([^\\']*.*)([\\']))";
+declare -a shell_script_var_assignment_nonempty_regexp_parts=([0]="(([\"])([^\"]*.*)([\"]))" [1]="(([\\'])([^\\']*.*)([\\']))" [2]="(([(])([^()]*.*)([)]))" [3]="(.*)")
+declare - shell_script_var_declaration_regexp="^(\\s*)((declare|local)\\s+[-][a-zA-Z-]+\\s+|(unset|export)\\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*)([^=]+)?)([=]\${regexp_group_variable_value_variants[*]})\$";
+declare -a shell_script_var_declaration_regexp_non_line_bound=()
+declare - shell_state_script_path="/Users/gabrielfalcao/.shell.d/x.d/shell-state.sh";
 declare -a shfmt_args=([0]="-bn" [1]="-ci" [2]="-i" [3]="4" [4]="-ln=bash")
 declare -- sorter="/Users/gabrielfalcao/.cargo/bin/path";
 export PATH='/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin'

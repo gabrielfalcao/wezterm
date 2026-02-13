@@ -23,9 +23,8 @@ declare -i exit_code=0
 declare -- curdir=$(pwd)
 declare -a font_files=()
 declare -a font_directories=()
-declare -- TEXT="Hello World"
-
-
+declare -a showcase_words=()
+declare -A output_by_word=()
 declare -- error_prefix_color_rgb="239;41;41"
 declare -- error_color_rgb="204;0;0"
 
@@ -209,6 +208,7 @@ process_argv() {
                     error_prefixed "[argument error]" "missing filename argument after \042=\042 ${current} of ${argc}: ${arg@Q}"
                     exit 1
                 fi
+                ;;
             -d)
                 if [ -n "${next_arg}" ]; then
                     font_directories+=("${next_arg}")
@@ -226,11 +226,30 @@ process_argv() {
                     error_prefixed "[argument error]" "missing filename argument after \042=\042 ${current} of ${argc}: ${arg@Q}"
                     exit 1
                 fi
-
                 ;;
+            *)
+                # if [[ "${arg}" =~ \\[nt] ]]; then
+                #     word="$(echo -e "${arg}")"
+                # fi
+                # if [ "${word}" != "${arg}" ]; then
+                local -- word=""
+                local -a candidate_words=()
 
+                candidate_words=($(echo -e "${arg}"))
+                for word in ${candidate_words[@]}; do
+                    # if [[ "${word}" =~ ^[a-zA-Z0-9_,;:\"\'./\\-]+$ ]]; then
+                    if [[ "${word}" =~ ^[a-zA-Z0-9_./\\-]+$ ]]; then
+                        showcase_words+=("${word}")
+                    fi
+                done
+                ;;
+        esac
     done
     repl sane
+
+    if [ ${#showcase_words[@]} -eq 0 ]; then
+        showcase_words=("Hello" "World")
+    fi
 }
 
 main() {
@@ -247,19 +266,29 @@ fi
 repl sane
 #!/bin/bash
 
-function display() {
+display() {
+    local -- text=""
+    local -- word=""
+    local -- font=""
+    local -a figlet_args=()
+
     local -r lpath="$(brew --prefix figlet)/share/figlet/fonts"
     for font in $(find "$lpath" -name "*.flf" -not -path '*C64*'); do
+        figlet_args=( "-w" 160 "-f" "${font}" )
         directory=$(dirname $font)
         group_name=$(basename $directory)
         filename=$(basename $font)
         relative_path=${font##$lpath/}
 
         name="${filename%.*}"
-        cmd="figlet -w 160 -f ${font} ${TEXT}"
-        printf "\x1b[1;38;5;51m\"${TEXT}\" \x1b[0mwith font \x1b[1;38;5;220m${name} (${group_name}) \x1b[1;38;5;250m${relative_path} \x1b[1;38;5;237m${font}\x1b[0m\n\n\n"
-        $cmd
-        printf "\n\n"
+        echo -e "\x1b[1;38;5;51m\"${showcase_words[@]}\" \x1b[0mwith font \x1b[1;38;5;220m${name} (${group_name}) \x1b[1;38;5;250m${relative_path} \x1b[1;38;5;237m${font}\x1b[0m\n\n"
+        for word in ${showcase_words[@]}; do
+            figlet ${figlet_args[@]} "${word}"
+            if [ ${#showcase_words[@]} -gt 1 ]; then
+                echo -e "\n"
+            fi
+        done
+        echo -e "\n\n"
         if [ "$?" != "0" ]; then
             exit 1
         fi
