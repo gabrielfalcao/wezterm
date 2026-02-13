@@ -36,8 +36,8 @@ declare -gar shell_script_var_assignment_nonempty_regexp_parts=(
     "${shell_script_value_regexp_group_wrapped_in_parenthesis}"
     "${shell_script_value_regexp_group_anything}"
 )
-declare -gar shell_script_var_declaration_regexp_non_line_bound="($(export IFS=$'|';echo "${shell_script_var_assignment_nonempty_regexp_parts}"))"
-declare -gr shell_script_var_declaration_regexp_non_line_bound='(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?'
+declare -gr shell_script_var_declaration_regexp_non_line_bound="($(export IFS=$'|';echo "${shell_script_var_assignment_nonempty_regexp_parts}"))"
+# declare -gr shell_script_var_declaration_regexp_non_line_bound='(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?'
 
 declare -g shell_script_var_declaration_regexp='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?$'
 
@@ -153,14 +153,14 @@ map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x27')"]='\x27'
 map_pair_xcodepoint_hex_escaped_by_value["$(printf '\x60')"]='\x60'
 declare -gr map_pair_xcodepoint_hex_escaped_by_value;
 
-declare -gar list_pair_xcodepoint_escaped=(
+declare -gar list_pair_xcodepoint_escaped_list=(
     '\x22'
     '\x27'
     '\x60'
 )
 export IFS=$'\n'
 declare -gar list_pair_xcodepoint_escaped=(
-    $(echo "${list_pair_xcodepoint_escaped[*]}")
+    $(echo "${list_pair_xcodepoint_escaped_list[*]}")
 )
 # </WIP codegen-for"regexp_group_variable_value_variants">
 

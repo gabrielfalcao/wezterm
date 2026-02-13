@@ -1,4 +1,4 @@
 set +x
-. ~/.bashrc.static
+# . ~/.bashrc.static
 
 . ~/.shell.d/entrypoint.sh

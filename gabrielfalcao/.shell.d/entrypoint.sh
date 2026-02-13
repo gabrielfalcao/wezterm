@@ -1,8 +1,15 @@
+export INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:";
+export MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man::";
+export PATH="/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin";
+export CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao";
+
 export TZ=UTC
 set -mTE
 
-declare -i shell_d_started_at=$(date +%s)
-declare -i shell_d_pid=${$}
+declare -gi shell_d_entrypoint_verbose=0
+
+declare -gi shell_d_started_at=$(date +%s)
+declare -gi shell_d_pid=${$}
 #<TODO read/map shopts from `man bash'>
 shopt -s checkwinsize
 shopt -s cmdhist
@@ -44,16 +51,64 @@ export PS4='$(__shell_d_sh_ps4_function__)'
 declare -gA shell_d_checked_shell_scripts_stderr_map=()
 declare -gA shell_d_checked_shell_scripts_stdout_map=()
 declare -gA shell_d_checked_shell_scripts_result_map=()
-set -x
 
 __shell_d_sh_trap_function_return__() {
     set +x
-    1>&2 echo "${FUNCNAME[1]}"
-}
+    # local -- key=''
+    # local -i index=0;
+    # local -- value=''
 
+    # for key in ${!FUNCNAME[@]}; do
+    #     value=${FUNCNAME[${key}]}
+    #     if [[ "${value}" =~ __shell_d.* ]]; then
+    #         continue
+    #     fi
+    #     1>&2 echo "\${FUNCNAME[${key}]} => ${FUNCNAME[${key}]}"
+    # done
+}
+cls() {
+
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+}
+__shell_d_sh_trap_function_debug__() {
+    set +x
+    local -a argv=(${@})
+    local -i argc=${#}
+
+    local -- func=''
+    local -- lineno=''
+    local -- key=''
+    local -i index=0;
+    local -- value=''
+
+    local -i stdin_is_tty=0;
+
+    if [ -t 0 ]; then
+        stdin_is_tty=1
+    fi
+
+    local -i total=${#FUNCNAME[@]}
+    for index in ${!FUNCNAME[@]}; do
+        func=${FUNCNAME[${index}]}
+        lineno=${BASH_LINENO[${index}]}
+        if [ ${index} -eq 0 ]; then
+            padding=""
+        else
+            padding=$(printf '%*s' "$(( index * 4 ))" " ")
+        fi
+    done
+    1>&2 echo "\${#FUNCNAME[@]} => ${#FUNCNAME[@]}  (argc: ${argc}, stdin_is_tty: ${stdin_is_tty})"
+    1>&2 echo "\${#BASH_LINENO[@]} => ${#BASH_LINENO[@]}"
+
+    # 1>&2 echo "\${FUNCNAME[0]} => ${FUNCNAME[0]} (argc: ${argc}, stdin_is_tty: ${stdin_is_tty})"
+
+}
 __shell_d_sh_trap_function_backtrace__() {
     set +x
     local -i  i
+    # local -- padding_left=''
+    # local -- indent='    '
+
     local -- stack_size=${#FUNCNAME[@]}
     1>&2 echo -e "\nBash backtrace:"
     # Loop from the second element (index 1) to skip the backtrace function itself
@@ -63,13 +118,17 @@ __shell_d_sh_trap_function_backtrace__() {
         local line="${BASH_LINENO[$((i-1))]}"
         local src="${BASH_SOURCE[$i]}"
         [ -z "$src" ] && src=non_file_source
+        # for ((pl=0; pl<=${i}; pl++)) {
+        #     padding_left="$(builtin printf '%s%s' "${padding_left}" "${indent}")"
+        # }
+        # padding_left=$(seq "${i}" | sed -z -E 's/[0-9]+//g; s/[\n]+/    /g')
         1>&2 printf "  at %s (%s:%s)\n" "$func" "$src" "$line"
     done
     set +x
-    set -x
 }
 
-# trap __shell_d_sh_trap_function_return__ return
+trap __shell_d_sh_trap_function_return__ RETURN
+# trap __shell_d_sh_trap_function_debug__ DEBUG
 trap __shell_d_sh_trap_function_backtrace__ ERR
 set -o errtrace # Ensure ERR trap is inherited by functions
 set -o functrace
@@ -168,6 +227,16 @@ shell_d_sh_declare() {
 
 }
 
+shell_d_sh_shfmt_check() {
+    local -r shfmt_path="${HOME}/go/bin/shfmt"
+    local -i code=0
+    local -- output=""
+    if [ -x "${shfmt_path}" ]; then
+        if ! output=$(${shfmt_path} $@); then
+            code=$?
+        fi
+    fi
+}
 shell_d_sh_check_shell_script() {
     set +x
     local -a argv=($@)
@@ -184,6 +253,7 @@ shell_d_sh_check_shell_script() {
     local -- shell_script_path="${argv[0]}"
     shell_d_sh_validate_non_empty_regular_file_argument "shell_script_path" "${shell_script_path}"
 
+
     shell_script_path=$(shell_d_fs_get_canonical_path "${shell_script_path}")
     local -- ps_var="\${BASH_SOURCE[0]}:\${BASH_LINENO[0]} "
     local -a shell_d_shell_d_sh_check_shell_script_lines=(
@@ -199,8 +269,6 @@ shell_d_sh_check_shell_script() {
 
         ''
         ''
-
-        # 'set -x'
 
         "$(cat "${shell_script_path}")"
     )
@@ -282,8 +350,12 @@ export HISTCONTROL='ignorespace'
 # ack 'declare\s+[-][Inlaixr-]*[r][Inlaixr-]*\s+([^=]+)=([^#]+)$' ~/.shell.d/  #
 ################################################################################
 
+declare -ga shell_d_load_source_stack=()
+
 if [[ ! -v shell_d_kernel_name ]]; then
-    declare -- shell_d_kernel_name="$(uname -s | tr '[:upper:]' '[:lower:]')" # revised
+    declare -- shell_d_kernel_name=""
+    shell_d_kernel_name="$(uname -s | tr '[:upper:]' '[:lower:]' || true)" # revised
+    1>&2 echo "${shell_d_kernel_name@A}"
     if [ -n "${shell_d_kernel_name}" ]; then
         declare -r shell_d_kernel_name="${shell_d_kernel_name}" # revised
     fi
@@ -391,12 +463,16 @@ shell_d_sh_load_libs() {
     local -- script_ui_path="${script_folder}/.${script_filename/%.sh/.ui}"
     local -- script_lib_path="${script_folder}/.${script_filename/%.sh/.lib}"
     local -a loaded=()
+    if [ -r "${script_path}" ]; then
+        shell_d_sh_load_source "${script_path}"
+        loaded+=("${script_path}")
+    fi
     if [ -r "${script_ui_path}" ]; then
-        builtin source "${script_ui_path}"
+        shell_d_sh_load_source "${script_ui_path}"
         loaded+=("${script_ui_path}")
     fi
     if [ -r "${script_lib_path}" ]; then
-        builtin source "${script_lib_path}"
+        shell_d_sh_load_source "${script_lib_path}"
         loaded+=("${script_ui_path}")
     fi
     # if [ ${#loaded[@]} -gt 0 ]; then
@@ -464,7 +540,7 @@ entrypoint() {
     fi
     local -- SHELL_D_PATH="${entrypoint_dirname}"
     local -- X_D_PATH="${SHELL_D_PATH}/x.d"
-    shell_d_sh_load_source "${X_D_PATH}/boot.sh"
+    # shell_d_sh_load_source "${X_D_PATH}/boot.sh"
 
     # <PS1>
     #     <~%2f.config%2fps1.toml>
@@ -654,6 +730,23 @@ shell_d_sh_load_source() {
     shell_d_sh_validate_non_empty_regular_file_argument "shell_script_path" "${shell_script_path}"
     shell_script_path=$(shell_d_fs_get_canonical_path "${shell_script_path}")
 
+    if ! shell_d_sh_shfmt_check "${shell_script_path}"; then
+        return $?
+    fi
+    if [ -s "${shell_script_path}" ]; then
+        local -- shell_script_path_display="${shell_script_path}"
+        if [[ "${shell_script_path_display}" =~ ^${HOME}/ ]]; then
+            shell_script_path_display="~/${shell_script_path#${HOME}/}"
+        fi
+        if (( shell_d_entrypoint_verbose )); then
+            1>&2 echo -e "\x1b[1;38;5;202mloading \x1b[1;38;5;231m${shell_script_path_display}\x1b[0m"
+        fi
+        builtin source "${shell_script_path}"
+        shell_d_load_source_stack+=("${shell_script_path}")
+    else
+        1>&2 echo -e "\x1b[1;38;5;196mcannot load empty file \x1b[1;38;5;231m${shell_script_path}\x1b[0m"
+        return 1
+    fi
 }
 xD() {
     export PS4=''
@@ -699,7 +792,6 @@ if [[ -v SHELL_D_DEBUG ]] && [ -n "${SHELL_D_DEBUG}" ]; then
 fi
 
 if [ "${0}" == "${gnu_bash_libexec}" ]; then
-    set -x
     entrypoint
     postentry
 fi

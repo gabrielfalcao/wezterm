@@ -1,7 +1,7 @@
 
 # start of func='shell_d_export_state_part1_variables'
 
-declare -x ALTERNATE_EDITOR="/opt/homebrew/bin/vim";
+export ALTERNATE_EDITOR="/opt/homebrew/bin/vim";
 declare -- BASH="/opt/homebrew/bin/bash";
 declare -i BASHPID;
 declare -A BASH_ALIASES=()
@@ -12,98 +12,98 @@ declare -A BASH_CMDS=()
 declare -- BASH_COMMAND;
 declare -a BASH_LINENO=([0]="12" [1]="3" [2]="383")
 declare -- BASH_LOADABLES_PATH="/usr/local/lib/bash:/usr/lib/bash:/opt/local/lib/bash:/usr/pkg/lib/bash:/opt/pkg/lib/bash:.";
+export INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:";
+export MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man::";
+export PATH="/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin";
+export CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao";
 declare -a BASH_REMATCH=([0]="shell_script_path")
 declare -a BASH_SOURCE=([0]="/Users/gabrielfalcao/.shell.d/scripts/static-state.sh" [1]="/Users/gabrielfalcao/.shell.d/scripts/static-state.sh" [2]="/Users/gabrielfalcao/.shell.d/scripts/static-state.sh")
 declare -- BASH_SUBSHELL;
 declare -- BASH_VERSION="5.2.26(1)-release";
-declare -x CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao";
-declare -x COLORTERM="truecolor";
+export COLORTERM="truecolor";
 declare -- COLUMNS="130";
-declare -x COMMAND_MODE="unix2003";
+export COMMAND_MODE="unix2003";
 declare -- COMP_WORDBREAKS;
 declare -- DEFAULT_NODE_VERSION="v22.18.0";
 declare -a DIRSTACK=()
-declare -x EDITOR="emc -w";
-declare -x ENCODING="utf-8";
+export EDITOR="emc -w";
+export ENCODING="utf-8";
 declare -- EPOCHREALTIME;
 declare -- EPOCHSECONDS;
-declare -x FCEDIT="vim";
+export FCEDIT="vim";
 declare -a GROUPS=()
 declare -i HISTCMD="4025";
-declare -x HISTCONTROL="ignorespace";
+export HISTCONTROL="ignorespace";
 declare -- HISTFILE="/Users/gabrielfalcao/.bash_history";
-declare -x HISTFILESIZE="211776";
-declare -x HISTSIZE="211776";
-declare -x HISTTIMEFORMAT="@%s:%Z     ";
-declare -x HOME="/Users/gabrielfalcao";
-declare -x HOMEBREW_CELLAR="/opt/homebrew/Cellar";
-declare -x HOMEBREW_FORCE_BREWED_CURL="1";
-declare -x HOMEBREW_FORCE_BREWED_GIT="1";
-declare -x HOMEBREW_GIT_EMAIL="gabrielteratos@gmail.com";
-declare -x HOMEBREW_GIT_NAME="Gabriel Falcão";
-declare -x HOMEBREW_INSTALL_BADGE="";
-declare -x HOMEBREW_LOGS="/Users/gabrielfalcao/Library/Logs/Homebrew";
-declare -x HOMEBREW_NO_ANALYTICS="set";
-declare -x HOMEBREW_NO_AUTO_UPDATE="1";
-declare -x HOMEBREW_NO_INSTALL_CLEANUP="set";
-declare -x HOMEBREW_NO_INSTALL_FROM_API="1";
-declare -x HOMEBREW_PIP_INDEX_URL="https://pypi.org/simple";
-declare -x HOMEBREW_PREFIX="/opt/homebrew";
-declare -x HOMEBREW_REPOSITORY="/opt/homebrew";
+export HISTFILESIZE="211776";
+export HISTSIZE="211776";
+export HISTTIMEFORMAT="@%s:%Z     ";
+export HOME="/Users/gabrielfalcao";
+export HOMEBREW_CELLAR="/opt/homebrew/Cellar";
+export HOMEBREW_FORCE_BREWED_CURL="1";
+export HOMEBREW_FORCE_BREWED_GIT="1";
+export HOMEBREW_GIT_EMAIL="gabrielteratos@gmail.com";
+export HOMEBREW_GIT_NAME="Gabriel Falcão";
+export HOMEBREW_INSTALL_BADGE="";
+export HOMEBREW_LOGS="/Users/gabrielfalcao/Library/Logs/Homebrew";
+export HOMEBREW_NO_ANALYTICS="set";
+export HOMEBREW_NO_AUTO_UPDATE="1";
+export HOMEBREW_NO_INSTALL_CLEANUP="set";
+export HOMEBREW_NO_INSTALL_FROM_API="1";
+export HOMEBREW_PIP_INDEX_URL="https://pypi.org/simple";
+export HOMEBREW_PREFIX="/opt/homebrew";
+export HOMEBREW_REPOSITORY="/opt/homebrew";
 declare -- HOSTNAME="MacBook-Air.local";
 declare -- HOSTTYPE="aarch64";
-declare -x IFS=$'\n';
-declare -x INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:";
-declare -x LANG="en_US.UTF-8";
-declare -x LC_ALL="en_US.UTF-8";
-declare -x LC_COLLATE="en_US.UTF-8";
-declare -x LC_CTYPE="en_US.UTF-8";
-declare -x LC_MESSAGES="en_US.UTF-8";
-declare -x LC_MONETARY="en_US.UTF-8";
-declare -x LC_NUMERIC="en_US.UTF-8";
-declare -x LC_TIME="en_US.UTF-8";
+export IFS=$'\n';
+export LANG="en_US.UTF-8";
+export LC_ALL="en_US.UTF-8";
+export LC_COLLATE="en_US.UTF-8";
+export LC_CTYPE="en_US.UTF-8";
+export LC_MESSAGES="en_US.UTF-8";
+export LC_MONETARY="en_US.UTF-8";
+export LC_NUMERIC="en_US.UTF-8";
+export LC_TIME="en_US.UTF-8";
 declare -- LINENO;
 declare -- LINES="34";
-declare -x LOGNAME="gabrielfalcao";
-declare -x LaunchInstanceID="09389D1A-217F-45AB-AF56-FAE6CC537335";
+export LOGNAME="gabrielfalcao";
+export LaunchInstanceID="09389D1A-217F-45AB-AF56-FAE6CC537335";
 declare -- MACHTYPE="aarch64-apple-darwin22.6.0";
 declare -i MAILCHECK="60";
-declare -x MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man::";
-declare -x NODE_OPTIONS="--tls-min-v1.2";
-declare -x NVM_DIR="/Users/gabrielfalcao/.nvm";
-declare -x OLDPWD;
+export NODE_OPTIONS="--tls-min-v1.2";
+export NVM_DIR="/Users/gabrielfalcao/.nvm";
+export OLDPWD;
 declare -- OPTERR="1";
 declare -i OPTIND="1";
 declare -- OSTYPE="darwin22.6.0";
-declare -x PATH="/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin";
 declare -a PIPESTATUS=([0]="0")
 declare -- POSIXLY_CORRECT="y";
-declare -x PROMPT_COMMAND="history -a";
-declare -x PS1="\\[\\r\\][#\${HISTCMD}][\\\$?=\$?] [\\\$\\\$=\$\$] \\[\\033[1;38;5;220m\\]\\u\\[\\033[1;38;5;231m\\]:\\[\\033[1;38;5;220m\\]\$(ps1 --resolve cwd:name)\\[\\033[1;38;5;37m\\]\$(ps1 --resolve git:branch)\\[\\033[1;38;5;220m\\]\\\$\\[\\033[0m\\]";
-declare -x PS2="";
-declare -x PS3="";
-declare -x PS4="";
-declare -x PWD="/Users/gabrielfalcao/.shell.d";
-declare -x PYTHONDONTWRITEBYTECODE="x";
+export PROMPT_COMMAND="history -a";
+export PS1="\\[\\r\\][#\${HISTCMD}][\\\$?=\$?] [\\\$\\\$=\$\$] \\[\\033[1;38;5;220m\\]\\u\\[\\033[1;38;5;231m\\]:\\[\\033[1;38;5;220m\\]\$(ps1 --resolve cwd:name)\\[\\033[1;38;5;37m\\]\$(ps1 --resolve git:branch)\\[\\033[1;38;5;220m\\]\\\$\\[\\033[0m\\]";
+export PS2="";
+export PS3="";
+export PS4="";
+export PWD="/Users/gabrielfalcao/.shell.d";
+export PYTHONDONTWRITEBYTECODE="x";
 declare -i RANDOM;
 declare -- SECONDS;
-declare -x SECURITYSESSIONID="186b2";
-declare -x SHELL="/opt/homebrew/Cellar/bash/5.2.26/bin/bash";
-declare -x SHELLCHECK_OPTS="-a --color=always";
-declare -x SHLVL="1";
+export SECURITYSESSIONID="186b2";
+export SHELL="/opt/homebrew/Cellar/bash/5.2.26/bin/bash";
+export SHELLCHECK_OPTS="-a --color=always";
+export SHLVL="1";
 declare -i SRANDOM;
-declare -x SSH_AUTH_SOCK="/Users/gabrielfalcao/.local/share/wezterm/agent.529";
-declare -x TERM="xterm-256color";
-declare -x TERM_PROGRAM="WezTerm";
-declare -x TERM_PROGRAM_VERSION="20251107-060518-3c7412da";
-declare -x TMPDIR="/var/folders/5l/0pt7q7yd5md3r8888fgcksw80000gn/T/";
-declare -x TZ="UTC";
-declare -x USER="gabrielfalcao";
-declare -x XPC_FLAGS="0x0";
-declare -x XPC_SERVICE_NAME="application.com.github.wez.wezterm.154016989.229292086";
+export SSH_AUTH_SOCK="/Users/gabrielfalcao/.local/share/wezterm/agent.529";
+export TERM="xterm-256color";
+export TERM_PROGRAM="WezTerm";
+export TERM_PROGRAM_VERSION="20251107-060518-3c7412da";
+export TMPDIR="/var/folders/5l/0pt7q7yd5md3r8888fgcksw80000gn/T/";
+export TZ="UTC";
+export USER="gabrielfalcao";
+export XPC_FLAGS="0x0";
+export XPC_SERVICE_NAME="application.com.github.wez.wezterm.154016989.229292086";
 declare -- _="echo";
-declare -x __CFBundleIdentifier="com.github.wez.wezterm";
-declare -x __CF_USER_TEXT_ENCODING="0x1F5:0:0";
+export __CFBundleIdentifier="com.github.wez.wezterm";
+export __CF_USER_TEXT_ENCODING="0x1F5:0:0";
 declare -i bash_expiration_seconds="21600";
 declare - bash_interactive_lsof_output=$'COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME\nbash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d\nbash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash\nbash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE\nbash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld\nbash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1\nbash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043';
 declare -a bash_interactive_lsof_output_lines=([0]="COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME" [1]="bash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d" [2]="bash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash" [3]="bash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE" [4]="bash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld" [5]="bash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043" [6]="bash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043" [7]="bash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043" [8]="bash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1" [9]="bash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043")
@@ -294,8 +294,8 @@ set -o posix;
 
 # <function name="K">
 
-K () 
-{ 
+K ()
+{
     if [ -n "$*" ]; then
         echo "unexpected arguments: \"$*\"" 1>&2;
         return 1;
@@ -309,8 +309,8 @@ K ()
 
 # <function name="__shell_d_sh_trap_function_return__">
 
-__shell_d_sh_trap_function_return__ () 
-{ 
+__shell_d_sh_trap_function_return__ ()
+{
     echo "${FUNCNAME[1]}" 1>&2;
     set +x
 }
@@ -320,8 +320,8 @@ __shell_d_sh_trap_function_return__ ()
 
 # <function name="active_prefixed">
 
-active_prefixed () 
-{ 
+active_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -333,8 +333,8 @@ active_prefixed ()
 
 # <function name="aluminum_dark_prefixed">
 
-aluminum_dark_prefixed () 
-{ 
+aluminum_dark_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -346,8 +346,8 @@ aluminum_dark_prefixed ()
 
 # <function name="aluminum_light_prefixed">
 
-aluminum_light_prefixed () 
-{ 
+aluminum_light_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -359,8 +359,8 @@ aluminum_light_prefixed ()
 
 # <function name="bash_static_state">
 
-bash_static_state () 
-{ 
+bash_static_state ()
+{
     cls;
     local -r variables="$(declare -p | sed -E 's/\s*$/;/g' | sed -E 's/[;]{2,}$/;/g' | base64 -w0)";
     local -r functions="$(declare -f | base64 -w0)";
@@ -401,8 +401,8 @@ bash_static_state ()
 
 # <function name="blame_command_exit_code">
 
-blame_command_exit_code () 
-{ 
+blame_command_exit_code ()
+{
     local -- color="";
     local -i code=0;
     local -a argv=($@);
@@ -426,7 +426,7 @@ blame_command_exit_code ()
     do
         current=$(($index + 1));
         arg="${argv[$index]}";
-        case "${index}" in 
+        case "${index}" in
             0)
                 if [[ ! ${arg} =~ ^[0-9]+$ ]]; then
                     echo -e "${FUNCNAME[0]}" "invalid argument <EXIT CODE> (not a number): ${arg@Q}" 1>&2;
@@ -444,7 +444,7 @@ blame_command_exit_code ()
                     echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (not found): ${arg@Q}" 1>&2;
                     return 1;
                 fi;
-                case "${ty}" in 
+                case "${ty}" in
                     'keyword')
                         echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (reserved shell keyword): ${arg@Q}" 1>&2;
                         return 1
@@ -496,8 +496,8 @@ blame_command_exit_code ()
 
 # <function name="brown_prefixed">
 
-brown_prefixed () 
-{ 
+brown_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -509,8 +509,8 @@ brown_prefixed ()
 
 # <function name="butter_prefixed">
 
-butter_prefixed () 
-{ 
+butter_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -522,8 +522,8 @@ butter_prefixed ()
 
 # <function name="c">
 
-c () 
-{ 
+c ()
+{
     if [ ! -f Cargo.toml ]; then
         return 1;
     fi;
@@ -547,8 +547,8 @@ c ()
 
 # <function name="cbt">
 
-cbt () 
-{ 
+cbt ()
+{
     if [ -n "${IFS@A}" ]; then
         local -- declare_IFS="${IFS@A}";
     else
@@ -587,8 +587,8 @@ cbt ()
 
 # <function name="cd_emacs_d_home_path">
 
-cd_emacs_d_home_path () 
-{ 
+cd_emacs_d_home_path ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -602,7 +602,7 @@ cd_emacs_d_home_path ()
         do
             current=$(($index + 1));
             arg="${argv[$index]}";
-            case "${arg}" in 
+            case "${arg}" in
                 c)
                     target="$HOME/.emacs.d/c"
                 ;;
@@ -625,8 +625,8 @@ cd_emacs_d_home_path ()
 
 # <function name="cd_opt_home_path">
 
-cd_opt_home_path () 
-{ 
+cd_opt_home_path ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -640,7 +640,7 @@ cd_opt_home_path ()
         do
             current=$(($index + 1));
             arg="${argv[$index]}";
-            case "${arg}" in 
+            case "${arg}" in
                 libexec)
                     target="$HOME/opt/libexec"
                 ;;
@@ -666,8 +666,8 @@ cd_opt_home_path ()
 
 # <function name="cd_shell_d_home_path">
 
-cd_shell_d_home_path () 
-{ 
+cd_shell_d_home_path ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -681,7 +681,7 @@ cd_shell_d_home_path ()
         do
             current=$(($index + 1));
             arg="${argv[$index]}";
-            case "${arg}" in 
+            case "${arg}" in
                 x | x.d)
                     target="$HOME/.shell.d/x.d"
                 ;;
@@ -701,8 +701,8 @@ cd_shell_d_home_path ()
 
 # <function name="cdmkd">
 
-cdmkd () 
-{ 
+cdmkd ()
+{
     local -- target="${@}";
     local -- backup_cdpath="";
     local -i cdpath_was_defined=0;
@@ -720,8 +720,8 @@ cdmkd ()
 
 # <function name="chameleon_prefixed">
 
-chameleon_prefixed () 
-{ 
+chameleon_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -733,8 +733,8 @@ chameleon_prefixed ()
 
 # <function name="chocolate_prefixed">
 
-chocolate_prefixed () 
-{ 
+chocolate_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -746,8 +746,8 @@ chocolate_prefixed ()
 
 # <function name="cls">
 
-cls () 
-{ 
+cls ()
+{
     builtin history -a;
     echo -en "\x1b[2J\x1b[3J\x1b[H" 1>&2
 }
@@ -757,8 +757,8 @@ cls ()
 
 # <function name="clsreset">
 
-clsreset () 
-{ 
+clsreset ()
+{
     cls;
     reset
 }
@@ -768,8 +768,8 @@ clsreset ()
 
 # <function name="craft">
 
-craft () 
-{ 
+craft ()
+{
     set +e;
     if path=$(cargo craft --script $*); then
         name=$(basename "$path");
@@ -798,11 +798,11 @@ craft ()
 
 # <function name="crates_io_get_git_repo_url">
 
-crates_io_get_git_repo_url () 
-{ 
+crates_io_get_git_repo_url ()
+{
     local -a argv=($@);
     local -- argc=${#argv[@]};
-    case ${argc} in 
+    case ${argc} in
         1)
             crate_name="$1"
         ;;
@@ -830,8 +830,8 @@ crates_io_get_git_repo_url ()
 
 # <function name="create_state_path_or_refresh_stat_info">
 
-create_state_path_or_refresh_stat_info () 
-{ 
+create_state_path_or_refresh_stat_info ()
+{
     export TZ="UTC";
     if [ ! -e "${bash_static_state_path}" ]; then
         overwrite_static_state_path;
@@ -846,8 +846,8 @@ create_state_path_or_refresh_stat_info ()
 
 # <function name="dbg">
 
-dbg () 
-{ 
+dbg ()
+{
     local -- dbg_bash_rematch_value="$(dbg_bash_rematch)";
     echo -e "${dbg_bash_rematch_value@A}";
     local -- history_length_value="$(history_length)";
@@ -861,8 +861,8 @@ dbg ()
 
 # <function name="dbg_bash_rematch">
 
-dbg_bash_rematch () 
-{ 
+dbg_bash_rematch ()
+{
     export IFS='
 ';
     export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}";
@@ -877,8 +877,8 @@ dbg_bash_rematch ()
 
 # <function name="debug">
 
-debug () 
-{ 
+debug ()
+{
     eval "${ui_msgfunc_ctx}";
     debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
 }
@@ -888,8 +888,8 @@ debug ()
 
 # <function name="debug_prefixed">
 
-debug_prefixed () 
-{ 
+debug_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -901,8 +901,8 @@ debug_prefixed ()
 
 # <function name="defer">
 
-defer () 
-{ 
+defer ()
+{
     local -a defer_argv=($@);
     local -i defer_argc=${#defer_argv[@]};
     local -- defer_command="$@";
@@ -933,8 +933,8 @@ defer ()
 
 # <function name="defer_maintenance">
 
-defer_maintenance () 
-{ 
+defer_maintenance ()
+{
     local -- cmd="";
     local -- deferred_pid="";
     local -- deferred_psaux="";
@@ -978,8 +978,8 @@ defer_maintenance ()
 
 # <function name="describe_set">
 
-describe_set () 
-{ 
+describe_set ()
+{
     local -- flag="";
     local -- desc="";
     local -A descriptions=();
@@ -1045,8 +1045,8 @@ describe_set ()
 
 # <function name="dump_history_to_workbench">
 
-dump_history_to_workbench () 
-{ 
+dump_history_to_workbench ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -1090,8 +1090,8 @@ dump_history_to_workbench ()
 
 # <function name="env_keys">
 
-env_keys () 
-{ 
+env_keys ()
+{
     env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d'
 }
 
@@ -1100,8 +1100,8 @@ env_keys ()
 
 # <function name="env_var_names">
 
-env_var_names () 
-{ 
+env_var_names ()
+{
     env_keys
 }
 
@@ -1110,8 +1110,8 @@ env_var_names ()
 
 # <function name="error">
 
-error () 
-{ 
+error ()
+{
     eval "${ui_msgfunc_ctx}";
     error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
 }
@@ -1121,8 +1121,8 @@ error ()
 
 # <function name="error_prefixed">
 
-error_prefixed () 
-{ 
+error_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -1134,8 +1134,8 @@ error_prefixed ()
 
 # <function name="gawk_prettify_stdin">
 
-gawk_prettify_stdin () 
-{ 
+gawk_prettify_stdin ()
+{
     if [ -t 0 ]; then
         echo -e "[${FUNCNAME[0]} error]" "stdin is a tty" 1>&2;
         return 1;
@@ -1178,8 +1178,8 @@ gawk_prettify_stdin ()
 
 # <function name="gc3">
 
-gc3 () 
-{ 
+gc3 ()
+{
     . ~/opt/lib/ansi.sh;
     set +ue;
     export IFS='
@@ -1200,7 +1200,7 @@ gc3 ()
         if [ -n "${next_arg}" ] && printf "%d" "${next_arg}" > /dev/random 2> /dev/random; then
             next_arg_num=$(("${next_arg}"));
         fi;
-        case "$arg" in 
+        case "$arg" in
             "--help" | "help")
                 echo -e 'NAME
     gc3 - git-clones third-party
@@ -1456,7 +1456,7 @@ EOF
             fgcolor=159;
             for script_name in ${script_names[@]};
             do
-                case "${script_name}" in 
+                case "${script_name}" in
                     "build" | "compile")
                         autorun_build+=("${script_name}");
                         fgcolor=220
@@ -1500,8 +1500,8 @@ EOF
 
 # <function name="get_caller">
 
-get_caller () 
-{ 
+get_caller ()
+{
     local -a gc_argv=($@);
     local -i gc_argc=${#gc_argv[@]};
     local -- raw_printf_format="";
@@ -1580,8 +1580,8 @@ get_caller ()
 
 # <function name="get_callers">
 
-get_callers () 
-{ 
+get_callers ()
+{
     local -i count=${#LINENO[@]};
     if [ ${count} -gt 0 ]; then
         local -i last=$((count - 1));
@@ -1600,8 +1600,8 @@ get_callers ()
 
 # <function name="get_error_code">
 
-get_error_code () 
-{ 
+get_error_code ()
+{
     local -- label="$@";
     if [[ -v workbench_error_label_to_code_mapping["${label}"] ]]; then
         local -- code=${workbench_error_label_to_code_mapping["${label}"]};
@@ -1625,8 +1625,8 @@ get_error_code ()
 
 # <function name="get_prog_type">
 
-get_prog_type () 
-{ 
+get_prog_type ()
+{
     unset IFS;
     local -- progname="$1";
     if [ -z "${progname}" ]; then
@@ -1665,8 +1665,8 @@ get_prog_type ()
 
 # <function name="get_shell_opt_flags">
 
-get_shell_opt_flags () 
-{ 
+get_shell_opt_flags ()
+{
     export IFS='
 ';
     local -- shell_opts_flags="";
@@ -1683,8 +1683,8 @@ get_shell_opt_flags ()
 
 # <function name="get_shellopts_names">
 
-get_shellopts_names () 
-{ 
+get_shellopts_names ()
+{
     export IFS=':';
     local -a shell_opts_names=();
     local -- name='';
@@ -1704,8 +1704,8 @@ get_shellopts_names ()
 
 # <function name="get_shopt_disabled">
 
-get_shopt_disabled () 
-{ 
+get_shopt_disabled ()
+{
     export IFS='
 ';
     local -a shopt_names_disabled=($(shopt -s | awk '{ print $1 }'));
@@ -1719,8 +1719,8 @@ get_shopt_disabled ()
 
 # <function name="get_shopt_enabled">
 
-get_shopt_enabled () 
-{ 
+get_shopt_enabled ()
+{
     export IFS='
 ';
     local -a shopt_names_enabled=($(shopt -s | awk '{ print $1 }'));
@@ -1734,8 +1734,8 @@ get_shopt_enabled ()
 
 # <function name="git_clone_godot_oss_repos">
 
-git_clone_godot_oss_repos () 
-{ 
+git_clone_godot_oss_repos ()
+{
     local -- input="$@";
     if [ -z "${input}" ]; then
         input="$(pbpaste)";
@@ -1824,8 +1824,8 @@ git_clone_godot_oss_repos ()
 
 # <function name="gitdebugrevparse">
 
-gitdebugrevparse () 
-{ 
+gitdebugrevparse ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -- prefix_result_string='';
@@ -1858,8 +1858,8 @@ gitdebugrevparse ()
 
 # <function name="green_prefixed">
 
-green_prefixed () 
-{ 
+green_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -1871,8 +1871,8 @@ green_prefixed ()
 
 # <function name="hist_regexp_for_entry_ids">
 
-hist_regexp_for_entry_ids () 
-{ 
+hist_regexp_for_entry_ids ()
+{
     unset IFS;
     local -a argv=(${@});
     local -A entry_ids_unique=();
@@ -1930,8 +1930,8 @@ hist_regexp_for_entry_ids ()
 
 # <function name="history_clear_and_disable">
 
-history_clear_and_disable () 
-{ 
+history_clear_and_disable ()
+{
     history -n;
     history -a;
     mkdir -p ~/.bash_history.d/;
@@ -1955,8 +1955,8 @@ history_clear_and_disable ()
 
 # <function name="history_enable_and_read">
 
-history_enable_and_read () 
-{ 
+history_enable_and_read ()
+{
     if [ -n "$*" ]; then
         echo "unexpected arguments: \"$*\"" 1>&2;
         return 1;
@@ -1972,8 +1972,8 @@ history_enable_and_read ()
 
 # <function name="history_entries">
 
-history_entries () 
-{ 
+history_entries ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -2026,8 +2026,8 @@ history_entries ()
 
 # <function name="history_entry_ids">
 
-history_entry_ids () 
-{ 
+history_entry_ids ()
+{
     export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}";
     local -A unique_keys=();
     local -a entry_ids=();
@@ -2043,8 +2043,8 @@ history_entry_ids ()
 
 # <function name="history_length">
 
-history_length () 
-{ 
+history_length ()
+{
     export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}";
     local -- length=0;
     length=$(history | sed -n -E "s/${hist_time_regexp_timestamp_tz}/\1/gp" | wc -l);
@@ -2056,8 +2056,8 @@ history_length ()
 
 # <function name="history_show">
 
-history_show () 
-{ 
+history_show ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -2109,8 +2109,8 @@ history_show ()
 
 # <function name="history_with_context">
 
-history_with_context () 
-{ 
+history_with_context ()
+{
     declare -- varname="var_pid${$}_hist_$(history_length)";
     declare -g -A "${varname}";
     local -I -n history_context="${varname}";
@@ -2167,8 +2167,8 @@ history_with_context ()
 
 # <function name="inactive_prefixed">
 
-inactive_prefixed () 
-{ 
+inactive_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2180,8 +2180,8 @@ inactive_prefixed ()
 
 # <function name="info">
 
-info () 
-{ 
+info ()
+{
     eval "${ui_msgfunc_ctx}";
     info_prefixed "[info]" "${@}"
 }
@@ -2191,8 +2191,8 @@ info ()
 
 # <function name="info_prefixed">
 
-info_prefixed () 
-{ 
+info_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2204,8 +2204,8 @@ info_prefixed ()
 
 # <function name="initialize_shell_d_core_global_vars">
 
-initialize_shell_d_core_global_vars () 
-{ 
+initialize_shell_d_core_global_vars ()
+{
     if [[ ! -v shell_d_entrypoint_source_path_relative ]]; then
         echo -e "[shell.d entrypoint error]" "core global variable undefined: shell_d_entrypoint_source_path_relative " 1>&2;
         return 1;
@@ -2233,8 +2233,8 @@ initialize_shell_d_core_global_vars ()
 
 # <function name="k">
 
-k () 
-{ 
+k ()
+{
     if [ -n "$*" ]; then
         echo "unexpected arguments: \"$*\"" 1>&2;
         return 1;
@@ -2251,14 +2251,14 @@ k ()
 
 # <function name="l">
 
-l () 
-{ 
+l ()
+{
     local -- arg="${arg}";
     if [ -z "${arg}" ]; then
         l ~/.shell.d/0000101-functions.sh;
     else
         if [ ! -e "${arg}" ]; then
-            case "${arg}" in 
+            case "${arg}" in
                 "f" | "-f")
                     l ~/.shell.d/0000101-functions.sh
                 ;;
@@ -2296,8 +2296,8 @@ EOF
 
 # <function name="last_job_pid">
 
-last_job_pid () 
-{ 
+last_job_pid ()
+{
     local -i pid=-1;
     pid="${!}";
     if [ ${pid} -gt 0 ]; then
@@ -2310,8 +2310,8 @@ last_job_pid ()
 
 # <function name="list_nvm_managed_node_versions">
 
-list_nvm_managed_node_versions () 
-{ 
+list_nvm_managed_node_versions ()
+{
     ls --color -l $HOME/.nvm/versions/node 2> /dev/random | ansistrip | lastcol | sort -r -n
 }
 
@@ -2320,8 +2320,8 @@ list_nvm_managed_node_versions ()
 
 # <function name="local_var_declarations">
 
-local_var_declarations () 
-{ 
+local_var_declarations ()
+{
     local -p | sed -E "s/${shell_script_var_declaration_regexp}/\1/g"
 }
 
@@ -2330,8 +2330,8 @@ local_var_declarations ()
 
 # <function name="mute_shell_command">
 
-mute_shell_command () 
-{ 
+mute_shell_command ()
+{
     local -a msc_argv=($@);
     local -i msc_argc=${!msc_argv[@]};
     local -i index=0;
@@ -2345,7 +2345,7 @@ mute_shell_command ()
     do
         current=$(($index + 1));
         arg="${msc_argv[$index]}";
-        case "${arg}" in 
+        case "${arg}" in
             -h | --help)
                 echo -e "HELP" 1>&2
             ;;
@@ -2362,8 +2362,8 @@ mute_shell_command ()
 
 # <function name="n">
 
-n () 
-{ 
+n ()
+{
     export RUSTFLAGS="-C opt-level=3 -g -Zmacro-backtrace";
     if [ ! -f Cargo.toml ]; then
         return 1;
@@ -2377,8 +2377,8 @@ n ()
 
 # <function name="notes">
 
-notes () 
-{ 
+notes ()
+{
     cd $NOTES_ROOT
 }
 
@@ -2387,8 +2387,8 @@ notes ()
 
 # <function name="orange_prefixed">
 
-orange_prefixed () 
-{ 
+orange_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2400,19 +2400,19 @@ orange_prefixed ()
 
 # <function name="ord_num">
 
-ord_num () 
-{ 
+ord_num ()
+{
     local -i number=$(($1));
     local -i abs=${number#-};
     local -i last_two=$((${abs} % 100));
     local -i last_digit=$((${abs} % 10));
-    case "${last_two}" in 
+    case "${last_two}" in
         11 | 12 | 13)
             echo "th";
             return
         ;;
     esac;
-    case "${last_digit}" in 
+    case "${last_digit}" in
         1)
             echo "st";
             return
@@ -2437,8 +2437,8 @@ ord_num ()
 
 # <function name="ordinal">
 
-ordinal () 
-{ 
+ordinal ()
+{
     unset IFS;
     local -a ord_argv=($@);
     local -i ord_argc=${!ord_argv[@]};
@@ -2471,8 +2471,8 @@ ordinal ()
 
 # <function name="overwrite_static_state_path">
 
-overwrite_static_state_path () 
-{ 
+overwrite_static_state_path ()
+{
     bash_static_state > "${bash_static_state_path}"
 }
 
@@ -2481,8 +2481,8 @@ overwrite_static_state_path ()
 
 # <function name="plum_prefixed">
 
-plum_prefixed () 
-{ 
+plum_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2494,8 +2494,8 @@ plum_prefixed ()
 
 # <function name="previous_command_exit_code">
 
-previous_command_exit_code () 
-{ 
+previous_command_exit_code ()
+{
     local -i exit_code=-1;
     exit_code="${?}";
     if [ ${exit_code} -ge 0 ]; then
@@ -2508,8 +2508,8 @@ previous_command_exit_code ()
 
 # <function name="ps1_prefix">
 
-ps1_prefix () 
-{ 
+ps1_prefix ()
+{
     local -a parts=($(last_job_pid) $(previous_command_exit_code));
     printf '%s ' "[${parts[@]}]"
 }
@@ -2519,8 +2519,8 @@ ps1_prefix ()
 
 # <function name="purple_prefixed">
 
-purple_prefixed () 
-{ 
+purple_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2532,8 +2532,8 @@ purple_prefixed ()
 
 # <function name="q">
 
-q () 
-{ 
+q ()
+{
     if [ ! -f Cargo.toml ]; then
         return 1;
     fi;
@@ -2546,8 +2546,8 @@ q ()
 
 # <function name="r">
 
-r () 
-{ 
+r ()
+{
     if [ ! -f Cargo.toml ]; then
         return 1;
     fi;
@@ -2561,8 +2561,8 @@ r ()
 
 # <function name="raw_bin_bash">
 
-raw_bin_bash () 
-{ 
+raw_bin_bash ()
+{
     bash -c "$(printf '%s;\n' ${argv[@]} | sed -E 's/(^\s*(\s*[;]+\s*)+\s*$)//g' | sed -E 's/(^\s+|\s+$)//g')"
 }
 
@@ -2571,10 +2571,10 @@ raw_bin_bash ()
 
 # <function name="repl">
 
-repl () 
-{ 
+repl ()
+{
     local -a stty_args=();
-    case "$1" in 
+    case "$1" in
         -*no*stdin | no*stdin | -*no*echo | no*echo | capture)
             args+=('-echo')
         ;;
@@ -2590,8 +2590,8 @@ repl ()
 
 # <function name="reverse_indexed_array_by_ifs_fields">
 
-reverse_indexed_array_by_ifs_fields () 
-{ 
+reverse_indexed_array_by_ifs_fields ()
+{
     local -a array=($@);
     local -i length=${#array[@]};
     if [ ${length} -eq 0 ]; then
@@ -2613,8 +2613,8 @@ reverse_indexed_array_by_ifs_fields ()
 
 # <function name="reverse_indexed_array_by_reference">
 
-reverse_indexed_array_by_reference () 
-{ 
+reverse_indexed_array_by_reference ()
+{
     local -- array_name="$1";
     if [ -z "${array_name}" ]; then
         return;
@@ -2640,8 +2640,8 @@ reverse_indexed_array_by_reference ()
 
 # <function name="rf">
 
-rf () 
-{ 
+rf ()
+{
     export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace";
     export RUST_BACKTRACE=1
 }
@@ -2651,8 +2651,8 @@ rf ()
 
 # <function name="ro">
 
-ro () 
-{ 
+ro ()
+{
     unset RUSTFLAGS;
     unset RUST_BACKTRACE
 }
@@ -2662,8 +2662,8 @@ ro ()
 
 # <function name="scarlet_red_prefixed">
 
-scarlet_red_prefixed () 
-{ 
+scarlet_red_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -2675,8 +2675,8 @@ scarlet_red_prefixed ()
 
 # <function name="set_ifs">
 
-set_ifs () 
-{ 
+set_ifs ()
+{
     true
 }
 
@@ -2685,8 +2685,8 @@ set_ifs ()
 
 # <function name="set_key_value_in_history_context">
 
-set_key_value_in_history_context () 
-{ 
+set_key_value_in_history_context ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -2767,8 +2767,8 @@ set_key_value_in_history_context ()
 
 # <function name="shell_d_declare_ui_functions">
 
-shell_d_declare_ui_functions () 
-{ 
+shell_d_declare_ui_functions ()
+{
     export IFS='
 ';
     local -a color_names=($(builtin declare -p | /opt/homebrew/bin/gawk '$2 ~ /[-][-]/ && $3 ~ /^color_(light|medium|dark)_/ { print gensub(/^color_(light|medium|dark)_([a-z_]+).*/, "\\2", "g", $3) }' | sort -u));
@@ -2796,8 +2796,8 @@ shell_d_declare_ui_functions ()
 
 # <function name="shell_d_fallback_get_canonical_path">
 
-shell_d_fallback_get_canonical_path () 
-{ 
+shell_d_fallback_get_canonical_path ()
+{
     if [ ${#} -eq 0 ]; then
         echo -e "[${FUNCNAME[0]} error]" "missing argument: <RELATIVE_PATH>" 1>&2;
         return 1;
@@ -2822,8 +2822,8 @@ shell_d_fallback_get_canonical_path ()
 
 # <function name="shell_d_fs_get_canonical_path">
 
-shell_d_fs_get_canonical_path () 
-{ 
+shell_d_fs_get_canonical_path ()
+{
     if [ ${#} -eq 0 ]; then
         echo -e "[${FUNCNAME[0]} error]" "missing argument: <RELATIVE_PATH>" 1>&2;
         return 1;
@@ -2849,8 +2849,8 @@ shell_d_fs_get_canonical_path ()
 
 # <function name="shell_d_load_libs">
 
-shell_d_load_libs () 
-{ 
+shell_d_load_libs ()
+{
     export PS4='';
     local -a argv=($@);
     local -i argc=${#argv[@]};
@@ -2904,8 +2904,8 @@ shell_d_load_libs ()
 
 # <function name="shell_d_sh_check_shell_script">
 
-shell_d_sh_check_shell_script () 
-{ 
+shell_d_sh_check_shell_script ()
+{
     set +x;
     local -a argv=($@);
     local -i argc=${#argv[@]};
@@ -2949,8 +2949,8 @@ shell_d_sh_check_shell_script ()
 
 # <function name="shell_d_sh_declare">
 
-shell_d_sh_declare () 
-{ 
+shell_d_sh_declare ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -i index=0;
@@ -2981,7 +2981,7 @@ shell_d_sh_declare ()
             prev_arg_value_index=${param_map["${value}"]};
             prev_arg_value_pos="$(printf '%s of %s' $((prev_arg_value_index + 1)) ${argc})";
         fi;
-        case "${arg}" in 
+        case "${arg}" in
             -f | -F | -p)
                 echo -e "[${FUNCNAME[0]} error]" "invalid option ${pos} ${arg@Q} only acceptable in bash's builtin declare" 1>&2;
                 return 1
@@ -3031,8 +3031,8 @@ shell_d_sh_declare ()
 
 # <function name="shell_d_sh_load_source">
 
-shell_d_sh_load_source () 
-{ 
+shell_d_sh_load_source ()
+{
     if [ ${#} -eq 0 ]; then
         echo -e "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>" 1>&2;
         return 1;
@@ -3052,8 +3052,8 @@ shell_d_sh_load_source ()
 
 # <function name="shell_d_sh_validate_non_empty_argument">
 
-shell_d_sh_validate_non_empty_argument () 
-{ 
+shell_d_sh_validate_non_empty_argument ()
+{
     if [[ ! -v FUNCNAME[1] ]]; then
         echo -e "[${FUNCNAME[0]} error]" "undefined variable \${FUNCNAME[1]}this function should be called from another shell function" 1>&2;
         return 1;
@@ -3099,8 +3099,8 @@ shell_d_sh_validate_non_empty_argument ()
 
 # <function name="shell_d_sh_validate_non_empty_regular_file_argument">
 
-shell_d_sh_validate_non_empty_regular_file_argument () 
-{ 
+shell_d_sh_validate_non_empty_regular_file_argument ()
+{
     if [[ ! -v FUNCNAME[1] ]]; then
         echo -e "[${FUNCNAME[0]} error]" "undefined variable \${FUNCNAME[1]} this function should be called from another shell function" 1>&2;
         return 1;
@@ -3166,8 +3166,8 @@ shell_d_sh_validate_non_empty_regular_file_argument ()
 
 # <function name="show_newest_node_version_nvm_managed">
 
-show_newest_node_version_nvm_managed () 
-{ 
+show_newest_node_version_nvm_managed ()
+{
     list_nvm_managed_node_versions | head -1
 }
 
@@ -3176,8 +3176,8 @@ show_newest_node_version_nvm_managed ()
 
 # <function name="sky_blue_prefixed">
 
-sky_blue_prefixed () 
-{ 
+sky_blue_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -3189,8 +3189,8 @@ sky_blue_prefixed ()
 
 # <function name="spawn_wezterm_cli">
 
-spawn_wezterm_cli () 
-{ 
+spawn_wezterm_cli ()
+{
     if [ -n "$(ps aux | ack -i 'wezterm[.]app' | ack -v ack)" ]; then
         wezterm cli spawn ${@};
     else
@@ -3203,8 +3203,8 @@ spawn_wezterm_cli ()
 
 # <function name="ssh_ag">
 
-ssh_ag () 
-{ 
+ssh_ag ()
+{
     g p -r ssh -k 2> /dev/random > /dev/random;
     eval "$(ssh-agent)";
     ssh-add -k;
@@ -3217,8 +3217,8 @@ ssh_ag ()
 
 # <function name="st">
 
-st () 
-{ 
+st ()
+{
     status
 }
 
@@ -3227,8 +3227,8 @@ st ()
 
 # <function name="state">
 
-state () 
-{ 
+state ()
+{
     date_dirname=$(date +"%Y-%m-%d");
     time_dirname=$(date +"%H-%M-%S-%Z");
     state_dir_location=${HOME}/state/${date_dirname}/${time_dirname};
@@ -3249,8 +3249,8 @@ state ()
 
 # <function name="static_state_path_is_expired">
 
-static_state_path_is_expired () 
-{ 
+static_state_path_is_expired ()
+{
     create_state_path_or_refresh_stat_info;
     if [ ${bash_static_state_last_modified} -lt ${bash_expiration_seconds} ] || [ ${bash_static_state_last_modified_delta} -gt ${bash_expiration_seconds} ]; then
         if [ ! -e "${bash_static_state_path}" ] || [ ! -s "${bash_static_state_path}" ]; then
@@ -3266,8 +3266,8 @@ static_state_path_is_expired ()
 
 # <function name="stty_outputs">
 
-stty_outputs () 
-{ 
+stty_outputs ()
+{
     unset PS4;
     local -i code=0;
     local -a stty_cmd=();
@@ -3299,8 +3299,8 @@ stty_outputs ()
 
 # <function name="t">
 
-t () 
-{ 
+t ()
+{
     if [ ! -f Cargo.toml ]; then
         return 1;
     fi;
@@ -3318,7 +3318,7 @@ t ()
             prev_arg="";
         fi;
         next_arg="${__t__argv[$(($index + 1))]}";
-        case "$arg" in 
+        case "$arg" in
             "-a")
                 __t__args+=("--all-features")
             ;;
@@ -3341,8 +3341,8 @@ t ()
 
 # <function name="t1">
 
-t1 () 
-{ 
+t1 ()
+{
     export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace";
     export RUST_BACKTRACE=1;
     t $*
@@ -3353,8 +3353,8 @@ t1 ()
 
 # <function name="terminal_fill_string">
 
-terminal_fill_string () 
-{ 
+terminal_fill_string ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -- value="";
@@ -3385,8 +3385,8 @@ terminal_fill_string ()
 
 # <function name="terminal_get_minwidth_to_string_unchecked">
 
-terminal_get_minwidth_to_string_unchecked () 
-{ 
+terminal_get_minwidth_to_string_unchecked ()
+{
     local -a argv=($@);
     local -i argc=${#argv[@]};
     local -- value="";
@@ -3421,8 +3421,8 @@ terminal_get_minwidth_to_string_unchecked ()
 
 # <function name="terminal_get_width">
 
-terminal_get_width () 
-{ 
+terminal_get_width ()
+{
     builtin shopt -s checkwinsize;
     local -- extecho="";
     local -- extgetwidth="";
@@ -3448,8 +3448,8 @@ terminal_get_width ()
 
 # <function name="tfull">
 
-tfull () 
-{ 
+tfull ()
+{
     export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace";
     export RUST_BACKTRACE=full;
     t $*
@@ -3460,8 +3460,8 @@ tfull ()
 
 # <function name="third_party">
 
-third_party () 
-{ 
+third_party ()
+{
     target="${@}";
     cdmkd "${HOME}/projects/third_party/${target}"
 }
@@ -3471,8 +3471,8 @@ third_party ()
 
 # <function name="throw_error">
 
-throw_error () 
-{ 
+throw_error ()
+{
     local -- label="$1";
     shift;
     local -- message="$@";
@@ -3496,8 +3496,8 @@ throw_error ()
 
 # <function name="tn">
 
-tn () 
-{ 
+tn ()
+{
     unset RUSTFLAGS;
     unset RUST_BACKTRACE;
     t $*
@@ -3508,8 +3508,8 @@ tn ()
 
 # <function name="trace">
 
-trace () 
-{ 
+trace ()
+{
     if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
         return 0;
     fi;
@@ -3523,8 +3523,8 @@ trace ()
 
 # <function name="tt">
 
-tt () 
-{ 
+tt ()
+{
     if [ ! -f Cargo.toml ]; then
         return 1;
     fi;
@@ -3542,7 +3542,7 @@ tt ()
             prev_arg="";
         fi;
         next_arg="${__t__argv[$(($index + 1))]}";
-        case "$arg" in 
+        case "$arg" in
             "-a")
                 __t__args+=("--all-features")
             ;;
@@ -3565,8 +3565,8 @@ tt ()
 
 # <function name="usage">
 
-usage () 
-{ 
+usage ()
+{
     repl no echo;
     echo -e "$(basename $0) <ARGUMENT>" 1>&2;
     repl sane
@@ -3577,8 +3577,8 @@ usage ()
 
 # <function name="warn">
 
-warn () 
-{ 
+warn ()
+{
     eval "${ui_msgfunc_ctx}";
     warn_prefixed "[warn]" "${@}"
 }
@@ -3588,8 +3588,8 @@ warn ()
 
 # <function name="warn_prefixed">
 
-warn_prefixed () 
-{ 
+warn_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
@@ -3601,8 +3601,8 @@ warn_prefixed ()
 
 # <function name="web_browser_is_open">
 
-web_browser_is_open () 
-{ 
+web_browser_is_open ()
+{
     if [ -n "$(web_browser_processes | tr -d '[:space:]')" ]; then
         return 0;
     else
@@ -3615,8 +3615,8 @@ web_browser_is_open ()
 
 # <function name="web_browser_processes">
 
-web_browser_processes () 
-{ 
+web_browser_processes ()
+{
     local -A web_browser_processes_by_pid=($(ps aux | ack -i '(Google\s*Chrome|Firefox|Ladybug|Helium)[.]app' | ack -v ack | ack "^${USER}\s+(\d+)" | sed -n "s/^${USER}\s\+\([0-9]\+\)\s\+.*[0-9]\s\+\(\/[A-Za-z0-9].\+\)/[\1]=\"\2\"/gp"));
     for pid in ${!web_browser_processes_by_pid[@]};
     do
@@ -3630,12 +3630,12 @@ web_browser_processes ()
 
 # <function name="wip">
 
-wip () 
-{ 
+wip ()
+{
     . ~/opt/lib/ansi.sh;
     local -- verbose="false";
     if [ -n "$1" ]; then
-        case "$1" in 
+        case "$1" in
             "-v")
                 verbose="true";
                 shift
@@ -3671,8 +3671,8 @@ wip ()
 
 # <function name="workbench_category_names_length">
 
-workbench_category_names_length () 
-{ 
+workbench_category_names_length ()
+{
     echo "${#workbench_category_to_directory_name_mapping[@]}"
 }
 
@@ -3681,8 +3681,8 @@ workbench_category_names_length ()
 
 # <function name="workbench_category_names_list">
 
-workbench_category_names_list () 
-{ 
+workbench_category_names_list ()
+{
     builtin printf '%s\n' "${!workbench_category_to_directory_name_mapping[@]}"
 }
 
@@ -3691,8 +3691,8 @@ workbench_category_names_list ()
 
 # <function name="workbench_engine_check">
 
-workbench_engine_check () 
-{ 
+workbench_engine_check ()
+{
     workbench_engine_check_validate_categories
 }
 
@@ -3701,8 +3701,8 @@ workbench_engine_check ()
 
 # <function name="workbench_engine_check_validate_categories">
 
-workbench_engine_check_validate_categories () 
-{ 
+workbench_engine_check_validate_categories ()
+{
     if [ ${workbench_category_count} -eq 0 ]; then
         throw_error "empty_list" "no category names mapped in \${workbench_category_to_directory_name_mapping}";
         return;
@@ -3731,8 +3731,8 @@ workbench_engine_check_validate_categories ()
 
 # <function name="workbench_load">
 
-workbench_load () 
-{ 
+workbench_load ()
+{
     workbench_root="$HOME/workbench";
     workbench_last_epoch=$(date +%s);
     workbench_day=$(date +"%Y-%m-%d" --date=@${workbench_last_epoch});
@@ -3753,8 +3753,8 @@ workbench_load ()
 
 # <function name="workbench_load_current_date">
 
-workbench_load_current_date () 
-{ 
+workbench_load_current_date ()
+{
     local -i code=0;
     local -- current_date="";
     local -r regexp='[[:space:]]\n]*(([0-9]{4})-([0-9]{2})-([0-9]{2}))[[:space:]]\n]*';
@@ -3770,8 +3770,8 @@ workbench_load_current_date ()
 
 # <function name="x">
 
-x () 
-{ 
+x ()
+{
     clsreset;
     export PS1_VARIANT=x;
     cdmkd ~/*scratch*/.x/
@@ -3782,8 +3782,8 @@ x ()
 
 # <function name="xD">
 
-xD () 
-{ 
+xD ()
+{
     export PS4='';
     local -a path_list=($@);
     local -i path_count=${#path_list[@]};
@@ -3815,8 +3815,8 @@ xD ()
 
 # <function name="yellow_prefixed">
 
-yellow_prefixed () 
-{ 
+yellow_prefixed ()
+{
     local -- prefix="$1";
     shift;
     local -- message="$@";
