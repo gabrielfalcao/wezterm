@@ -24,7 +24,7 @@ const hnScrapeMain = () => {
     widestTitleLength: 0,
     widestUrlLength: 0,
   };
-  contexts.forEach((item, index) => {
+  Object.entries(contexts).forEach((item, index) => {
     const { title, url } = item;
     if (title.length > context.widestTitleLength) {
       widestTitleLength = title.length;
