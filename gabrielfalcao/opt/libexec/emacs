@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#. ~/.shell.d/entrypoint.sh
-. ~/.shell.d/x.d/workbench.sh
+# #. ~/.shell.d/entrypoint.sh
+# . ~/.shell.d/x.d/workbench.sh
 
-workbench_refresh || true
+# workbench_refresh || true
 
 unset IFS
 declare -- emacs_d_path="$HOME/.emacs.d"

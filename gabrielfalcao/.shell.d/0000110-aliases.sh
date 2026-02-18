@@ -1,4 +1,5 @@
 alias ls="ls --color"
+alias la="ls -latrh"
 alias ll="ls -latrh"
 alias lll="ls -latrhS"
 alias bats="bat --style=default"
@@ -12,3 +13,4 @@ if ! 2>/dev/random 1>/dev/random which hackernews; then
 fi
 alias hn="hackernews"
 alias shellcheck="$(which shellcheck) --rcfile $HOME/.shell.d/rc.d/shellcheck"
+alias diff="/opt/homebrew/bin/diff -u --color"
