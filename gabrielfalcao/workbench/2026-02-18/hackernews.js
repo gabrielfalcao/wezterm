@@ -28,5 +28,5 @@
   /* console.log({ urlsAndTitles, urls, urlCommentTitleList });
    * console.log(urlCommentTitleList); */
   const urlContext = { urlsAndTitles, urls, urlCommentTitleList };
-    return {...printerContext, ...urlContext} }
+  return {...printerContext, ...urlContext} }
 })() ? null: null;
