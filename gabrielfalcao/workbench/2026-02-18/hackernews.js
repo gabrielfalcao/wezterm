@@ -1,5 +1,5 @@
 (() => {
-  const printerContext {
+  const printerContext= {
     widestTitleLength: 0,
     widestUrlLength: 0,
   };
@@ -29,4 +29,4 @@
    * console.log(urlCommentTitleList); */
   const urlContext = { urlsAndTitles, urls, urlCommentTitleList };
   return {...printerContext, ...urlContext} }
-})() ? null: null;
+)()
