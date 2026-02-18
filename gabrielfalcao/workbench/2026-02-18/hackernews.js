@@ -19,19 +19,20 @@ const hnScrapeMain = () => {
 };
 
 (() => {
-  const contexts = {...hnScrapeMain(),
+  const contexts = {
+    ...hnScrapeMain(),
     widestTitleLength: 0,
     widestUrlLength: 0,
   };
-  contexts.forEach((item, index) =>  {
-    const {title, url}= item;
+  contexts.forEach((item, index) => {
+    const { title, url } = item;
     if (title.length > context.widestTitleLength) {
       widestTitleLength = title.length;
     }
     if (url.length > context.widestUrlLength) {
       widestUrlLength = url.length;
     }
-  })
+  });
 
   return contexts;
 })();
