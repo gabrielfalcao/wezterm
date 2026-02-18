@@ -33,4 +33,5 @@ const hnScrapeMain = () => {
 
 (() => {
   const context = hnScrapeMain();
+  return context;
 })();
