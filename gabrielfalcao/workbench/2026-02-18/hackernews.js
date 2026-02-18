@@ -17,6 +17,7 @@
       const urlCommentTitleList = urlsAndTitles
         .map(({ title, url }) => `"${url}"    // ${title}`)
         .join("\n");
+      return urlCommentTitleList
     },
     [fn(text), text].pop(),
   ))();
