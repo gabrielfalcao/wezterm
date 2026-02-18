@@ -1,5 +1,5 @@
-(() => {
-  const printerContext= {
+const hnScrapeMain = () => {
+  const printerContext = {
     widestTitleLength: 0,
     widestUrlLength: 0,
   };
@@ -14,10 +14,10 @@
     }
     const title = el.innerText;
     if (title.length > printerContext.widestTitleLength) {
-      widestTitleLength=title.length;
+      widestTitleLength = title.length;
     }
     if (url.length > printerContext.widestUrlLength) {
-      widestUrlLength=url.length;
+      widestUrlLength = url.length;
     }
     return { title, url };
   });
@@ -28,5 +28,9 @@
   /* console.log({ urlsAndTitles, urls, urlCommentTitleList });
    * console.log(urlCommentTitleList); */
   const urlContext = { urlsAndTitles, urls, urlCommentTitleList };
-  return {...printerContext, ...urlContext} }
-)()
+  return { ...printerContext, ...urlContext };
+};
+
+(() => {
+  const context = hnScrapeMain();
+})();
