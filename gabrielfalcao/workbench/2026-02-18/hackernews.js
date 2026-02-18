@@ -15,5 +15,6 @@
   const urlCommentTitleList = urlsAndTitles
     .map(({ title, url }) => `"${url}"    // ${title}`)
     .join("\n");
+  console.log({ urlsAndTitles, urls, urlCommentTitleList });
   return urlCommentTitleList;
 })();
