@@ -4,9 +4,9 @@
   ).map((el) => {
     let url = null;
     try {
-      url = URL(`${el.href}`);
+      url = new URL(`${el.href}`);
     } catch (_) {
-      url = URL(`https://news.ycombinator.com${el.href}`);
+      url = new URL(`https://news.ycombinator.com${el.href}`);
     }
     const title = el.innerText;
     return { title, url };
