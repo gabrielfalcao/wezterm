@@ -1,8 +1,4 @@
 const hnScrapeMain = () => {
-  const printerContext = {
-    widestTitleLength: 0,
-    widestUrlLength: 0,
-  };
   const urlsAndTitles = Array.from(
     new Set(document.querySelectorAll(`table td span.titleline a[href]`)),
   ).map((el) => {
@@ -13,25 +9,29 @@ const hnScrapeMain = () => {
       url = new URL(`https://news.ycombinator.com${el.href}`);
     }
     const title = el.innerText;
-    if (title.length > printerContext.widestTitleLength) {
-      widestTitleLength = title.length;
-    }
-    if (url.length > printerContext.widestUrlLength) {
-      widestUrlLength = url.length;
-    }
     return { title, url };
   });
   const urls = urlsAndTitles.map(({ url }) => url.toString());
   const urlCommentTitleList = urlsAndTitles
     .map(({ title, url }) => `"${url}"    // ${title}`)
     .join("\n");
-  /* console.log({ urlsAndTitles, urls, urlCommentTitleList });
-   * console.log(urlCommentTitleList); */
-  const urlContext = { urlsAndTitles, urls, urlCommentTitleList };
-  return { ...printerContext, ...urlContext };
+  return { urlsAndTitles, urls, urlCommentTitleList };
 };
 
 (() => {
-  const context = hnScrapeMain();
-  return context;
+  const contexts = {...hnScrapeMain(),
+    widestTitleLength: 0,
+    widestUrlLength: 0,
+  };
+  contexts.forEach((item, index) =>  {
+    const {title, url}= item;
+    if (title.length > context.widestTitleLength) {
+      widestTitleLength = title.length;
+    }
+    if (url.length > context.widestUrlLength) {
+      widestUrlLength = url.length;
+    }
+  })
+
+  return contexts;
 })();
