@@ -13,10 +13,11 @@ declare -a pidfile_data=()
 
 declare -- working_path="$(pwd)"
 declare -- log_timestamp="$(date +"%Y%m%d-%H%M%S")"
-declare -- stdout_log_path="$HOME/opt/var/log/emacs.out.${log_timestamp}.log"
-declare -- stderr_log_path="$HOME/opt/var/log/emacs.err.${log_timestamp}.log"
+declare -- today="$(date +"%Y%-m-%d")"
+declare -- stdout_log_path="${HOME}/workbench/${today}/emacs.out.${log_timestamp}.log"
+declare -- stderr_log_path="${HOME}/workbench/${today}/emacs.err.${log_timestamp}.log"
 declare -- exec="/Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11"
-declare -- homebrew_bin="/opt/homebrew/bin/emacs"
+declare -- emacs_bin="${exec}"
 declare -a exec_args=()
 export IFS=$'\n'
 declare -a lsof_lines_socket_server_matching_emacs_command=()
@@ -59,8 +60,8 @@ update_pidfile() {
     local -A pids=()
     local -i now=$(date +%s)
     for index in ${!up_argv[@]}; do
-        arg="${up_argv[$index]}"
-        if pid=$(awk '{ if ($pos ~ /^[0-9]+$/) { print $0; } else { exit 1; }}' <<<"${arg}") 2>/dev/random; then
+        arg="${up_argv[${index}]}"
+        if pid=$(awk '{ if (${pos} ~ /^[0-9]+$/) { print $0; } else { exit 1; }}' <<<"${arg}") 2>/dev/random; then
             pids+=(["${index}"]="${pid}")
         fi
     done
@@ -124,9 +125,9 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
     declare -- kill=
 
     for arg in $@; do
-        case "$arg" in
+        case "${arg}" in
             "-p")
-                echo "${exec}"
+                echo "$exec"
                 exit 0
             ;;
             "-f")
@@ -145,20 +146,20 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
             "-nw")
                 export EMACS_NO_SERVER=true
                 exec_args+=("${arg}")
-                if [ ! -e "${homebrew_bin}" ]; then
-                    1>&2 echo "${homebrew_bin@Q} does not exist"
+                if [ ! -e "${emacs_bin}" ]; then
+                    1>&2 echo "${emacs_bin@Q} does not exist"
                     exit 1
                 fi
-                if [ ! -f "${homebrew_bin}" ] && [ ! -L "${homebrew_bin}" ] && [ ! -h "${homebrew_bin}" ]; then
-                    1>&2 echo "${homebrew_bin@Q} is not a file or symlink"
+                if [ ! -f "${emacs_bin}" ] && [ ! -L "${emacs_bin}" ] && [ ! -h "${emacs_bin}" ]; then
+                    1>&2 echo "${emacs_bin@Q} is not a file or symlink"
                     exit 1
                 fi
-                if [ ! -s "${homebrew_bin}" ]; then
-                    1>&2 echo "${homebrew_bin@Q} is empty"
+                if [ ! -s "${emacs_bin}" ]; then
+                    1>&2 echo "${emacs_bin@Q} is empty"
                     exit 1
                 fi
-                if [ ! -x "${homebrew_bin}" ]; then
-                    1>&2 echo "${homebrew_bin@Q} is not executable"
+                if [ ! -x "${emacs_bin}" ]; then
+                    1>&2 echo "${emacs_bin@Q} is not executable"
                     exit 1
                 fi
                 declare -- exec=/opt/homebrew/bin/emacs
@@ -169,26 +170,26 @@ if [ "$0" == "${BASH_SOURCE[0]}" ]; then
         esac
     done
 
-    if [ "$kill" == "true" ]; then
+    if [ "${kill}" == "true" ]; then
         kill_emacs
     fi
-    if [ "$delete_socket" == "true" ]; then
-        2>/dev/random 1>/dev/random rm -f "$socket"
+    if [ "${delete_socket}" == "true" ]; then
+        2>/dev/random 1>/dev/random rm -f "${socket}"
     fi
 
     if [[ -v EMACS_DEBUG_INIT ]] && [ -n "EMACS_DEBUG_INIT" ]; then
        exec_args+=('--debug-init')
     fi
-    if [ -S "${socket}" ] && [ -n "$(ps aux | 2>/dev/random grep /Applications/Emacs.app | grep -v grep)" ]; then
+    if [ -S "${socket}" ] && [ -n "$(ps aux | grep -v grep | grep -E "/Applications/Emacs.app" | grep -v grep)" ]; then
         export EMACS_NO_SERVER=true
         set -x
-        $exec ${exec_args[@]} 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
+        $exec ${exec_args[@]} 1>"${stdout_log_path}" 2>"${stderr_log_path}" </dev/null
         exit 0
         # # 1>&2 echo "emacs already running: ${socket}"
         # exit 1
     fi
 
-    2>/dev/null 1>/dev/null cd "$working_path"
-    $exec ${exec_args[@]} 1>"$stdout_log_path" 2>"$stderr_log_path" </dev/null
-    rm -f "$socket"
+    2>/dev/null 1>/dev/null cd "${working_path}"
+    $exec ${exec_args[@]} 1>"${stdout_log_path}" 2>"${stderr_log_path}" </dev/null
+    rm -f "${socket}"
 fi

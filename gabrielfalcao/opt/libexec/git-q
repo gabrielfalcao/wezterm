@@ -4,6 +4,7 @@ export IFS=$'\n'
 set -umeTE
 set +f
 set -o pipefail
+unset IFS
 
 script_name="$(basename "${BASH_SOURCE[0]}")"
 script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
@@ -194,55 +195,8 @@ process_argv() {
     fi
     repl sane
 }
-declare -A available_conditions=(
-    ["^[^?[:space:]]"]="indexed"
-    ["^[?[:space:]]"]="untracked"
-    ["[[:space:]]"]="unmodified"
-    ["M"]="modified"
-    ["T"]="type-changed"  #  (regular file, symbolic link or submodule)
-    ["A"]="added"
-    ["D"]="deleted"
-    ["R"]="renamed"
-    ["C"]="copied" #  (if config option status.renames is set to "copies"]="copied" )
-    ["U"]="updated_unmerged"
-)
 
 main() {
-    export IFS=$'\n'
-    local -a staged_files=()
-    local -a unstaged_files=()
-    local -a untracked_files=()
-    local -A file_status_map=()
-    local -a status_porcelain_lines=()
-    local -- initial_working_dir=$(pwd)
-    local -- initial_relative_dir="."
-    local -- line=''
-
-    if [[ "${initial_working_dir}" =~ ^${git_repo_path} ]]; then
-        initial_relative_dir="${initial_relative_dir#${HOME}/}"
-    fi
-
-    cd "${git_repo_path}"
-    status_porcelain_lines=( $(git status --porcelain) )
-    local -- staged_status_char=""
-    local -- unstaged_status_char=""
-    local -- untracked_status_char=""
-    local -a status_triple=()
-    local -- status_char_regex='[[:space:]MTADRCU]'
-    for line in ${status_porcelain_lines[@]}; do
-        status_triple=($(sed -E "s/^(${status_char_regex})(${status_char_regex})\s+(.*)$/\n\1\n\2\n\3/g" <<< "${line}"))
-        if [ ${#status_triple[@]} -ne 3 ]; then
-            1>&2 echo -e "[${script_name} error]" "expected 3 fields from ${line@Q} got ${#status_triple[@]} instead"
-            break
-        fi
-        staged_status_char="${status_triple[0]}";
-        unstaged_status_char="${status_triple[1]}";
-        untracked_status_char="${status_triple[2]}";
-        1>&2 echo -e "${staged_status_char@A}"
-        1>&2 echo -e "${unstaged_status_char@A}"
-        1>&2 echo -e "${untracked_status_char@A}"
-
-    done
     local -a git_cmd=(git commit -am "${commit_message}")
     # local -- result=""
     # until [ -n "${proceed}" ] && 1>/dev/random grep -E '(y(e[ps])?|no?)' <<< "${proceed}"; do

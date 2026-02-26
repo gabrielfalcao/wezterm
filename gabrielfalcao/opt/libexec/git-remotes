@@ -7,11 +7,27 @@ if ! git_repo_path=$(2>/dev/random git rev-parse --show-toplevel); then
     exit 1
 fi
 
+# <2026-02-19 18:59:23+0000>
+# \,(let* (
+#      (regexp  "\x5c\x5c\x28\x5b\x3d\x5d\x3f\x5c\x5c\x29\x5c\x5c\x28\x5b\x22\x27\x5d\x5c\x5c\x29\x5c\x5c\x28\x66\x61\x6c\x73\x65\x5c\x5c\x7c\x74\x72\x75\x65\x5c\x5c\x29\x5c\x5c\x28\x5c\x32\x5c\x5c\x29" )
+#      (to-string    (progn (let* (
+#                            (prefix \1)
+#                            (quote-char \2)
+#                            (old-value (downcase \3))
+#                            (new-value (if (string= old-value "true") 1 0))
+#                         )
+#                 (format "%s%d" prefix new-value)
+#               )))
+#      )
+#      (replace-regexp regexp to-string)
+# )
+# </2026-02-19 18:59:23+0000>
+
 declare -a argv=( $@ )
 declare argc=${#argv[@]}
-show_name="false"
-remove_bare="false"
-open_in_browser="false"
+declare -i show_name="false"
+declare -i remove_bare="false"
+declare -i open_in_browser="false"
 
 for index in ${!argv[@]}; do
     arg="${argv[$index]}"

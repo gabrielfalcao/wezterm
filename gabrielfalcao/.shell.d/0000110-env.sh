@@ -40,11 +40,11 @@ if [[ ! -v UV_PYTHON_PREFERENCE ]]; then
     declare -xr UV_PYTHON_PREFERENCE="managed" # revised
 fi
 
+export CHILD_MAX=8192
 export PYTHONDONTWRITEBYTECODE='x'
 export FCEDIT="vim"
 export NVM_DIR="${HOME}/.nvm"
 export NODE_OPTIONS="--tls-min-v1.2"
-export PROMPT_COMMAND="history -a"
 
 export SHELLCHECK_OPTS="-a -C=always -f=diff -e SC2059 -e SC2034 -e SC1090 -e SC2124"
 export SHELLCHECK_OPTS="-a --color=always"

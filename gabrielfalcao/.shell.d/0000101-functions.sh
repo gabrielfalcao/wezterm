@@ -529,14 +529,32 @@ cdmkd() {
     local -- target="${@}"
     local -- backup_cdpath=""
     local -i cdpath_was_defined=0
-    if [[ -v CDPATH ]]; then
+    if [[ -v CDPATH ]] && [ -n "${CDPATH}" ]; then
         backup_cdpath="${CDPATH}"
         cdpath_was_defined=1
         unset CDPATH
     fi
     mkdir -p "${target}" && cd "${target}"
-    export CDPATH="${backup_cdpath}"
+    if (( $cdpath_was_defined )); then
+        export CDPATH="${backup_cdpath}"
+    fi
 }
+pushdmkd() {
+    local -- target="${@}"
+    local -- backup_cdpath=""
+    local -i cdpath_was_defined=0
+    if [[ -v CDPATH ]] && [ -n "${CDPATH}" ]; then
+        backup_cdpath="${CDPATH}"
+        cdpath_was_defined=1
+        unset CDPATH
+    fi
+    mkdir -p "${target}" && pushd "${target}"
+    if (( $cdpath_was_defined )); then
+        export CDPATH="${backup_cdpath}"
+    fi
+}
+alias pushmkd="pushdmkd"
+
 cd_opt_home_path() {
     local -a argv=($@)
     local -i argc=${#argv[@]}
