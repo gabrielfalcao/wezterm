@@ -1,12 +1,3 @@
-#declare -- shell_d_entrypoint_trace_dir="${HOME}/workbench/$(date +'%Y-%m-%d')"
-#declare -- shell_d_entrypoint_trace_path="${shell_d_entrypoint_trace_dir}/bash.$$.entrypoint.trace.log"
-#declare -- shell_d_entrypoint_stderr_path="${shell_d_entrypoint_trace_dir}/bash.$$.entrypoint.stderr.log"
-#
-#mkdir -p "${shell_d_entrypoint_trace_dir}"
-## exec 2>>${shell_d_entrypoint_stderr_path}
-#exec 5>>${shell_d_entrypoint_trace_path}
-#export BASH_XTRACEFD="5"
-
 if [ "${BASH_VERSINFO[0]}" -lt 5 ]; then
     1>&2 echo -e "[shell.d warning]" "${BASH_SOURCE[0]} requires bash version 5.2 or greater"
 fi
@@ -17,8 +8,8 @@ export IFS=$'\n'
 
 export INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:"
 export MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man::"
-export PATH="/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
-export CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao"
+export PATH="/opt/homebrew/bin:${HOME}/opt/libexec:${HOME}/.cargo/bin:${HOME}/.elixir-install/installs/elixir/1.18.2-otp-27/bin:${HOME}/.elixir-install/installs/otp/27.1.2/bin:${HOME}/.local/bin:${HOME}/.shell.d/.venv/bin:${HOME}/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:${HOME}/.bun/bin:${HOME}/.deno/bin:${HOME}/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:${HOME}/go/bin:${HOME}/.zig:${HOME}/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
+export CDPATH="${HOME}/projects/work/poems.codes/tools/noon-cli/packages:${HOME}/projects/work/poems.codes/tools:${HOME}/projects/work/poems.codes:${HOME}/projects/work/poems.codes/paas:${HOME}/projects/work/poems.codes/pro-bono:${HOME}/projects/work/poems.codes/sandbox:${HOME}/projects/work/poems.codes/poc:${HOME}/projects/personal:${HOME}/projects/personal/chrome-extensions:${HOME}/projects/work:${HOME}/projects/third_party:${HOME}/projects:${HOME}/projects/опенсорси:${HOME}/.shell.d/CDPATH:${HOME}"
 export EMACS_SOCKET_NAME="${HOME}/.emacs.d/socket/server"
 # Enable function tracing
 set -o functrace
@@ -188,6 +179,7 @@ trap __shell_d_sh_trap_function_return__ RETURN
 trap __shell_d_sh_trap_function_backtrace__ ERR
 set -o errtrace # Ensure ERR trap is inherited by functions
 set -o functrace
+set -o pipefail
 
 shell_d_fs_get_tty_path() {
     lsof -p "${$}" | awk '{ print $NF }' | grep /dev/tty | sort -u | head -1
