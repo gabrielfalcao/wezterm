@@ -137,7 +137,7 @@ bat_man() {
     if [ -n "${filename}" ]; then
         bat_args+=("--file-name" "${filename}")
     fi
-    ansistrip < /dev/stdin | bat ${bat_args[@]}
+    bat ${bat_args[@]}  < /dev/stdin
     return $?
 }
 
@@ -199,20 +199,20 @@ fi
 
 export BAT_STYLE="plain"
 
-if prog_path=$(2>/dev/random which "${prog_target}"); then
+if prog_path=$(2>/dev/random type -P "${prog_target}"); then
     declare -a prog_help_call=(${prog_path} ${prog_target_args[@]} ${help_arg})
     if prog_help=$(2>&1 ${prog_help_call[@]}); then
         ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
-    elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
-        ansistrip <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+    elif prog_help=$(2>/dev/random help "${prog_target}"); then
+        cat <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
     elif prog_help=$(2>/dev/random man "${prog_target}"); then
         ansistrip <<< "${prog_help}" | bat_man "${prog_target_all}'s manual"
     else
         error "error invoking help command \"${prog_help_call[@]}\":\n${prog_help}"
         exit 1
     fi
-elif prog_help=$(2>/dev/random help -m "${prog_target}"); then
-    ansistrip <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
+elif prog_help=$(2>/dev/random help "${prog_target}"); then
+    cat <<< "${prog_help}" | bat_man "builtin's \"${prog_target}\" help page"
 elif 2>/dev/random 1>/dev/random declare -F "${prog_target}"; then
     declare -a prog_help_call=(${prog_target} ${prog_target_args[@]} ${help_arg})
     if prog_help=$(2>&1 ${prog_help_call[@]}); then

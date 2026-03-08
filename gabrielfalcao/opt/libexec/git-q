@@ -21,6 +21,8 @@ declare -- commit_message=""
 declare -- proceed=""
 declare -i skip_commit=0
 
+declare -- location_type=""
+
 declare -- error_prefix_color_rgb="239;41;41"
 declare -- error_color_rgb="204;0;0"
 
@@ -167,7 +169,6 @@ process_argv() {
 
         commit_message="saves state of workbench \"$(basename ${curdir})\" at $(gdate --utc +"%H:%M:%S") UTC"
     else
-        local -- location_type=""
 
         case "${curdir}" in
             */projects/**/tool/*)
@@ -195,8 +196,47 @@ process_argv() {
     fi
     repl sane
 }
+commit_file() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- path=""
+    local -i created_ts==0
+    local -i modified_ts=0
+    local -- created_at=''
+    local -- modified_at=''
 
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <PATH>"
+        return 1
+    elif [ ${argc} -gt 1 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "takes exactly 1 argument, got ${argc}: ${argv[@]@Q}"
+        return 1
+    fi
+
+    path="${1}"
+    created_ts=$(gstat -c '%W' "${path}")
+    modified_ts=$(gstat -c '%Y' "${path}")
+    created_at=$(gdate --date=@${created_ts} +'%Y-%m-%d %H:%M:%S %Z')
+    modified_at=$(gdate --date=@${modified_ts} +'%Y-%m-%d %H:%M:%S %Z')
+    local -- file_commit_message=""
+
+    if [ ! -e "${path}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "path does not exist: ${path@Q}"
+        return 1
+    fi
+    file_commit_message=$(echo -en "file ${path@Q} created at ${created_at}, modified at ${created_at}\n\n${commit_message}")
+    local -- status_name=''
+
+    echo git commit "${path}" -m "commit ${status_name} at ${location_type} ${file_commit_message}"
+
+}
 main() {
+    local -i now=$(date -u +%s)
+    export GIT_COMMITTER_DATE="$(date --date=@${now} +'%Y-%m-%d %H:%M:%S')"
+    export GIT_AUTHOR_DATE="$(date --date=@${now} +'%Y-%m-%d %H:%M:%S')"
+
     local -a git_cmd=(git commit -am "${commit_message}")
     # local -- result=""
     # until [ -n "${proceed}" ] && 1>/dev/random grep -E '(y(e[ps])?|no?)' <<< "${proceed}"; do

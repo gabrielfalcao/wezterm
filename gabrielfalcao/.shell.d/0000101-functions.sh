@@ -553,7 +553,7 @@ pushdmkd() {
         export CDPATH="${backup_cdpath}"
     fi
 }
-alias pushmkd="pushdmkd"
+alias mkpushd="pushdmkd"
 
 cd_opt_home_path() {
     local -a argv=($@)

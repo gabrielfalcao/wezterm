@@ -11,7 +11,7 @@ declare -- open="false"
 declare -- boot="false"
 
 
-client $@
+client -n $@
 
 
 #emacs_is_open() {

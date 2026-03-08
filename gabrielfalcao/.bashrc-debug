@@ -1,2 +1,3 @@
+declare -gi SHELL_D_DEBUG=1
 set -x
 . ~/.shell.d/entrypoint.sh

@@ -12,3 +12,6 @@ x.d.rev.patch
 wezterm-cli*.log
 wezterm-pane-debug.*
 
+*.pid
+
+/logs

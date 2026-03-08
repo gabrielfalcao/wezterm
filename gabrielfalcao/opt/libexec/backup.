@@ -127,7 +127,7 @@ function indent_rev() {
 # production
 USERLAND_USERNAME=gabrielfalcao
 USERLAND_HOME=/Users/gabrielfalcao
-TARGET_BASE=/Volumes/WaveMandala
+TARGET_BASE=/Volumes/nothing/APFEL
 LOG_FOLDER=$USERLAND_HOME/opt/var/log
 mkdir -p "$LOG_FOLDER"
 LOG_PATH="${LOG_FOLDER}/$(slugify-string "$0")-$(t16g)"
@@ -161,7 +161,7 @@ not_dry_run() {
 }
 if not_dry_run; then
     mounted_target_base="$(df -h | grep "$TARGET_BASE" | lastcol)"
-    if [ "$mounted_target_base" != "$TARGET_BASE" ]; then
+    if [[ ! "$mounted_target_base" =~ $TARGET_BASE ]] && [[ ! "$TARGET_BASE" =~ ${mounted_target_base} ]] ; then
         log_err "\x1b[1;38;5;220m${TARGET_BASE}\x1b[1;38;5;160m does not appear to be mounted\x1b[0m"
         exit 1
     fi
@@ -339,41 +339,44 @@ function backup_home_items() {
     set -e
 }
 
-back_this_up "/usr/local"
-back_this_up "/opt"
-back_this_up "/var/log"
-back_this_up "/Applications"
-back_this_up "*scratch*" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+# back_this_up "/usr/local"
+# back_this_up "/opt"
+# back_this_up "/var/log"
+# back_this_up "/Applications"
 back_this_up "projects"
-back_this_up "*scratch*/Data"
-back_this_up "__sandbox__"
-back_this_up "*sandbox*"
-back_this_up "*nons*"
-back_this_up ".wezterm.lua"
-back_this_up "SDKs"
-back_this_up ".bun"
-back_this_up ".gnupg"
-back_this_up ".ssh"
-back_this_up ".shell.d"
-back_this_up ".config"
-back_this_up ".emacs.d"
-back_this_up ".nvm"
-back_this_up ".yarn"
-back_this_up ".local"
-back_this_up ".logs"
-back_this_up "Music"
-back_this_up "JUCE"
-back_this_up "Unity"
-back_this_up "Blender"
+back_this_up "godot"
+back_this_up "Kino"
+back_this_up "*scratch*" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+# back_this_up "*scratch*" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+# back_this_up "*scratch*/Data"
+# back_this_up "__sandbox__"
+# back_this_up "*sandbox*"
+# back_this_up "*nons*"
+# back_this_up ".wezterm.lua"
+# back_this_up "SDKs"
+# back_this_up ".bun"
+# back_this_up ".gnupg"
+# back_this_up ".ssh"
+# back_this_up ".shell.d"
+# back_this_up ".config"
+# back_this_up ".emacs.d"
+# back_this_up ".nvm"
+# back_this_up ".yarn"
+# back_this_up ".local"
+# back_this_up ".logs"
+# back_this_up "Music"
+# back_this_up "JUCE"
+# back_this_up "Unity"
+# back_this_up "Blender"
 back_this_up "Documents"
-back_this_up "Splice"
+# back_this_up "Splice"
 back_this_up "Downloads"
 back_this_up "Bildern"
 back_this_up "Büchen"
-back_this_up "Kino"
-back_this_up "LOL"
-back_this_up "Publications"
-back_this_up "tmp"
+# back_this_up "Kino"
+# back_this_up "LOL"
+# back_this_up "Publications"
+# back_this_up "tmp"
 back_this_up "Desktop"
 back_this_up "Movies"
 back_this_up "Pictures"
@@ -381,20 +384,20 @@ back_this_up "Library"
 back_this_up "Applications"
 back_this_up "go"
 back_this_up "opt"
-backup_macintosh_hd_library
-backup_home_items
-backup_system_library
-back_this_up "Library/HTTPStorages"
-back_this_up "Library/Caches"
-back_this_up "Library/LaunchAgents"
-back_this_up "Library/LaunchDaemons"
-back_this_up "Library/Logs"
-back_this_up "Library/Audio/Plug-Ins"
-2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/var-db-dslocal-nodes-default-users-$(date +"%Y%m%d-%H%M%S").zip" "/var/db/dslocal/nodes/default/users"
-2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Preferences-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Preferences"
-2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Containers-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Containers/"
-2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/keychains-$(date +"%Y%m%d-%H%M%S").zip" $(pat ~/Library/Preferences/com.apple.security.plist | jq .DLDBSearchList[].DbName | tr -d '"')
-back_this_up "Library/Application%20Support"
+# backup_macintosh_hd_library
+# backup_home_items
+# backup_system_library
+# back_this_up "Library/HTTPStorages"
+# back_this_up "Library/Caches"
+# back_this_up "Library/LaunchAgents"
+# back_this_up "Library/LaunchDaemons"
+# back_this_up "Library/Logs"
+# back_this_up "Library/Audio/Plug-Ins"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/var-db-dslocal-nodes-default-users-$(date +"%Y%m%d-%H%M%S").zip" "/var/db/dslocal/nodes/default/users"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Preferences-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Preferences"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Containers-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Containers/"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/keychains-$(date +"%Y%m%d-%H%M%S").zip" $(pat ~/Library/Preferences/com.apple.security.plist | jq .DLDBSearchList[].DbName | tr -d '"')
+# back_this_up "Library/Application%20Support"
 
 # # # # # back_this_up ".git"
 # # # # # back_this_up ".casa"

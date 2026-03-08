@@ -317,9 +317,12 @@ cfquery() {
 
     if ! filtered=$(2>${stderr} jq ${jq_args[@]} <<< "${response}"); then
         code=$?
-        1>&2 echo -e "command failed: jq ${jq_args[@]} with input=${response@Q}"
-        1>&2 echo -e "stdin: ${response@Q}"
-        1>&2 cat "${stderr}"
+    fi
+    if [ ${code} -ne 0 ]; then
+        1>&2 echo -e "command failed: jq ${jq_args[@]}"
+        # 1>&2 echo -e "command failed: jq ${jq_args[@]} with input=${response@Q}"
+        # 1>&2 echo -e "stdin: ${response@Q}"
+        # 1>&2 cat "${stderr}"
         exit $${code}
     else
         echo -e "${name}"
@@ -369,6 +372,10 @@ git_command_at_path() {
         case "${index}" in
             0)
                 path="${arg}"
+                if [ ! -e "${path}" ]; then
+                    1>&2 echo "path does not exist: ${arg@Q}"
+                    exit 11
+                fi
                 if [ ! -d "${path}" ]; then
                     1>&2 echo -e "${err_prefix}${FUNCNAME[0]} invalid <PATH> argument (not a directory): ${path@Q}"
                     return 1
@@ -401,7 +408,12 @@ git_command_at_path() {
     fi
     local -- stdout=$(mktemp)
     local -a full_cmd=(git ${git_command} ${git_args[@]})
-    if ! (cd ${path} && 2>${stderr} 1>${stdout} ${full_cmd[@]}); then
+    if [ ! -e "${path}" ]; then
+        1>&2 echo "path does not exist: ${arg@Q}"
+        exit 1
+    fi
+
+    if ! (cd "${path}" && 2>${stderr} 1>${stdout} ${full_cmd[@]}); then
         code=$?
         if [ ${code} -ne 0 ]; then
             1>&2 echo -e "running command \`${full_cmd[@]}\' in path ${path@Q} failed exit code ${code}"
