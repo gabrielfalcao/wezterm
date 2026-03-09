@@ -1,0 +1,14 @@
+
+/target
+/*
+
+*.stderr.log
+*.stdout.log
+*.timing
+
+
+tmp*.log
+tmp*.log
+tmp*.timing
+tmp*.pid
+tmp*.lock

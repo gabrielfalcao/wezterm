@@ -1,0 +1,111 @@
+# <emacs>
+.#*
+*#*
+.*#*
+*~
+.*~
+# </emacs>
+# <MacOS>
+.DS_Store
+# <MacOS>>
+
+.cargo-dist.toml
+# <version control>
+.hg/
+.git/
+# <version control>
+
+# <python>
+/*.egg-info
+/.venv
+# </python>
+
+# <dev artifacts>
+.refactorsignore
+*.pyc
+
+/build
+/dist
+/target
+/node_modules/
+*/node_modules/*
+/target
+uv.lock
+Cargo.lock
+__pycache__
+/.crates-json/
+# </dev artifacts>
+
+# <shell artifacts>
+nohup.out
+*.stderr.log
+*.stdout.log
+*.timing
+
+
+tmp*.log
+tmp*.log
+tmp*.timing
+tmp*.pid
+tmp*.lock
+# <shell artifacts>
+
+
+
+# /*
+
+
+# <media files>
+
+#   <blender artifacts>
+*.blend1
+#   </blender artifacts>
+
+#     <video files>
+*.3g2
+*.3gp
+*.M2TS
+*.MTS
+*.aiff
+*.avif
+*.amv
+*.asf
+*.avi
+*.drc
+*.elc
+*.f4a
+*.f4b
+*.f4p
+*.f4v
+*.flv
+*.gifv
+*.lock
+*.m2v
+*.m4p
+*.m4v
+*.mkv
+*.mng
+*.mov
+*.mp2
+*.mp4
+*.mpe
+*.mpeg
+*.mpg
+*.mpv
+*.mxf
+*.nsv
+*.ogg
+*.ogv
+*.qt
+*.rm
+*.rmvb
+*.roq
+*.svi
+*.viv
+*.vob
+*.wav
+*.webm
+*.wmv
+*.yuv
+#     </video files>
+# </media files>
