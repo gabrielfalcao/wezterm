@@ -1,14 +1,26 @@
 . ${HOME}/.bashrc.env.static
+cls() {
+    1>&2 echo -en "\x1b\x5b\x48\x1b\x5b\x32\x4a"
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+}
+
+declare -gi shell_d_internal_wezterm_pid=$(ps aux | psgrep wezterm-gui)
+if [[ ! -v WEZTERM_UNIX_SOCKET ]]; then
+    "${HOME}/.local/share/wezterm/gui-sock-${shell_d_internal_wezterm_pid}"
+fi
 
 export TZ=UTC
-declare -gir shell_d_started_at=$(date --utc +%s)
+declare -gir shell_d_started_at=$(date -u +%s)
 declare -gi shell_d_pid=${$}
 
 declare -g default_shell_d_path="${HOME}/.shell.d"
 declare -g default_x_d_path="${default_shell_d_path}/x.d"
+declare -g shell_d_internal_started_at_day="$(date -u +'%Y-%m-%d')"
+declare -g shell_d_internal_workbench_path="${HOME}/workbench/${shell_d_internal_started_at_day}"
+declare -g shell_d_internal_workbench_logs="${shell_d_internal_workbench_path}/logs/${shell_d_internal_started_at_day}"
+declare -g shell_d_internal_log_dir="${shell_d_internal_workbench_logs}"
 
-declare -gr shell_d_internal_log_dir="${default_shell_d_path}/logs/$(date -u +'%Y-%m-%d')"
-mkdir -p "${shell_d_internal_log_dir}"
+mkdir -p "${shell_d_internal_workbench_logs}" "${shell_d_internal_workbench_path}"
 
 if [[ -v WEZTERM_PANE ]]; then
     declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/entrypoint.pid_$$.pane_${WEZTERM_PANE}.${shell_d_started_at}.log"
@@ -16,6 +28,53 @@ else
     declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/entrypoint.pid_$$.${shell_d_started_at}.log"
 fi
 
+
+
+shell_d_sh_wezterm_cli() {
+    if [[ ! -v WEZTERM_PANE ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "env var not set: WEZTERM_PANE"
+        return 9
+    fi
+    if [[ ! -v WEZTERM_UNIX_SOCKET ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "env var not set: WEZTERM_UNIX_SOCKET"
+        return 9
+    fi
+    if [ ! -S "${WEZTERM_UNIX_SOCKET}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "env var WEZTERM_UNIX_SOCKET does not contain path to a socket: ${WEZTERM_UNIX_SOCKET@Q}"
+        return 9
+    fi
+
+    if [[ ! "${WEZTERM_PANE}" =~ ^([0-9]|[1-9][0-9]*)$ ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "env var WEZTERM_PANE is not a positive number: ${WEZTERM_PANE}"
+        return 9
+    fi
+
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i code=0
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments for wezterm cli"
+        return 9
+    fi
+    local -- stderr=$(mktemp)
+
+    if ! 2>${stderr} wezterm cli ${argv[@]}; then
+        code=$?
+    fi
+
+    if [ ${code} -ne 0 ]; then
+        if [ -s "${stderr}" ]; then
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "command \x1b[1;38;5;220mwezterm cli ${argv[@]}\x1b[0m failed with code ${code}:\n$(cat "${stderr}")"
+        else
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "command \x1b[1;38;5;220mwezterm cli ${argv[@]}\x1b[0m failed with code ${code}"
+        fi
+        return ${code}
+    fi
+}
+
+shell_d_internal_init() {
+    declare -g shell_d_internal_wezterm_info_at_startup=$(shell_d_sh_wezterm_cli list --format=json | jq ".[] | select(.pane_id == ${WEZTERM_PANE})")
+}
 shell_d_sh_log_error() {
     local -a argv=($@)
     local -i argc=${#argv[@]}
@@ -178,7 +237,7 @@ declare -gA shell_d_declared_functions_colon_sep_by_source=()
 declare -gA shell_d_declared_functions_colon_sep_by_caller=()
 declare -gA shell_d_declared_functions_colon_sep_by_timestamp=()
 declare -g fn=''
-declare -i now=$(date --utc +%s)
+declare -i now=$(date -u +%s)
 for fn in $(declare -p -F); do
     shell_d_declared_functions_colon_sep_by_timestamp[${fn}]=${now}
 done
@@ -345,9 +404,35 @@ set -o errtrace # Ensure ERR trap is inherited by functions
 set -o functrace
 set -o pipefail
 
-shell_d_fs_get_tty_path() {
-    lsof -p "${$}" | awk '{ print $NF }' | grep /dev/tty | sort -u | head -1
+shell_d_fs_mkdir_p() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <DIRECTORY_PATH_TO_CREATE>"
+        return 1
+    fi
+    local -- directory_path_to_create="${argv[@]}"
+
+    if [ ! -e "${directory_path_to_create}" ]; then
+        mkdir -p "${directory_path_to_create}"
+        return $?
+    fi
+    local -- ty=$(gstat -c '%F' "${directory_path_to_create}")
+
+    if [ ! -d "${directory_path_to_create}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "${directory_path_to_create} exists but is not a directory: ${ty}"
+        return "${#directory_path_to_create}"
+    fi
 }
+
+shell_d_fs_get_tty_path() {
+    tty || (lsof -p "${$}" | awk '{ print $NF }' | grep /dev/tty | sort -u | head -1)
+}
+
 shell_d_sh_shfmt_check() {
     local -r shfmt_path="${HOME}/go/bin/shfmt"
     local -i code=0
@@ -447,25 +532,7 @@ shell_d_sh_get_history_entry_by_id() {
     history 1 | awk 'BEGIN {result="";} $0 ~ /^\s*[0-9]+\s+@([0-9]+):([^[:space:]\n]+)\s+([^[:space:]].*)$/ { result=" "; for (i=1;i<NF;i++) { result=sprintf("%s%s ", result, $i) }} END { print(gensub(/\s*$/, "", "g", result)) }'
 
 }
-shell_d_sh_prompt_command_enable() {
-    declare -gi shell_d_prompt_command_no_auto_title=1
-}
-shell_d_sh_prompt_command_disable() {
-    unset shell_d_prompt_command_no_auto_title=1
-}
-shell_d_sh_wezterm_cli() {
-    local -a argv=($@)
-    local -i argc=${#argv[@]}
 
-    if [[ -v WEZTERM_PANE ]] && [[ -v WEZTERM_UNIX_SOCKET ]]; then
-        if [ -S "${WEZTERM_UNIX_SOCKET}" ] && [[ "${WEZTERM_PANE}" =~ ^[0-9]+$ ]]; then
-            if [ ${argc} -eq 0 ]; then
-                1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments for wezterm cli"
-            fi
-            wezterm cli ${argv[@]}
-        fi
-    fi
-}
 shell_d_sh_prompt_command() {
     local -r pwd_canon_folded="$(path canon -uf .)"
 
@@ -488,6 +555,14 @@ shell_d_sh_prompt_command() {
         title_path="${beg}...${end}"
     fi
     shell_d_sh_wezterm_cli set-tab-title "${title_path}"
+    shell_d_sh_wezterm_cli set-window-title "$(path canon -f .)"
+}
+
+shell_d_sh_prompt_command_enable() {
+    declare -gi shell_d_prompt_command_no_auto_title=1
+}
+shell_d_sh_prompt_command_disable() {
+    unset shell_d_prompt_command_no_auto_title=1
 }
 
 shell_d_sh_prompt_command_set_wezterm_title_last_history_entry_command() {
@@ -670,25 +745,15 @@ entrypoint() {
     else
         export PS1='\u@\h:\w\$ '
     fi
-    # declare -p "PROMPT_COMMAND"
+    # ZGVjbGFyZSAtcCAiUFJPTVBUX0NPTU1BTkQi
 
     declare -gr shell_d_bash_pid=${$}
     declare -gr shell_d_bash_histcmd=${HISTCMD}
-    #    declare -gA shell_d_sh_ps1_prefix_parts=(
-    #	"[#\${HISTCMD}]"
     #
-    #	"[\\\$?=\$?]"
+    #   CiAgICAjICAgIGRlY2xhcmUgLWdBIHNoZWxsX2Rfc2hfcHMxX3ByZWZpeF9wYXJ0cz0oCiAgICAjCSJbI1wke0hJU1RDTUR9XSIKICAgICMKICAgICMJIltcXFwkPz1cJD9dIgogICAgIwogICAgIwkiW1xcXCQhPVwkIV0iCiAgICAjCiAgICAjCSJbdXAgXCQoKCBTRUNPTkRTICkpc10iCiAgICAjCiAgICAjCSQoaWYgW1sgIiR7U0hMVkx9IiAtZ3QgMSBdXTsgdGhlbiBlY2hvIC1uICJbbGV2ZWwgXCR7U0hMVkx9XSI7IGZpKQogICAgIwogICAgIwkiW1xcXCRcXFwkPVwkXCRdIgogICAgIyAgICAp
     #
-    #	"[\\\$!=\$!]"
-    #
-    #	"[up \$(( SECONDS ))s]"
-    #
-    #	$(if [[ "${SHLVL}" -gt 1 ]]; then echo -n "[level \${SHLVL}]"; fi)
-    #
-    #	"[\\\$\\\$=\$\$]"
-    #    )
-
-    export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(( SECONDS ))s][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
+    declare -gt ps1_extra_prefix="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(( SECONDS ))s][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
+    # export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(( SECONDS ))s][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
     # # See `man bash'
     # export EXECIGNORE=""
     # export BASH_XTRACEFD
@@ -1146,7 +1211,7 @@ umask 007
 
 declare -gr shell_d_histcmd_at_startup_finished="${HISTCMD}"
 
-declare -gir shell_d_finished_at=$(date --utc +%s)
+declare -gir shell_d_finished_at=$(date -u +%s)
 # <TODO: write report of new shell session at end of entrypoint.sh>
 # path: workbench/$(today)/.shell-sessions/session.pid.$$.tty.${tty_name}.$(nowdz).json
 #
