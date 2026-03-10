@@ -12,7 +12,6 @@ script_name="$(basename "${BASH_SOURCE[0]}")"
 script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 this_script_path="${script_path}/${script_name}"
 
-
 if [ "$(whoami)" != "root" ]; then
     sudo $0 $@
     exit $?
@@ -76,7 +75,7 @@ function execute-if-exists() {
     fi
 }
 extract_domain() {
-    name=$(sed -E 's,^(https?://)?([^/]+)([/].*)?$,\2,g' <<< "${@}")
+    name=$(sed -E 's,^(https?://)?([^/]+)([/].*)?$,\2,g' <<<"${@}")
     echo "${name}"
 }
 stop() {
@@ -121,13 +120,13 @@ wait_activity() {
     local -i curr_count=${prev_count}
     local -- interval=0.314
     local -i success=0
-    until [ $(( $current_ts - $started_ts )) -le 0 ] || [ ${curr_count} -gt ${prev_count} ]; do
+    until [ $(($current_ts - $started_ts)) -le 0 ] || [ ${curr_count} -gt ${prev_count} ]; do
         curr_count=$(cat /var/log/dnsmasq.log | wc -l)
         1>&2 echo -e "waiting for dnsmasq log activity"
         2>/dev/null 1>/dev/null /usr/bin/curl --max-time ${interval} --connect-timeout ${interval} --expect100-timeout ${interval} --happy-eyeballs-timeout-ms ${interval} -q "https://nsa.gov" || sleep ${interval}
         current_ts=${now}
     done
-    local -i elapsed_seconds=$(( $current_ts - $started_ts ))
+    local -i elapsed_seconds=$(($current_ts - $started_ts))
     if [ ${elapsed_seconds} -gt ${timeout_secs} ]; then
         1>&2 echo -e "dnsmasq did not appear to produce activity within ${elapsed_seconds} seconds"
         return 1
@@ -141,14 +140,14 @@ start() {
     # local -i started=${#pids[@]}
 
     until [ ${#pids[@]} -gt 0 ]; do
-        if ! (( $started )); then
+        if ! (($started)); then
             start_bg
             started=1
         fi
         wait_activity
         pids=($(server_pids))
     done
-    if [ ${#pids[@]} -gt 0 ] && (( $report_status_running )); then
+    if [ ${#pids[@]} -gt 0 ] && (($report_status_running)); then
         1>&2 echo -e "dns-server running"
         report_status_running=0
     fi
@@ -184,6 +183,13 @@ restart() {
 restart_help() {
     1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m restart \x1b[0m"
 }
+reboot() {
+    ps aux | gawk -v pppid="${$}" 'BEGIN{ IGNORECASE=1; PROCINFO["@sorted_in"] = "@val_str_asc"; printf("\x1b[2J\x1b[3J\x1b[H") } { if ( ( $2 != PROCINFO["pid"] ) &&  ( $2 != PROCINFO["ppid"] ) && ($NF ~ /(dnsmasq|tcpdump)/)) { print $0 } } END { delete varnames; varnames[varname_index++]="pid"; varnames[varname_index++]="ppid"; for (key in varnames) { varname=varnames[key]; value=PROCINFO[varname]; printf("PROCINFO[\x27%s\x27] => \x27%s\x27\n", varname, value) }  }'
+    2>/dev/null 1>/dev/null g p -qr dnsmasq -k
+    2>/dev/null 1>/dev/null g p -qr tcpdump -k
+
+    restart
+}
 
 logs() {
     local -a argv=($@)
@@ -191,8 +197,6 @@ logs() {
     local -i index=0
     local -i current=0
     local -- arg=""
-
-
 
     if [ -f "${dnsmasq_log_path}" ]; then
         chmod 644 "${dnsmasq_log_path}"
@@ -213,10 +217,21 @@ logs() {
     fi
     tail_call+=("${dnsmasq_log_path}")
     local -- regexp_exclusions='(from[[:space:]]+[0-9A-Fa-f]+|NXDOMAIN|only|NODATA)'
-    ${tail_call[@]} | grep -v -E  "${regexp_exclusions}"
+    ${tail_call[@]} | grep -v -E "${regexp_exclusions}"
 }
 logs_help() {
     1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m logs \x1b[1;38;5;241m[#log lines]\x1b[0m"
+}
+
+reset_cache() {
+    1>/dev/random 2>/dev/random killall -HUP mDNSResponder
+    dscacheutil -flushcache
+    1>/dev/random 2>/dev/random killall -HUP mDNSResponder
+    g p -S 1 -qr mDNSResponder -k
+    2>/dev/random killall -HUP mDNSResponder
+    if [ ${argc} -gt 0 ]; then
+        logs ${argv[@]}
+    fi
 }
 
 refresh() {
@@ -237,6 +252,14 @@ refresh_help() {
 
 help() {
     fn=""
+
+    if [[ ! -v 1 ]]; then
+        1>&2 echo -e "USAGE: ${script_name} <FUNCTION_NAME>"
+        1>&2 echo -e "\nwhere FUNCTION_NAME in:\n"
+        1>&2 printf '    %s\n' $(declare -F | lastcol | sed -n -E 's/^((.*)([_]help)|([^_]+))$/\2\n\4\n/gp' | grep -E -v '-exists$' | sort -u)
+        1>&2 echo -e "\n"
+        return 1
+    fi
     if [ -n "$1" ]; then
         fn=" ($1) "
     fi
@@ -245,7 +268,7 @@ help() {
 
     if [ -n "$1" ]; then
         help="${1}_help"
-        if 1>/dev/null declare -f "$help"; then
+        if 1>/dev/null declare -F "$help"; then
             $help
         fi
     else
@@ -305,17 +328,17 @@ cfquery() {
     local -- filtered=""
     local -- jq_args=('-M' '-r' '.Answer[].data')
 
-    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<< "${@}")
+    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<<"${@}")
 
     slug=cfquery/$(slugify-string "${name}")
     response="$(cf_prettified_json "${name}")"
 
     json_path="${function_log_dir}/${slug}.${now}.json"
     log_path="${function_log_dir}/${slug}.${now}.log"
-    echo "${response}" > "${json_path}"
-    echo "jq ${jq_args[@]} <<< \"${response}\"" > "${log_path}"
+    echo "${response}" >"${json_path}"
+    echo "jq ${jq_args[@]} <<< \"${response}\"" >"${log_path}"
 
-    if ! filtered=$(2>${stderr} jq ${jq_args[@]} <<< "${response}"); then
+    if ! filtered=$(2>${stderr} jq ${jq_args[@]} <<<"${response}"); then
         code=$?
     fi
     if [ ${code} -ne 0 ]; then
@@ -338,7 +361,7 @@ wl_content() {
     if [ -z "$name" ]; then
         exit 11
     fi
-    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<< "${name}")
+    name=$(sed 's/^\(https\?:\/\/\)\?\([^\/]\+\)\([\/].*\)\?$/\2/g' <<<"${name}")
     slug=wl/$(slugify-string "${name}")
     local -a ipv4_addresses=()
     local -a data=()
@@ -366,7 +389,7 @@ git_command_at_path() {
     local -i index=0
     local -i code=0
     for index in ${!argv[@]}; do
-        current=$(( index + 1 ))
+        current=$((index + 1))
         arg=${argv[$index]}
         err_prefix="[${current}/${argc}]"
         case "${index}" in
@@ -396,7 +419,7 @@ git_command_at_path() {
                 ;;
             *)
                 git_args+=("${arg}")
-            ;;
+                ;;
         esac
     done
     if [ -z "${path}" ]; then
@@ -435,7 +458,7 @@ commit_conf_file() {
     local -- message=""
     local -a parts=()
     local -- stderr=$(mktemp)
-    if [ -z "${subject}"  ]; then
+    if [ -z "${subject}" ]; then
         prefix=(
             "${script_name}"
             ${main_argv[@]}
@@ -507,14 +530,14 @@ block() {
 
 case $1 in
     #%help%
-    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl'|'block')
+    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl' | 'block')
         invoke=$1
         shift
         declare -a argv=(${@})
         if [ ${#argv[@]} -eq 0 ]; then
             if clipboard="$(pbpaste)" \
-                && 1>/dev/random ack '^(https?://)?([^/]+)([/].*)?$' <<< "${clipboard}" \
-                && 1>/dev/random ack -i '^[a-z0-9_.-]+$' <<< "${clipboard}"; then
+                && 1>/dev/random ack '^(https?://)?([^/]+)([/].*)?$' <<<"${clipboard}" \
+                && 1>/dev/random ack -i '^[a-z0-9_.-]+$' <<<"${clipboard}"; then
                 argv+=("${clipboard}")
             fi
         fi
