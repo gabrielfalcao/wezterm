@@ -184,7 +184,7 @@ restart_help() {
     1>&2 echo -e "\x1b[1;38;5;242m$(basename $0)\x1b[1;38;5;247m restart \x1b[0m"
 }
 reboot() {
-    ps aux | gawk -v pppid="${$}" 'BEGIN{ IGNORECASE=1; PROCINFO["@sorted_in"] = "@val_str_asc"; printf("\x1b[2J\x1b[3J\x1b[H") } { if ( ( $2 != PROCINFO["pid"] ) &&  ( $2 != PROCINFO["ppid"] ) && ($NF ~ /(dnsmasq|tcpdump)/)) { print $0 } } END { delete varnames; varnames[varname_index++]="pid"; varnames[varname_index++]="ppid"; for (key in varnames) { varname=varnames[key]; value=PROCINFO[varname]; printf("PROCINFO[\x27%s\x27] => \x27%s\x27\n", varname, value) }  }'
+    ps aux | gawk -v pppid="${$}" 'BEGIN{ IGNORECASE=1; PROCINFO["sorted_in"] = "@val_str_asc"; printf("\x1b[2J\x1b[3J\x1b[H") } { if ( ( $2 != PROCINFO["pid"] ) &&  ( $2 != PROCINFO["ppid"] ) && ($NF ~ /(dnsmasq|tcpdump)/)) { print $0 } } END { delete varnames; varnames[varname_index++]="pid"; varnames[varname_index++]="ppid"; for (key in varnames) { varname=varnames[key]; value=PROCINFO[varname]; printf("PROCINFO[\x27%s\x27] => \x27%s\x27\n", varname, value) }  }'
     2>/dev/null 1>/dev/null g p -qr dnsmasq -k
     2>/dev/null 1>/dev/null g p -qr tcpdump -k
 
