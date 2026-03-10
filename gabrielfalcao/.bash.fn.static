@@ -1,0 +1,44 @@
+whichbin() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments"
+        return 1
+    fi
+    declare -a all_resolved=()
+    declare -- result=''
+    all_resolved=( $(which -a ${argv[@]} | 2>/dev/null xargs -Ieachwhich path canon 'eachwhich' | xargs -Ieachpath gstat -c '%Y eachpath' 'eachpath' | sort -nu | gawk '{ result=""; for (i=2;i<=NF;i++) { result=sprintf("%s%s%s", result, $i, FS);}; print(result)  }' ) )
+    result=${all_resolved[0]}
+    echo "${result}"
+}
+
+cdmkd() {
+    local -- target="${@}"
+    local -- backup_cdpath=""
+    local -i cdpath_was_defined=0
+    if [[ -v CDPATH ]] && [ -n "${CDPATH}" ]; then
+        backup_cdpath="${CDPATH}"
+        cdpath_was_defined=1
+        unset CDPATH
+    fi
+    mkdir -p "${target}" && cd "${target}"
+    if (( $cdpath_was_defined )); then
+        export CDPATH="${backup_cdpath}"
+    fi
+}
+pushdmkd() {
+    local -- target="${@}"
+    local -- backup_cdpath=""
+    local -i cdpath_was_defined=0
+    if [[ -v CDPATH ]] && [ -n "${CDPATH}" ]; then
+        backup_cdpath="${CDPATH}"
+        cdpath_was_defined=1
+        unset CDPATH
+    fi
+    mkdir -p "${target}" && pushd "${target}"
+    if (( $cdpath_was_defined )); then
+        export CDPATH="${backup_cdpath}"
+    fi
+}
+alias mkpushd="pushdmkd"
