@@ -1,0 +1,2810 @@
+#\([[:space:][\n]]*?[a-zA-Z0-9_]+[[:space:][\n]]*?[(][[:space:][\n]]*?[)][[:space:][\n]]*?[{][^}]*?[[\n]]+?\s-*?[}][[:space:][\n]           ]*?\)
+
+declare -- DEFAULT_NODE_VERSION="v22.18.0"
+declare -- HISTFILE="/Users/gabrielfalcao/.bash_history"
+declare -- bash_interactive_lsof_output=$'COMMAND   PID          USER   FD   TYPE             DEVICE SIZE/OFF                NODE NAME\nbash    64234 gabrielfalcao  cwd    DIR               1,16     2336             6844557 /Users/gabrielfalcao/.shell.d\nbash    64234 gabrielfalcao  txt    REG               1,16  1070328            28508125 /opt/homebrew/Cellar/bash/5.2.26/bin/bash\nbash    64234 gabrielfalcao  txt    REG               1,16     2086 1152921500312510194 /usr/share/locale/la_LN.ISO8859-1/LC_COLLATE\nbash    64234 gabrielfalcao  txt    REG               1,16  2423888 1152921500312498623 /usr/lib/dyld\nbash    64234 gabrielfalcao    0u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    1u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    2u   CHR              16,43    0t955                6173 /dev/ttys043\nbash    64234 gabrielfalcao    3   PIPE 0xe599c29414bdf573    16384                     ->0x3a61cac44b5895b1\nbash    64234 gabrielfalcao  255u   CHR              16,43    0t955                6173 /dev/ttys043'
+declare -- bash_static_state_path="/Users/gabrielfalcao/.static.bashrc"
+declare -- gnu_bash_libexec="/opt/homebrew/bin/bash"
+declare -- hist_time_format_timestamp_tz="@%s:%Z     "
+declare -- hist_time_regexp_timestamp_tz="^\\s*([0-9]+)\\s*(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$"
+declare -- latest_node_version="v22.18.0"
+declare -- output_path="/Users/gabrielfalcao/.bashrc.static.2026-02-13.03-27-46.1770964066"
+declare -- regexp_group_variable_value_variants="([^\\5]*|\\\\\\5[^\\5]*|\\\\\\5[^\\5]*\\\\\\5|\\\\\\5[^\\5]*\\\\\\5|[^\\5]*|\\\\\\5[^\\5]*|\\\\\\5[^\\5]*\\\\\\5|\\\\\\5[^\\5]*\\\\\\5)"
+declare -- shell_d_config_files_path="/Users/gabrielfalcao/.shell.d/conf.d"
+declare -- shell_d_entrypoint_source_path_relative="/Users/gabrielfalcao/.shell.d/entrypoint.sh"
+declare -- shell_d_kernel_name="darwin"
+declare -- shell_d_python_bin_path="/Users/gabrielfalcao/.shell.d/.venv/bin"
+declare -- shell_d_python_manifest="/Users/gabrielfalcao/.shell.d/pyproject.toml"
+declare -- shell_d_python_root_path="/Users/gabrielfalcao/.shell.d/.venv"
+declare -- shell_d_python_script=$'import os\nfrom argparse import ArgumentParser, ArgumentTypeError\nfrom pathlib import Path\n\nparser = ArgumentParser(prog="resolve-path")\nparser.add_argument(\n    "paths",\n    nargs="+",\n    type=lambda p: (not Path(p).exists() and ArgumentTypeError(f"does not exist {p}"))\n    or Path(p).expanduser().absolute(),\n)\n\nprint(os.getenv("IFS", "\\n").join(map(str, parser.parse_args().paths)))'
+declare -- shell_d_rc_files_path="/Users/gabrielfalcao/.shell.d/rc.d"
+declare -- shell_d_rust_bin_path="/Users/gabrielfalcao/.cargo/bin"
+declare -- shell_d_rust_env_path="/Users/gabrielfalcao/.cargo/env"
+declare -- shell_d_rust_root_path="/Users/gabrielfalcao/.cargo"
+declare -- shell_d_rust_toolchain=""
+declare -- shell_script_value_regexp_group_anything="(.*)"
+declare -- shell_script_value_regexp_group_wrapped_in_parenthesis="(([(])([^()]*.*)([)]))"
+declare -- shell_script_var_declaration_regexp="^(\\s*)((declare|local)\\s+[-][a-zA-Z-]+\\s+|(unset|export)\\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*)([^=]+)?)([=]\${regexp_group_variable_value_variants[*]})\$"
+declare -- shell_state_script_path="/Users/gabrielfalcao/.shell.d/x.d/shell-state.sh"
+declare -- sorter="/Users/gabrielfalcao/.cargo/bin/path"
+declare -A current_caller_info=()
+declare -A deferred_prog_finished_at_utc=()
+declare -A deferred_prog_pids=()
+declare -A deferred_prog_psaux_lines=()
+declare -A deferred_prog_started_at_utc=()
+declare -A deferred_prog_stderr=()
+declare -A deferred_prog_stdout=()
+declare -A function_definitions=()
+declare -A hist_commands_by_entry_id=()
+declare -A shell_d_checked_shell_scripts_result_map=()
+declare -A shell_d_checked_shell_scripts_stderr_map=()
+declare -A shell_d_checked_shell_scripts_stdout_map=()
+declare -a current_caller_frame=()
+declare -a default_shell_d_path=([0]="/Users/gabrielfalcao/.shell.d")
+declare -a default_x_d_path=([0]="/Users/gabrielfalcao/.shell.d/x.d")
+declare -a deferred_prog_commands=()
+declare -a global_set_ifs_callers=()
+declare -a global_set_ifs_values=()
+declare -a list_pair_xcodepoint_escaped=([0]="\\x22" [1]="\\x27" [2]="\\x60")
+declare -a shell_script_var_assignment_nonempty_regexp_parts=([0]="(([\"])([^\"]*.*)([\"]))" [1]="(([\\'])([^\\']*.*)([\\']))" [2]="(([(])([^()]*.*)([)]))" [3]="(.*)")
+declare -a shell_script_var_declaration_regexp_non_line_bound=()
+declare -a shfmt_args=([0]="-bn" [1]="-ci" [2]="-i" [3]="4" [4]="-ln=bash")
+declare -g hist_time_regexp_timestamp_tz_no_entry_id="(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\\s+(([^\\n]*[\\n]|[^\\n]*)+|.*)\$"
+declare -g shell_d_entrypoint="/Users/gabrielfalcao/.shell.d/entrypoint.sh"
+declare -g shell_d_root_path="/Users/gabrielfalcao/.shell.d"
+declare -g shell_script_value_regexp_group_wrapped_in_double_quote="(([\"])([^\"]*.*)([\"]))"
+declare -g shell_script_value_regexp_group_wrapped_in_single_quote="(([\\'])([^\\']*.*)([\\']))"
+declare -i MAILCHECK="60"
+declare -i OPTIND="1"
+declare -i RANDOM
+declare -i SRANDOM
+declare -i bash_expiration_seconds="21600"
+declare -i bash_static_state_last_modified="0"
+declare -i bash_static_state_last_modified_delta="1770744410"
+declare -i now="1770744410"
+declare -i shell_d_finished_at="1770744411"
+declare -i shell_d_in_linux="0"
+declare -i shell_d_in_macos="1"
+declare -i shell_d_pid="64234"
+declare -i shell_d_started_at="1770744410"
+export ALTERNATE_EDITOR="/opt/homebrew/bin/vim"
+export CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao"
+export CDPATH='/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin'
+export COLORTERM="truecolor"
+export COMMAND_MODE="unix2003"
+export EDITOR="emc -w"
+export ENCODING="utf-8"
+export FCEDIT="vim"
+export HISTCONTROL="ignorespace"
+export HISTFILESIZE="211776"
+export HISTSIZE="211776"
+export HISTTIMEFORMAT="@%s:%Z     "
+export HOMEBREW_CELLAR="/opt/homebrew/Cellar"
+export HOMEBREW_FORCE_BREWED_CURL="1"
+export HOMEBREW_FORCE_BREWED_GIT="1"
+export HOMEBREW_GIT_EMAIL="gabrielteratos@gmail.com"
+export HOMEBREW_GIT_NAME="Gabriel Falcão"
+export HOMEBREW_INSTALL_BADGE=""
+export HOMEBREW_LOGS="/Users/gabrielfalcao/Library/Logs/Homebrew"
+export HOMEBREW_NO_ANALYTICS="set"
+export HOMEBREW_NO_AUTO_UPDATE="1"
+export HOMEBREW_NO_INSTALL_CLEANUP="set"
+export HOMEBREW_NO_INSTALL_FROM_API="1"
+export HOMEBREW_PIP_INDEX_URL="https://pypi.org/simple"
+export HOMEBREW_PREFIX="/opt/homebrew"
+export HOMEBREW_REPOSITORY="/opt/homebrew"
+export IFS=$'\n'
+export INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:"
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export LC_COLLATE="en_US.UTF-8"
+export LC_CTYPE="en_US.UTF-8"
+export LC_MESSAGES="en_US.UTF-8"
+export LC_MONETARY="en_US.UTF-8"
+export LC_NUMERIC="en_US.UTF-8"
+export LC_TIME="en_US.UTF-8"
+export LOGNAME="gabrielfalcao"
+export LaunchInstanceID="09389D1A-217F-45AB-AF56-FAE6CC537335"
+export MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man::"
+export NODE_OPTIONS="--tls-min-v1.2"
+export NVM_DIR="/Users/gabrielfalcao/.nvm"
+export OLDPWD
+export PATH="/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
+export PATH='/opt/homebrew/bin:/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.shell.d/.venv/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin'
+export PROMPT_COMMAND="history -a"
+export PS1="\\[\\r\\][#\${HISTCMD}][\\\$?=\$?] [\\\$\\\$=\$\$] \\[\\033[1;38;5;220m\\]\\u\\[\\033[1;38;5;231m\\]:\\[\\033[1;38;5;220m\\]\$(ps1 --resolve cwd:name)\\[\\033[1;38;5;37m\\]\$(ps1 --resolve git:branch)\\[\\033[1;38;5;220m\\]\\\$\\[\\033[0m\\]"
+export PS2=""
+export PS3=""
+export PS4=""
+export PWD="/Users/gabrielfalcao/.shell.d"
+export PYTHONDONTWRITEBYTECODE="x"
+export SECURITYSESSIONID="186b2"
+export SHELL="/opt/homebrew/Cellar/bash/5.2.26/bin/bash"
+export SHELLCHECK_OPTS="-a --color=always"
+export SHLVL="1"
+export SSH_AUTH_SOCK="/Users/gabrielfalcao/.local/share/wezterm/agent.529"
+export TERM="xterm-256color"
+export TERM_PROGRAM="WezTerm"
+export TERM_PROGRAM_VERSION="20251107-060518-3c7412da"
+export TZ="UTC"
+if [[ -v  XPC_FLAGS ]]; then
+    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_FLAGS)"
+fi
+if [[ -v  XPC_SERVICE_NAME ]]; then
+    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_SERVICE_NAME)"
+fi
+if [[ -v  __CFBundleIdentifier ]]; then
+    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CFBundleIdentifier)"
+fi
+if [[ -v  __CF_USER_TEXT_ENCODING ]]; then
+    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CF_USER_TEXT_ENCODING)"
+fi
+alias 3='third_party'
+alias bats='bat --style=default'
+alias diff='diff -u --color'
+alias env-keys='env_keys'
+alias env-var-names='env_var_names'
+alias gawk-prettify-stdin='gawk_prettify_stdin'
+alias hn='hackernews'
+alias ll='ls -latrh'
+alias lll='ls -latrhS'
+alias ls='ls --color'
+alias shellcheck='/opt/homebrew/bin/shellcheck --rcfile /Users/gabrielfalcao/.shell.d/rc.d/shellcheck'
+alias ssh-ag='ssh_ag'
+alias wb='workbench'
+alias ~emacs='cd_emacs_d_home_path c'
+alias ~emacs.d='cd_emacs_d_home_path'
+alias ~emacs.d.c='cd_emacs_d_home_path c'
+alias ~lib='cd_opt_home_path lib'
+alias ~libexec='cd_opt_home_path libexec'
+alias ~opt='cd_opt_home_path libexec'
+alias ~opt-lib='cd_opt_home_path lib'
+alias ~opt-libexec='cd_opt_home_path libexec'
+alias ~opt~='cd_opt_home_path root'
+alias ~shell='cd_shell_d_home_path'
+alias ~shell-d='cd_shell_d_home_path'
+alias ~shell.d='cd_shell_d_home_path'
+alias ~shell.d.x.d='cd_shell_d_home_path x.d'
+alias ~shell.x='cd_shell_d_home_path x.d'
+alias ~shell.x.d='cd_shell_d_home_path x.d'
+alias ~shell_d='cd_shell_d_home_path'
+alias ~shellxd='cd_shell_d_home_path x.d'
+shopt -u autocd
+shopt -s assoc_expand_once
+shopt -u cdable_vars
+shopt -u cdspell
+shopt -s checkhash
+shopt -u checkjobs
+shopt -s checkwinsize
+shopt -s cmdhist
+shopt -u compat31
+shopt -u compat32
+shopt -u compat40
+shopt -u compat41
+shopt -u compat42
+shopt -u compat43
+shopt -u compat44
+shopt -s complete_fullquote
+shopt -u direxpand
+shopt -u dirspell
+shopt -u dotglob
+shopt -u execfail
+shopt -s expand_aliases
+shopt -u extdebug
+shopt -u extglob
+shopt -s extquote
+shopt -u failglob
+shopt -s force_fignore
+shopt -s globasciiranges
+shopt -s globskipdots
+shopt -s globstar
+shopt -u gnu_errfmt
+shopt -s histappend
+shopt -u histreedit
+shopt -u histverify
+shopt -s hostcomplete
+shopt -u huponexit
+shopt -s inherit_errexit
+shopt -s interactive_comments
+shopt -u lastpipe
+shopt -u lithist
+shopt -u localvar_inherit
+shopt -u localvar_unset
+shopt -u login_shell
+shopt -u mailwarn
+shopt -u no_empty_cmd_completion
+shopt -u nocaseglob
+shopt -u nocasematch
+shopt -u noexpand_translation
+shopt -u nullglob
+shopt -s patsub_replacement
+shopt -s progcomp
+shopt -u progcomp_alias
+shopt -s promptvars
+shopt -u restricted_shell
+shopt -s shift_verbose
+shopt -s sourcepath
+shopt -u varredir_close
+shopt -u xpg_echo
+set -o braceexpand
+set -o emacs
+set -o errtrace
+set -o functrace
+set -o hashall
+set -o histexpand
+set -o history
+set -o interactive-comments
+set -o monitor
+set -o posix
+
+K() {
+    if [ -n "$*" ]; then
+        echo "unexpected arguments: \"$*\"" 1>&2
+        return 1
+    fi
+    history_clear_and_disable
+    history_enable_and_read
+}
+__shell_d_sh_trap_function_return__() {
+    echo "${FUNCNAME[1]}" 1>&2
+    set +x
+}
+active_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_active}m${prefix}\x1b[1;38;2;${color_medium_active}m ${message}\x1b[0m" 1>&2
+}
+aluminum_dark_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_aluminum_dark}m${prefix}\x1b[1;38;2;${color_medium_aluminum_dark}m ${message}\x1b[0m" 1>&2
+}
+aluminum_light_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_aluminum_light}m${prefix}\x1b[1;38;2;${color_medium_aluminum_light}m ${message}\x1b[0m" 1>&2
+}
+bash_static_state() {
+    cls
+    local -r variables="$(declare -p | sed -E 's/\s*$/;/g' | sed -E 's/[;]{2,}$/;/g' | base64 -w0)"
+    local -r functions="$(declare -f | base64 -w0)"
+    local -ar mobile_state_keys=('shopt_disabled' 'shopt_enabled' 'shell_opt_flags' 'shellopts_names' 'functions' 'variables')
+    local -A mobile_state_map=()
+    mobile_state_map['variables']="${variables}"
+    mobile_state_map['functions']="${functions}"
+    mobile_state_map['shellopts_names']="$(get_shellopts_names | grep -v -E '^\s*$' | base64 -w0)"
+    mobile_state_map['shell_opt_flags']="$(get_shell_opt_flags | grep -v -E '^\s*$' | base64 -w0)"
+    mobile_state_map['shopt_enabled']="$(get_shopt_enabled | grep -v -E '^\s*$' | base64 -w0)"
+    mobile_state_map['shopt_disabled']="$(get_shopt_disabled | grep -v -E '^\s*$' | base64 -w0)"
+    local -r mobile_state_map
+    local -i index=0
+    local -- key=''
+    local -- value=''
+    local -- result=""
+    local -i key_max_length=16
+    echo -e '#\n'
+    echo -e 'set -umeTE'
+    echo -e 'set +f'
+    echo -e 'set -o pipefail'
+    for key in ${mobile_state_keys[@]}; do
+        value="${mobile_state_map[${key}]}"
+        echo
+        printf '#%*s#%s#%-*s#\n' "${key_max_length}" "" "${key}" "${key_max_length}" "" | tr ' ' '#'
+        echo
+        printf 'eval "$(base64 -d <<< %s)";\n' "${value@Q}"
+        echo
+        printf '#%*s#%s#%-*s#\n' "${key_max_length}" "" "${key}" "${key_max_length}" "" | tr ' ' '#'
+        echo
+    done
+    echo -e '#\n'
+}
+blame_command_exit_code() {
+    local -- color=""
+    local -i code=0
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -i exit_code=-1
+    local -- prog=""
+    local -a prog_args=()
+    local -- ty=""
+    local -- actual_ty_path=''
+    local -- actual_ty=''
+    local -- actual_arg=''
+    local -a alias_parts=()
+    if [ ${argc} -eq 0 ]; then
+        echo -e "${FUNCNAME[0]}" "missing arguments <EXIT CODE> <COMMAND> [ARGS...]" 1>&2
+        return 1
+    fi
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        case "${index}" in
+            0)
+                if [[ ! ${arg} =~ ^[0-9]+$ ]]; then
+                    echo -e "${FUNCNAME[0]}" "invalid argument <EXIT CODE> (not a number): ${arg@Q}" 1>&2
+                    return 1
+                fi
+                exit_code="${arg}"
+                if [ "${exit_code}" != "${arg}" ]; then
+                    echo -e "${FUNCNAME[0]}" "invalid argument <EXIT CODE> (not a number): ${arg@Q}" 1>&2
+                    return 1
+                fi
+                ;;
+            1)
+                ty=$(builtin type -t "${arg}")
+                if [ -z "${ty}" ]; then
+                    echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (not found): ${arg@Q}" 1>&2
+                    return 1
+                fi
+                case "${ty}" in
+                    'keyword')
+                        echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (reserved shell keyword): ${arg@Q}" 1>&2
+                        return 1
+                        ;;
+                    'builtin')
+                        true
+                        ;;
+                    'file')
+                        true
+                        ;;
+                    'alias')
+                        export IFS='
+'
+                        if ! alias_parts=($(sed -n -E 's/^[^=]+=(.)([^[:space:]]+)\s*(.*)(.)$/\2\n\3/g;h;z;{g;s/\s+/\n/gp}' <<<"${arg}")); then
+                            unset IFS
+                            echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (unresolved alias): ${arg@Q}" 1>&2
+                            return 1
+                        fi
+                        unset IFS
+                        actual_arg=${alias_parts[@]:0:1}
+                        actual_ty=$(builtin type -t "${actual_arg}")
+                        if [ -n "${actual_ty}" ]; then
+                            if actual_ty_path=$(builtin type -t -P "${actual_arg}"); then
+                                actual_ty=$(builtin type -t "${actual_ty_path}")
+                            fi
+                        else
+                            echo -e "${FUNCNAME[0]}" "invalid argument <COMMAND> (unresolved alias): ${arg@Q}" 1>&2
+                            return 1
+                        fi
+                        ;;
+                esac
+                prog="${arg}"
+                ;;
+            *)
+                prog_args+=("${arg}")
+                ;;
+        esac
+    done
+    if [ ${exit_code} -eq 0 ]; then
+        color='112'
+    else
+        color=1
+    fi
+    echo -e "\n\n\x1b[1;38;5;248mcommand \x1b[1;38;5;220m${prog} $(printf '\x1b[1;38;5;222m%s\x1b[0m ' ${prog_args[@]})\x1b[1;38;5;248mexited with code=\x1b[1;38;5;${color}m${exit_code}\x1b[0m"
+}
+brown_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_brown}m${prefix}\x1b[1;38;2;${color_medium_brown}m ${message}\x1b[0m" 1>&2
+}
+butter_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_butter}m${prefix}\x1b[1;38;2;${color_medium_butter}m ${message}\x1b[0m" 1>&2
+}
+c() {
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    k
+    if [ ${#@} -gt 0 ]; then
+        if [ "$1" == "a" ]; then
+            cargo cbt --all-targets && cargo cbt --release --all-targets
+            return $?
+        else
+            cargo $@
+            return $?
+        fi
+    else
+        cargo c
+        return $?
+    fi
+}
+cbt() {
+    if [ -n "${IFS@A}" ]; then
+        local -- declare_IFS="${IFS@A}"
+    else
+        local -- declare_IFS=""
+    fi
+    unset IFS
+    local -a cargo_subcommands=("check" "build" "test")
+    local -A subcommand_fg_colors=(["check"]=231 ["build"]=220 ["test"]=154)
+    if [ ! -f Cargo.toml ]; then
+        if [ -n "${declare_IFS}" ] && ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' >/dev/random 2>/dev/random <<<"${declare_IFS}"; then
+            eval "${declare_IFS}"
+        fi
+        return 1
+    fi
+    for cargo_subc in ${cargo_subcommands[@]}; do
+        local -a cargo_call=(cargo "${cargo_subc}" "--offline")
+        if ! ${cargo_call[@]}; then
+            exit_code=$?
+            fg_color="${subcommand_fg_colors[$cargo_subc]}"
+            echo -e "command \x1b[1;38;5;${fg_color}m${cargo_subc}\x1b[0m failed with status ${exit_code}: \x1b[1;38;5;202m${cargo_call[@]}\x1b[0m" 1>&2
+            if [ -n "${declare_IFS}" ] && ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' >/dev/random 2>/dev/random <<<"${declare_IFS}"; then
+                eval "${declare_IFS}"
+            fi
+            return $exit_code
+        fi
+    done
+    if [ -n "${declare_IFS}" ] && ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' >/dev/random 2>/dev/random <<<"${declare_IFS}"; then
+        eval "${declare_IFS}"
+    fi
+    return $?
+}
+cd_emacs_d_home_path() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- target=""
+    if [ ${argc} -eq 0 ]; then
+        target=$HOME/opt/libexec
+    else
+        for index in ${!argv[@]}; do
+            current=$(($index + 1))
+            arg="${argv[$index]}"
+            case "${arg}" in
+                c)
+                    target="$HOME/.emacs.d/c"
+                    ;;
+                ~ | root)
+                    target="$HOME/.emacs.d"
+                    ;;
+                *)
+                    target="$HOME/.emacs.d/c"
+                    ;;
+            esac
+        done
+    fi
+    local -- rgb="211;215;207m"
+    echo -e "\x1b[1;38;2;${rgb}${target}\x1b[0m" 1>&2
+    pushd "${target}" >/dev/random 2>/dev/random
+}
+cd_opt_home_path() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- target=""
+    if [ ${argc} -eq 0 ]; then
+        target=$HOME/opt/libexec
+    else
+        for index in ${!argv[@]}; do
+            current=$(($index + 1))
+            arg="${argv[$index]}"
+            case "${arg}" in
+                libexec)
+                    target="$HOME/opt/libexec"
+                    ;;
+                lib)
+                    target="$HOME/opt/lib"
+                    ;;
+                ~ | root)
+                    target="$HOME/opt"
+                    ;;
+                *)
+                    target="$HOME/opt/libexec"
+                    ;;
+            esac
+        done
+    fi
+    local -- rgb="211;215;207m"
+    echo -e "\x1b[1;38;2;${rgb}${target}\x1b[0m" 1>&2
+    pushd "${target}" >/dev/random 2>/dev/random
+}
+cd_shell_d_home_path() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- target=""
+    if [ ${argc} -eq 0 ]; then
+        target=$HOME/.shell.d
+    else
+        for index in ${!argv[@]}; do
+            current=$(($index + 1))
+            arg="${argv[$index]}"
+            case "${arg}" in
+                x | x.d)
+                    target="$HOME/.shell.d/x.d"
+                    ;;
+                *)
+                    target="$HOME/.shell.d"
+                    ;;
+            esac
+        done
+    fi
+    local -- rgb="211;215;207m"
+    echo -e "\x1b[1;38;2;${rgb}${target}\x1b[0m" 1>&2
+    pushd "${target}" >/dev/random 2>/dev/random
+}
+cdmkd() {
+    local -- target="${@}"
+    local -- backup_cdpath=""
+    local -i cdpath_was_defined=0
+    if [[ -v CDPATH ]]; then
+        backup_cdpath="${CDPATH}"
+        cdpath_was_defined=1
+        unset CDPATH
+    fi
+    mkdir -p "${target}" && cd "${target}"
+    export CDPATH="${backup_cdpath}"
+}
+chameleon_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_chameleon}m${prefix}\x1b[1;38;2;${color_medium_chameleon}m ${message}\x1b[0m" 1>&2
+}
+chocolate_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_chocolate}m${prefix}\x1b[1;38;2;${color_medium_chocolate}m ${message}\x1b[0m" 1>&2
+}
+cls() {
+    builtin history -a
+    echo -en "\x1b[2J\x1b[3J\x1b[H" 1>&2
+}
+clsreset() {
+    cls
+    reset
+}
+craft() {
+    set +e
+    if path=$(cargo craft --script $*); then
+        name=$(basename "$path")
+        if [ -d "${path}/src" ]; then
+            old_manifest_bin_entry_regex="[.]/${name}.rs"
+            new_manifest_bin_entry="src/main.rs"
+            old_main_path="${path}/${name}.rs"
+            new_main_path="${path}/src/main.rs"
+            if [ -f "${old_main_path}" ]; then
+                (cd "${path}" && git commit -am 'save current state')
+                mv -fv "${old_main_path}" "${new_main_path}"
+                refactors "${old_main_path}" "${new_main_path}" -wp "${path}/Cargo.toml"
+            fi
+        fi
+    else
+        code=$?
+        if [ ${code} -eq 0 ]; then
+            code=101
+        fi
+        return $code
+    fi
+}
+crates_io_get_git_repo_url() {
+    local -a argv=($@)
+    local -- argc=${#argv[@]}
+    case ${argc} in
+        1)
+            crate_name="$1"
+            ;;
+        0)
+            echo "crates_io_get_git_repo_url missing argument: <CRATE-NAME>" 1>&2
+            ;;
+        *)
+            local -- args_list="$(sed "s/\s\+/'/g" <<<"${argv[@]}")"
+            echo "crates_io_get_git_repo_url too many arguments: ${args_list@Q}" 1>&2
+            return 1
+            ;;
+    esac
+    json_path=$(pwd)/.${crate_name}
+    crates_api_url="https://crates.io/api/v1/crates/${crate_name}"
+    if repo=$(/usr/bin/curl -s ${crates_api_url} 2>/dev/random | jq .crate.repository | tr -d '"'); then
+        echo "${repo}"
+    else
+        bar_text_left 231 196 "ERROR: failed to fetch json from ${crates_api_url}"
+        return 1
+    fi
+}
+create_state_path_or_refresh_stat_info() {
+    export TZ="UTC"
+    if [ ! -e "${bash_static_state_path}" ]; then
+        overwrite_static_state_path
+    fi
+    declare -gi now=$(date +'%s')
+    declare -gi bash_static_state_last_modified=$(gstat -c '%Y' "${bash_static_state_path}")
+    declare -gi bash_static_state_last_modified_delta=$((now - bash_static_state_last_modified))
+}
+dbg() {
+    local -- dbg_bash_rematch_value="$(dbg_bash_rematch)"
+    echo -e "${dbg_bash_rematch_value@A}"
+    local -- history_length_value="$(history_length)"
+    echo -e "${history_length_value@A}"
+    local -- get_callers_value="$(get_callers)"
+    echo -e "${get_callers_value@A}"
+}
+dbg_bash_rematch() {
+    export IFS='
+'
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- output=$(echo -e "\n$(history)\n")
+    local -a lines=($(echo "${output}"))
+    local -i lines_count=${#lines[@]}
+    hist_time_regexp_timestamp_tz='^\s*([0-9]+)\s+(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(.*)$'
+}
+debug() {
+    eval "${ui_msgfunc_ctx}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m" 1>&2
+}
+defer() {
+    local -a defer_argv=($@)
+    local -i defer_argc=${#defer_argv[@]}
+    local -- defer_command="$@"
+    local -- log_name=$(slugify-string "$@")
+    local -- defer_log_path="$(workbench --log-path)/logs"
+    local -- stdout="${defer_log_path}/${log_name}.stdout.log"
+    local -- stderr="${defer_log_path}/${log_name}.stderr.log"
+    if [ ${argc} -eq 0 ]; then
+        echo -e "[defer] no command provided" 1>&2
+        return 1
+    fi
+    local -- progname="${defer_argv[0]}"
+    local -- progtype=""
+    if ! progtype=$(get_prog_type "${progname}"); then
+        return $?
+    fi
+    deferred_prog_commands+=("${defer_command}")
+    deferred_prog_stderr+=(["${defer_command}"]="${stderr}")
+    deferred_prog_stdout+=(["${defer_command}"]="${stdout}")
+    deferred_prog_started_at_utc+=(["${defer_command}"]="$(date +%s)")
+    (${defer_argv[@]} 2>${stderr} >${stdout} && deferred_prog_finished_at_utc+=(["${defer_command}"]=$(date +%s))) &
+    local -- prog_pid=$!
+    disown -a
+    deferred_prog_pids+=(["${defer_command}"]="${prog_pid}")
+}
+defer_maintenance() {
+    local -- cmd=""
+    local -- deferred_pid=""
+    local -- deferred_psaux=""
+    local -- stdout=""
+    local -- stderr=""
+    local -i stderr_size=0
+    local -i stdout_size=0
+    local -i is_running=0
+    local -- psaux_regex="^[^[:space:]]+\s+(${deferred_pid})\s+.*"
+    set +u
+    for cmd in ${deferred_prog_commands[@]}; do
+        if ! deferred_pid=${deferred_prog_pids["${cmd}"]} || [ -z "${deferred_pid}" ]; then
+            continue
+        fi
+        if deferred_psaux=$(ps aux | grep -E "${psaux_regex}"); then
+            is_running=1
+            deferred_prog_psaux_lines+=(["${cmd}"]="${deferred_psaux}")
+        fi
+        if stderr=${deferred_prog_stderr["${cmd}"]} && [ -n "${deferred_pid}" ]; then
+            if [ -f "${stderr}" ]; then
+                stderr_size=$(gstat -c %s "${stderr}")
+            fi
+            if (($is_running)) && [ ${stderr_size} -eq 0 ]; then
+                rm -f "${stderr}"
+            fi
+        fi
+        if stdout=${deferred_prog_stdout["${cmd}"]} && [ -n "${deferred_pid}" ]; then
+            if [ -f "${stdout}" ]; then
+                stdout_size=$(gstat -c %s "${stdout}")
+            fi
+            if (($is_running)) && [ ${stdout_size} -eq 0 ]; then
+                rm -f "${stdout}"
+            fi
+        fi
+    done
+}
+describe_set() {
+    local -- flag=""
+    local -- desc=""
+    local -A descriptions=()
+    for help_line in $(help set | grep '^[[:space:]]\+[-][[:alpha:]][[:space:]]'); do
+        flag=$(sed 's/^[[:space:]]\+[-]\([[:alpha:]]\)[[:space:]]\+\(.\+\)$/\1/g' <<<"${help_line}")
+        desc=$(sed 's/^[[:space:]]\+[-]\([[:alpha:]]\)[[:space:]]\+\(.\+\)$/\2/g' <<<"${help_line}")
+        if [ -n "${flag}" ] && [ -n "${desc}" ]; then
+            descriptions+=(["${flag}"]="${desc}")
+        else
+            echo -e "failed to parse flag from ${help_line@Q}" 1>&2
+            break
+        fi
+    done
+    local -- flags="${-}"
+    local -- count=${#flags}
+    local -a unknown_flags=()
+    local -a explained_flags=()
+    for index in $(seq $(($count - 1))); do
+        curr=$(($index + 1))
+        flag="${flags:${index}:1}"
+        desc="${descriptions[${flag}]}"
+        if [ -n "${desc}" ]; then
+            explained_flags+=("flag ${flag@Q} - ${desc}")
+        else
+            unknown_flags+=("${flag}")
+        fi
+    done
+    local -- explained_count=${#explained_flags[@]}
+    local -- unknown_count=${#unknown_flags[@]}
+    if [ ${explained_count} -gt 0 ] && [ ${unknown_count} -gt 0 ]; then
+        echo -e "bash variable \${-} has ${explained_count} flags explained in \`help set\` but ${unknown_count} flags are unknown\n"
+        echo -e "explained in \`help set\`:"
+        for expl in ${explained_flags[@]}; do
+            echo "    ${expl}"
+        done
+        echo -e "\nunknown flags:"
+        for unknown in ${unknown_flags[@]}; do
+            echo "    ${unknown}"
+        done
+    else
+        if [ ${explained_count} -gt 0 ] && [ ${unknown_count} -eq 0 ]; then
+            echo -e "bash variable \${-} has ${explained_count} flags explained in \`help set\`:"
+            for expl in ${explained_flags[@]}; do
+                echo "    ${expl}"
+            done
+        else
+            echo -e "all flags in bash variable \${-} are unknown\n"
+            for unknown in ${unknown_flags[@]}; do
+                echo "    ${unknown}"
+            done
+        fi
+    fi
+}
+dump_history_to_workbench() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    export PS4='\r\n${FUNCNAME[0]}:${LINENO[0]} '
+    local -i workbench_last_epoch=$(gdate --utc +%s)
+    local -- workbench_day=$(gdate +"${workbench_strftime_fs_day}" --date=@${workbench_last_epoch})
+    local -- workbench_fs_timestamp=$(gdate +"${workbench_strftime_fs_timestamp}" --date=@${workbench_last_epoch})
+    local -- workbench_root="$HOME/workbench"
+    local -- workbench_path="${workbench_root}/${workbench_day}"
+    local -- workbench_logs_safe_path="${workbench_root}/logs/${workbench_day}"
+    local -- workbench_logs="${workbench_path}/logs"
+    local -- workbench_stderr="${workbench_logs}/stderr.log"
+    local -- workbench_stdout="${workbench_logs}/stdout.log"
+    local -a hash_material=("${BASH_LINENO[@]}" "${#BASH_LINENO[@]}" "\${$}=${$}" "\${!}=${!}" "\${PWD}=${PWD@Q}")
+    export IFS='
+'
+    local -- hl_reset='\x1b[0m'
+    local -- hl_outer_at='\x1b[1;38;2;52;101;164m'
+    local -- hl_inner_at='\x1b[1;38;2;114;159;207m'
+    local -- hl_outer_star='\x1b[1;38;2;78;154;6m'
+    local -- hl_inner_star='\x1b[1;38;2;138;226;52m'
+    local -- hl_tag_star_open="${hl_outer_star}<\${hash_material[*]}>${hl_reset}"
+    local -- hl_content_star="${hl_inner_star}${hash_material[*]}${hl_reset}"
+    local -- hl_tag_star_close="${hl_outer_star}</\${hash_material[*]}>${hl_reset}"
+    local -a hl_star_lines=("$(echo -en "${hl_tag_star_open}")" "$(echo -en "${hl_content_star}")" "$(echo -en "${hl_tag_star_close}")")
+    echo -e "${hl_star_lines[*]}"
+    local -- history_with_context="$(history_with_context)"
+    local -- commit_subject="save state $(nowdz)\n"
+    local -- commit_body="$(echo -e \"$(git status | grep -E -v '(^On\s+branch\s+|.*[(]\s*use.*git(\s*(add|push)).*)' | sed -E 's/^([[:space:]]{1,})([^[:space:]]+.*)$/    \2/g')\n\")"
+    local -- commit_message="$(echo -e \"${commit_subject}\n${commit_body}\n\n\")"
+    echo -e "\${commit_subject}=${commit_subject}"
+    echo -e "\${commit_body}=${commit_body}"
+    echo -e "\${commit_message}=${commit_message}"
+    unset PS4
+}
+env_keys() {
+    env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d'
+}
+env_var_names() {
+    env_keys
+}
+error() {
+    eval "${ui_msgfunc_ctx}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m" 1>&2
+}
+gawk_prettify_stdin() {
+    if [ -t 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "stdin is a tty" 1>&2
+        return 1
+    fi
+    local -- pretty_printed_output=""
+    local -i code=0
+    local -- original_input="$(cat </dev/stdin)"
+    if ! pretty_printed_output="$(gawk -f - -o- <<<"${original_input}")"; then
+        code=$?
+    fi
+    local -r pipeline='s/[\n[:space:]]+/ /g;s/(\n\s+|\s+\n)//g;s/[{]\s+[}]/{}/g;h;p'
+    local -- minified_input=$(sed -E "${pipeline}" <<<"${original_input}")
+    local -- minified_output=$(sed -E "${pipeline}" <<<"${pretty_printed_output}")
+    local -i unix_ts=$(date --utc +'%s')
+    local -- batch_id=$(date +'%Y-%m-%d.%H-%M-%S.%s' --date=@${unix_ts})
+    local -- tmp_workdir="$(mktemp -d)"
+    local -- tmp_original_input_file="${tmp_workdir}/original_input.${batch_id}.awk"
+    local -- tmp_original_output_file="${tmp_workdir}/original_output.${batch_id}.awk"
+    local -- tmp_minified_input_file="${tmp_workdir}/minified_input.${batch_id}.awk"
+    local -- tmp_minified_output_file="${tmp_workdir}/minified_output.${batch_id}.awk"
+    echo "${original_input}" >${tmp_original_input_file}
+    echo "${pretty_printed_output}" >${tmp_original_output_file}
+    echo "${minified_input}" >${tmp_minified_input_file}
+    echo "${minified_output}" >${tmp_minified_output_file}
+    local -i diff_exit_code=0
+    local -- diff_output=""
+    if ! diff_output=$(diff -u "${minified_input}" "${minified_output}"); then
+        diff_exit_code=$?
+    fi
+    echo "${pretty_printed_output}"
+    if [ ${diff_exit_code} -ne 0 ] || [ "${diff_output}" -gt 0 ]; then
+        echo -e "[important]" "naive check of the resulting prettified code has found a differences that you might like to be aware of. could be nothing important but that's up for you to decide." 1>&2
+        diff -u --colorv "${minified_input}" "${minified_output}"
+    fi
+    return ${code}
+}
+gc3() {
+    . ~/opt/lib/ansi.sh
+    set +ue
+    export IFS='
+'
+    repo=""
+    local -a argv=($@)
+    local -- argc=$((${#argv} + 0))
+    local -a git_argv=()
+    repo_url=""
+    default_target_path="$HOME/projects/third_party"
+    target_path="$default_target_path"
+    local -- argv_array_items="$(echo -n "${argv[@]}" | tr '[:space:]' ',')"
+    for idx in ${!argv[@]}; do
+        nidx=$(($idx + 1))
+        arg=${argv[$idx]}
+        next_arg=${argv[$nidx]}
+        if [ -n "${next_arg}" ] && printf "%d" "${next_arg}" >/dev/random 2>/dev/random; then
+            next_arg_num=$(("${next_arg}"))
+        fi
+        case "$arg" in
+            "--help" | "help")
+                echo -e 'NAME
+    gc3 - git-clones third-party
+SYNOPSIS
+    gc3 [-d|--depth] [-b|--backup] [-n|--namespace] <URL>
+DESCRIPTION
+    shallow clones git repository inside of ~/projects/third_party and
+    automatically tries to build the project, run tests, code examples
+    and/or open the documentation of the project in the target git
+    repository.
+    (currently supports rust, nodejs and golang projects and works best in rust projects)
+    Options:
+      -n, --namespace
+          places the git repository inside of `$HOME/projects/third_party/<REPOSITORY OWNER>/<REPOSITORY NAME>\x27
+          instead of the default ($HOME/projects/third_party/<REPOSITORY NAME>)
+      -d, --depth <NUMBER>
+          if this option is provided, the <NUMBER> value must be
+          an unsigned, non-zero number which is then forwarded to the corresponding `--depth\x27 option in the
+          underlying git command (.i.e.: `git clone --depth <GIT_REMOTE_URL>\x27)
+          Default value: 1
+      -b, --backup
+          by default gc3 skips cloning a git repository if the target
+          path in the filesystem already exists, however, if this
+          option is specified then an existing target path is
+          backed-up and a new copy of the target repo is cloned there.
+'
+                return 0
+                ;;
+            "-d" | "--depth")
+                if [ -n "${next_arg_num}" ]; then
+                    depth=$next_arg_num
+                else
+                    error_function "missing numeric value of --depth argument on position ${nidx} of [${argv_array_items}]"
+                    return 1
+                fi
+                git_argv+=("--depth" "${depth}")
+                ;;
+            "-b" | "--backup")
+                backup="true"
+                ;;
+            "-n" | "--namespace")
+                if [ -z "$target_path" ] || [ "${target_path}" == "${default_target_path}" ] || [ -e "$target_path" ]; then
+                    target_path="${default_target_path}/${owner_name}"
+                else
+                    error_function "target_path already set to: ${target_path}"
+                    return 1
+                fi
+                ;;
+            *)
+                if grep '^\(https\?\|git\)\(://\|@\)\([^/]\+\)\(.*\)\([.]git\)\?$' 2>/dev/random >/dev/random <<<"${arg}"; then
+                    if [ -z "$repo" ]; then
+                        repo="$arg"
+                        repo_url="$arg"
+                    else
+                        error_function "repo already set to: ${repo@Q}"
+                        return 1
+                    fi
+                else
+                    bar_text_left 231 196 "${arg@Q} does not seem to be a git repo address" 1>&2
+                    return 1
+                fi
+                ;;
+        esac
+    done
+    if [ -z "$repo" ]; then
+        clipboard="$(pbpaste)"
+        if grep '^\(https\?\|git\)\(://\|@\)\([^:/]\+\)\(.*\)\([.]git\)\?$' 2>/dev/random >/dev/random <<<"${clipboard}"; then
+            repo="${clipboard}"
+        fi
+    fi
+    if [ -z "$repo" ]; then
+        bar_text_left 231 196 "ERROR: missing git repo url"
+        return 1
+    fi
+    repo="$(sed 's/git@\([^:]\+\):/https:\/\/\1\//g' <<<"${repo}")"
+    repo="$(sed 's/\(^"\+\|"\+$\)//g' <<<"${repo}")"
+    repo="$(sed "s/\(^'\+\|'\+$\)//g" <<<"${repo}")"
+    gits="$(sed 's/^\(\(https\?:\/\/\|git@\|git:\/\/\)[^[:space:]]\+\([.]git\)\?\)$/gitrepo/g' <<<"$repo")"
+    if grep "https://crates.io/crates/" 2>/dev/random >/dev/random <<<"${repo}"; then
+        crate_name=$(echo "$repo" | sed 's/^\s*https:\/\/crates[.]io\/crates\/\+\([^\/?]\+\).*/\1/g')
+        bar_text_left 82 16 "crate name: ${crate_name}"
+        if ! repo=$(crates_io_get_git_repo_url "${crate_name}"); then
+            bar_text_left 231 196 "ERROR: failed to fetch json from ${crates_api_url}"
+            return 1
+        fi
+    else
+        if grep "https://docs[.]rs/[a-z_-]\+" 2>/dev/random >/dev/random <<<"${repo}"; then
+            crate_name=$(echo "$repo" | sed 's/^\s*https:\/\/docs[.]rs\/\+\([^\/?]\+\).*/\1/g')
+            bar_text_left 82 16 "crate name: ${crate_name}"
+            if ! repo=$(crates_io_get_git_repo_url "${crate_name}"); then
+                bar_text_left 231 196 "ERROR: failed to fetch json from ${crates_api_url}"
+                return 1
+            fi
+        fi
+    fi
+    if grep '[a-z0-9_+-]\+@' >/dev/random 2>/dev/random <<<"${repo}"; then
+        repo="$(echo -n "$repo" | tr -d '[:space:]' | sed 's/\/\?\([.]git\)\?$//g' | sed 's/\(https:\/\/[^?]\+\)[?].*$/\1/g' | sed 's/git@[^:]\+://g')"
+    else
+        repo="$(echo -n "$repo" | tr -d '[:space:]' | sed 's/\/\?\([.]git\)\?$//g' | sed 's/\(https:\/\/[^?]\+\)[?].*$/\1/g')"
+    fi
+    owner_name="$(sed 's/^\(https:\/\/\|git:\/\/\|git@\)[^\/:]\+:\?\/\([^\/]\+\)\/\([^\/]\+\)/\2/g' <<<${repo})"
+    repo_name="$(sed 's/^\(https:\/\/\|git:\/\/\|git@\)[^\/:]\+:\?\/\([^\/]\+\)\/\([^\/]\+\)/\3/g' <<<${repo})"
+    if [ ${#git_argv} -eq 0 ]; then
+        git_argv+=("--depth" "1")
+    fi
+    if [ -z "${repo_name}" ]; then
+        bar_text_left 231 196 "ERROR: could not determine repo name from url: ${repo@Q}"
+        return 1
+    fi
+    if [ -z "${owner_name}" ]; then
+        bar_text_left 231 196 "ERROR: could not determine owner name from url: ${repo@Q}"
+        return 1
+    fi
+    if [ "$gits" != "gitrepo" ]; then
+        bar_text_left 231 196 "ERROR: invalid git repo url: ${repo_url@Q}"
+        return 1
+    fi
+    tput clear
+    mkdir -p "$target_path"
+    target_repo_path="${target_path}/$repo_name"
+    if [ -e "$target_repo_path" ]; then
+        if [ "${backup}" == "true" ]; then
+            mv "$target_repo_path" "$target_path/${repo_name}-$(t16g)"
+        else
+            bar_text_center 101 16 "into existing ${target_repo_display}"
+        fi
+    else
+        bar_text_center 121 16 "cloning ${repo_name} to \x1b[1;38;5;233m${target_repo_path}"
+        git clone "${repo}.git" ${git_argv[@]} "$target_repo_path"
+    fi
+    cd "$target_repo_path"
+    ls -latrh
+    if [ -f ".gitmodules" ]; then
+        git submodule init
+        git submodule update
+    fi
+    if [ -f "Cargo.toml" ]; then
+        if [ -f "rust-toolchain.toml" ]; then
+            sed 's/channel\s*=\s*"[^"]\+"/channel = "nightly-2025-09-09"/g' -i rust-toolchain.toml
+        fi
+        if [ -d "examples" ]; then
+            varname="${repo_name//-/_}_path"
+            varname="${varname@L}"
+            cat >cargo-run-examples.sh <<EOF
+. \$HOME/opt/lib/ansi.sh
+ctrlc() {
+    echo -e "\r"
+    ansi_up
+    bar_text_left 196 231 "Cancelled with Control-C"
+    reset
+    2>/dev/null 1>/dev/null stty sane
+    exit 1
+}
+trap ctrlc int
+${varname}="${target_repo_path}"
+bar 235
+failed=""
+for example in \$(2>/dev/null wc -l \${${varname}}/examples/*.rs | sort -n | grep -v 'total\$' | lastcol | xargs-each basename); do
+    example=\${example/%.rs/}
+    bar_text_left 222 233 "cargo run --example \${example}"
+    if ! cargo run --example \${example}; then
+        if [ -z "${failed}" ] || [ "${failed}" != "false" ]; then
+            rm -rf target
+            break
+        else
+            failed="true"
+        fi
+    else
+        bar_text_left 222 233 "\$(ansi_spaced 233 222 "FINISHED")\$(ansi_spaced 222 233 "cargo run --example \${example}")"
+        failed="false"
+    fi
+done
+EOF
+            chmod +x cargo-run-examples.sh
+            ./cargo-run-examples.sh
+        else
+            if [ -f "src/main.rs" ] || [ $(ack '[[]bin[]]' Cargo.toml | wc -l) -gt 0 ]; then
+                bar_text_left 222 233 "cargo run # (${target_repo_path})"
+                if ! cargo run; then
+                    rm -rf target
+                else
+                    bar_text_left 222 233 "$(ansi_spaced 233 222 "FINISHED")$(ansi_spaced 222 233 "cargo run")"
+                fi
+            else
+                if [ $(ack '[[]workspace[]]' Cargo.toml | wc -l) -gt 0 ]; then
+                    bar 235
+                    failed=""
+                    for bin_name in $(find . -type f -name Cargo.toml -exec bash -c 'test -f $(dirname {})/src/main.rs && grep "^[[:space:]]*name\s*=\s*" {} | sed "s/^name\s*=\s*\"\([^\"]\+\)\".*/\1/g"' \;); do
+                        bar_text_left 222 233 "cargo run --bin ${bin_name} # (${target_repo_path})"
+                        if ! cargo run --bin ${bin_name}; then
+                            if [ -z "${failed}" ] || [ "${failed}" != "false" ]; then
+                                rm -rf target
+                                break
+                            else
+                                failed="true"
+                            fi
+                        else
+                            bar_text_left 222 233 "$(ansi_spaced 233 222 "FINISHED")$(ansi_spaced 222 233 "cargo run --bin ${bin_name}")"
+                            failed="false"
+                        fi
+                    done
+                else
+                    bar_text_center 154 235 "running cargo cbt"
+                    cargo cbt
+                fi
+            fi
+        fi
+        if web_browser_is_open; then
+            cargo doc --open
+        else
+            cargo doc
+        fi
+    fi
+    if [ -f "package.json" ]; then
+        bar_text_left 154 235 'package.json detected'
+        node_run_command=(npm run)
+        if [ -f "package-lock.json" ]; then
+            npm i
+            node_run_command=(npm run)
+        else
+            if [ -f "yarn-lock.json" ]; then
+                yarn
+                node_run_command=(yarn)
+            else
+                if [ -f "pnpm-lock.json" ]; then
+                    pnpm i
+                    node_run_command=(pnpm)
+                fi
+            fi
+        fi
+        local -a script_names=($(jq '.scripts | keys[]' package.json | ansistrip | tr -d '"'))
+        local -a autorun_build=()
+        local -a autorun_script_names=()
+        if [ ${#script_names[@]} -gt 0 ]; then
+            echo -e "\x1b[1;38;5;159mpackage.json scripts\x1b[0m"
+            fgcolor=159
+            for script_name in ${script_names[@]}; do
+                case "${script_name}" in
+                    "build" | "compile")
+                        autorun_build+=("${script_name}")
+                        fgcolor=220
+                        ;;
+                    "dev" | "start" | "start:dev" | "dev:start")
+                        autorun_script_names+=("${script_name}")
+                        fgcolor=154
+                        ;;
+                    *)
+                        fgcolor=159
+                        ;;
+                esac
+                echo -e "    \x1b[1;38;5;${fgcolor}m${node_run_command[@]} ${script_name}\x1b[0m"
+            done
+            for script_name in ${autorun_build[@]}; do
+                fgcolor=220
+                echo -e "\x1b[1;38;5;${fgcolor}m${node_run_command[@]} ${script_name}\x1b[0m"
+                ${node_run_command[@]} ${script_name}
+            done
+            for script_name in ${autorun_script_names[@]}; do
+                fgcolor=154
+                echo -e "\x1b[1;38;5;${fgcolor}m${node_run_command[@]} ${script_name}\x1b[0m"
+                ${node_run_command[@]} ${script_name}
+            done
+        fi
+    fi
+    if [ -f "go.mod" ]; then
+        go_version=$(go version 2>/dev/random)
+        go_version=${go_version/#go version go/}
+        go_version=${go_version/% */}
+        if [ -n "${go_version}" ]; then
+            go build .
+        fi
+    fi
+}
+get_caller() {
+    local -a gc_argv=($@)
+    local -i gc_argc=${#gc_argv[@]}
+    local -- raw_printf_format=""
+    local -- printf_format=""
+    local -- raw_caller_index=""
+    if [ ${gc_argc} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]}]" "missing argument <CALLER_INDEX>" 1>&2
+        return 1
+    fi
+    local -- raw_caller_index="${gc_argv[@]:0:1}"
+    raw_printf_format="${gc_argv[@]:1}"
+    printf_format="${raw_printf_format}"
+    if [[ ! "${raw_caller_index}" =~ ^[-]?[0-9]+$ ]]; then
+        echo -e "[${FUNCNAME[0]}]" "argument <CALLER_INDEX> got invalid non-integer value: ${raw_caller_index@Q}" 1>&2
+        return 1
+    fi
+    local -i caller_index=$((raw_caller_index + 1))
+    local -- caller_function_name=""
+    local -- caller_line_number=""
+    current_caller_frame=()
+    current_caller_info=()
+    if [[ -v LINENO[$caller_index] ]]; then
+        caller_line_number="${LINENO[$caller_index]}"
+        current_caller_frame+=("${caller_line_number}")
+        current_caller_info["line"]="${caller_line_number}"
+        current_caller_info["lineno"]="${caller_line_number}"
+        current_caller_info["line_number"]="${caller_line_number}"
+    fi
+    if [[ -v FUNCNAME[$caller_index] ]]; then
+        caller_function_name="${FUNCNAME[$caller_index]}"
+        current_caller_frame+=("${caller_function_name}")
+        current_caller_info["function"]="${caller_function_name}"
+        current_caller_info["function_name"]="${caller_function_name}"
+        current_caller_info["name"]="${caller_function_name}"
+        current_caller_info["type"]="function"
+    else
+        current_caller_info["name"]="${BASH_SOURCE[0]}"
+        current_caller_info["function"]="body of ${BASH_SOURCE[0]}"
+        current_caller_info["function_name"]="body of ${BASH_SOURCE[0]}"
+        current_caller_info["type"]="shell"
+    fi
+    if [ -n "${printf_format}" ]; then
+        local -- key=""
+        local -- value=""
+        local -- raw_value=""
+        local -- regex=""
+        for key in ${!current_caller_info[@]}; do
+            regex="[\x24\x25][{]${key}[}]"
+            raw_value="${current_caller_info[${key}]}"
+            value="${raw_value//\//\\\/}"
+            local -- ctx="key=${key@Q} raw_value=${raw_value@Q} value=${value@Q}"
+            echo -e "\r\x1b[0m\n\x1b[1;38;5;247m" 1>&2
+            echo "ctx=${ctx}" 1>&2
+            echo -e "\n" 1>&2
+            echo "before \${printf_format}=${printf_format@Q}" 1>&2
+            printf_format="$(sed -E "s/${regex}/${value}/g" <<<"${printf_format}")"
+            echo -e "\n" 1>&2
+            echo "after \${printf_format}=${printf_format@Q}" 1>&2
+        done
+        echo "${printf_format}"
+    fi
+    echo -e "\r\x1b[0m\n\x1b[1;38;5;220m<\${current_caller_info[@]}>\x1b[0m" 1>&2
+    value="${current_caller_info[@]@A}"
+    printf '\x1b[0m\x1b[1;38;5;233m\x1b[1;48;5;220m%-*s\x1b[0m\n' "${COLUMNS}" "${value}" 1>&2
+    for key in ${!current_caller_info[@]}; do
+        value="${current_caller_info[${key}]}"
+        printf '\x1b[0m\x1b[1;38;5;233m\x1b[1;48;5;220m%s=%-*s\x1b[0m\n' "${key}" "${COLUMNS}" "${value}" 1>&2
+    done
+    echo -e "\r\x1b[0m\x1b[1;38;5;220m</\${current_caller_info[@]}>\x1b[0m" 1>&2
+}
+get_callers() {
+    local -i count=${#LINENO[@]}
+    if [ ${count} -gt 0 ]; then
+        local -i last=$((count - 1))
+        local -i index=0
+        for index in $(seq -1 ${last} | sort -nr); do
+            get_caller "${index}"
+        done
+        return 0
+    fi
+    return 1
+}
+get_error_code() {
+    local -- label="$@"
+    if [[ -v workbench_error_label_to_code_mapping["${label}"] ]]; then
+        local -- code=${workbench_error_label_to_code_mapping["${label}"]}
+        if [ -z "${code}" ]; then
+            echo "[${FUNCNAME[0]} internal error]" "failed to obtain error code of label: ${label@Q} is not a valid number: ${code@Q}" 1>&2
+            return 2
+        else
+            if [[ ! "${code}" =~ ^[0-9]+$ ]]; then
+                echo "[${FUNCNAME[0]} internal error]" "failed to obtain error code of label: ${label@Q} is not a valid number: ${code@Q}" 1>&2
+                return 2
+            fi
+        fi
+    else
+        echo "[${FUNCNAME[0]} internal error]" "no code found for label ${label@Q}: it appears that there is either a typo in the given label or there is no numeric code corresponding to the label" 1>&2
+        return 404
+    fi
+}
+get_prog_type() {
+    unset IFS
+    local -- progname="$1"
+    if [ -z "${progname}" ]; then
+        echo -e "[progtype] missing argument <PROGNAME>" 1>&2
+        return 1
+    fi
+    local -- regex_not='[^]a-z0-9!*%^@[-]'
+    local -- regex_yes='[]a-z0-9!*%^@[-]'
+    local -- sed_regex="(${regex_yes}*)(${regex_not}+)(${regex_yes}*)"
+    local -- sed_repl='\1\x1b[1;38;5;196m\2\x1b[0m\3'
+    local -a invalid_chars=($(sed -n -E "s/${sed_regex}/\2/gp" <<<"${progname}"))
+    local -- printout="$(sed -n -E "s/${sed_regex}/${sed_repl}/gp" <<<"${progname}")"
+    if [ ${#invalid_chars[@]} -gt 0 ]; then
+        echo -e "[progtype] invalid chars in progname ${printout}" 1>&2
+        return 1
+    fi
+    if [ -n "$(alias | cut -d= -f1 | grep -E "^${progname}\$")" ]; then
+        echo "alias"
+        return
+    fi
+    local -- functionname=""
+    if functionname=$(sed -n -E 's/^(declare\s+[-]f\s+)(.+)$/\x1b[1;38;5;237m\1\x1b[0m\2/gp' <<<"${progname}"); then
+        echo "function"
+        return
+    fi
+    if progpath=$(which "${progname}"); then
+        echo "executable"
+        return
+    fi
+    echo -e "[progtype] cannot determine type of ${progname}" 1>&2
+    return 1
+}
+get_shell_opt_flags() {
+    export IFS='
+'
+    local -- shell_opts_flags=""
+    local -- flags="${-}"
+    local -a shell_opts_flags=()
+    shell_opts_flags=($(sed -E 's/([a-zA-Z])/\n\1\n/g' <<<"${-}"))
+    echo ""
+    printf 'set -%s;\n' ${shell_opts_flags[@]}
+    echo ""
+}
+get_shellopts_names() {
+    export IFS=':'
+    local -a shell_opts_names=()
+    local -- name=''
+    for name in ${SHELLOPTS}; do
+        shell_opts_names+=("${name}")
+    done
+    export IFS='
+'
+    echo ""
+    printf 'set -o %s;\n' ${shell_opts_names[@]}
+    echo ""
+}
+get_shopt_disabled() {
+    export IFS='
+'
+    local -a shopt_names_disabled=($(shopt -s | awk '{ print $1 }'))
+    echo ""
+    printf 'shopt -u %s;\n' ${shopt_names_disabled[@]}
+    echo ""
+}
+get_shopt_enabled() {
+    export IFS='
+'
+    local -a shopt_names_enabled=($(shopt -s | awk '{ print $1 }'))
+    echo ""
+    printf 'shopt -s %s;\n' ${shopt_names_enabled[@]}
+    echo ""
+}
+git_clone_godot_oss_repos() {
+    local -- input="$@"
+    if [ -z "${input}" ]; then
+        input="$(pbpaste)"
+    fi
+    if [ -z "${input}" ] && [ ! -t 0 ]; then
+        local -a stdin_lines=()
+        export IFS='
+'
+        while read line; do
+            if ! stdin_lines+=("$line"); then
+                continue
+            fi
+        done </dev/stdin
+        input="$(echo "${stdin_lines[*]}")"
+    fi
+    if [ -z "${input}" ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing urls via argv, clipboard or stdin" 1>&2
+        return 1
+    fi
+    local -A repos_to_clone=()
+    local -a urls_to_clone=()
+    local -a urls=($(printf '%s\n' "${input}" | grep -E "https://"))
+    local -a github_urls=($(printf '%s\n' "${urls[@]}" | grep -E "github[.]com"))
+    local -- gh_repo_owner=''
+    local -- gh_repo_name=''
+    local -a godot_games_oss_repos=()
+    local -- godot_github_examples_path="$HOME/godot/github_examples"
+    local -- clone_url=""
+    local -- clone_path=""
+    godot_games_oss_repos=($(printf '%s\n' "${github_urls[@]}" | grep -E -v 'github[.]com/topics' | grep -i -E "github[.]com/[a-z0-9_-]+/[a-z0-9_-]+"))
+    mkdir -p "${godot_github_examples_path}"
+    for url in ${godot_games_oss_repos[@]}; do
+        local -- regexp='^.*github[.]com/([^/]+)/([^/]+)([/]?([.]git)?)?$'
+        gh_repo_owner=$(sed -n -E "s,${regexp},\1,gp" <<<"${url}")
+        gh_repo_name=$(sed -n -E "s,${regexp},\2,gp" <<<"${url}")
+        if [ -z "${gh_repo_owner}" ]; then
+            echo -e "[${FUNCNAME[0]} warning]" "could not parse gh_repo_owner from url ${url@Q}" 1>&2
+            continue
+        fi
+        if [ -z "${gh_repo_name}" ]; then
+            echo -e "[${FUNCNAME[0]} warning]" "could not parse gh_repo_name from url ${url@Q}" 1>&2
+            continue
+        fi
+        local -- clone_dirname="${gh_repo_owner}__${gh_repo_name}"
+        if [[ ! "${clone_dirname}" =~ ^([a-zA-Z0-9_-]+)__([a-zA-Z0-9_-]+)$ ]]; then
+            echo -e "[${FUNCNAME[0]} warning]" "could not parse determine clone_dirname from url ${url@Q}: ${clone_dirname@Q}" 1>&2
+            continue
+        fi
+        local -- clone_url="https://github.com/${gh_repo_owner}/${gh_repo_name}.git"
+        local -- clone_path="${godot_github_examples_path}/${gh_repo_owner}__${gh_repo_name}"
+        if [[ ! -v repos_to_clone["${clone_url}"] ]]; then
+            repos_to_clone["${clone_url}"]="${clone_path}"
+            urls_to_clone+=("${clone_url}")
+        fi
+    done
+    local -i index=0
+    local -i total=${#repos_to_clone[@]}
+    local -- pos=""
+    local -- action=""
+    local -- remote=""
+    local -- branch=""
+    for index in ${!urls_to_clone[@]}; do
+        remote="origin"
+        branch=""
+        clone_url=${urls_to_clone[$index]}
+        clone_path=${repos_to_clone[${clone_url}]}
+        pos="$(printf '%-*s of %s' ${#total} $((index + 1)) ${total})"
+        if [ -d "${clone_path}/.git" ] && branch=$(cd "${clone_path}" && git branch | sed -n -E 's/[*]\s+([a-zA-Z0-9_-]+[^[:space:]]*)/\1/g; t success q1; :success p'); then
+            action="updating existing clone"
+        else
+            action="cloning"
+        fi
+        echo -e "${action} from ${clone_url} in ${clone_path}" 1>&2
+        if [ "${action}" == "cloning" ]; then
+            git clone --depth=1 "${clone_url}" "${clone_path}"
+        else
+            (cd "${clone_path}" && git pull --rebase "${remote}" "${branch}")
+        fi
+    done
+}
+gitdebugrevparse() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- prefix_result_string=''
+    local -- top_level_result_string=''
+    local -- final_result_string=""
+    local -- here=$(pwd)
+    local -a top_level_command=(git rev-parse '--show-toplevel')
+    local -a prefix_command=(git rev-parse '--show-prefix')
+    local -A final=()
+    if ! top_level_result_string="$(${top_level_command[@]})"; then
+        echo -e "[${FUNCNAME[0]} error]" "not under a git repo: ${here@Q}" 1>&2
+        return 404
+    else
+        final["${top_level_command[@]}"]="${top_level_result_string}"
+    fi
+    prefix_result_string="$(${prefix_command[@]})"
+    final["${prefix_command[@]}"]="${prefix_result_string}"
+    final["${final_command[@]}"]="${final_result_string}"
+    local -a base_final_command=(git rev-parse '--prefix' "${prefix_result_string}")
+    local -a final_command=(${base_final_command[@]})
+    if (($argc)); then
+        final_command+=('--' ${argv[@]})
+    fi
+    final_result_string="$(${final_command[@]})"
+    (cd "${git_root}" && echo "${final_result_string}")
+}
+green_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_green}m${prefix}\x1b[1;38;2;${color_medium_green}m ${message}\x1b[0m" 1>&2
+}
+hist_regexp_for_entry_ids() {
+    unset IFS
+    local -a argv=(${@})
+    local -A entry_ids_unique=()
+    local -A argv_errors_by_index=()
+    local -a entry_ids=()
+    local -i id=-1
+    local -i entry=-1
+    local -i index=0
+    local -- arg=""
+    local -- raw=""
+    local -- value=""
+    local -- pos=""
+    local -i current=0
+    local -i argc=${#argv[@]}
+    if [ ${argc} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing entry id argument(s)" 1>&2
+        return 1
+    fi
+    for index in ${!argv[@]}; do
+        raw="${argv[${index}]}"
+        arg="${raw#+}"
+        pos="$(printf '%-*s of %s' ${#argc} $((index + 1)) ${argc})"
+        if [[ "${arg}" =~ ^([+])([1-9][0-9]*)$ ]]; then
+            continue
+        else
+            if [[ "${arg}" =~ ^([-])([1-9][0-9]*)$ ]]; then
+                argv_errors_by_index["${index}"]="negative number: ${arg@Q}"
+                continue
+            else
+                if [[ "${arg}" =~ ^([0-9]+)$ ]]; then
+                    argv_errors_by_index["${index}"]="negative number: ${arg@Q}"
+                    continue
+                else
+                    if [[ "${arg}" =~ ^([^0-9+-][^0-9]+|[^0-9]+)$ ]]; then
+                        argv_errors_by_index["${index}"]="not a number: ${arg@Q}"
+                        return 1
+                    fi
+                fi
+            fi
+        fi
+        if [[ -v entry_ids_unique["${arg}"] ]]; then
+            entry_ids_unique["${arg}"]="${arg}"
+            continue
+        fi
+    done
+    export IFS='|'
+    local -r entry_ids_regexp_group="($(echo -e "${entry_ids[*]}"))"
+    export IFS='\n'
+    local -r hist_time_entry_regexp="^\s*${entry_ids_regexp_group}\s*${hist_time_regexp_timestamp_tz_no_entry_id}"
+}
+history_clear_and_disable() {
+    history -n
+    history -a
+    mkdir -p ~/.bash_history.d/
+    set +o history
+    if [ -e ~/.bash_history ]; then
+        mv -f ~/.bash_history ~/.bash_history.d/.bash_history.$(t16g)
+    fi
+    if [ -e ~/.history ]; then
+        mv -f ~/.history ~/.bash_history.d/.history.$(t16g)
+    fi
+    if [ -n "$*" ]; then
+        echo "unexpected arguments: \"$*\"" 1>&2
+        return 1
+    fi
+    set -o history
+    history -a
+}
+history_enable_and_read() {
+    if [ -n "$*" ]; then
+        echo "unexpected arguments: \"$*\"" 1>&2
+        return 1
+    fi
+    set -o history
+    history -n
+    history -r
+    history -a
+}
+history_entries() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -- arg=""
+    local -ar history_entry_ids=($(history_entry_ids))
+    local -ir history_len=${#history_entry_ids[@]}
+    local -ir history_last_entry_index=$((history_len - 1))
+    local -ir first_entry_id=${history_entry_ids[0]}
+    local -ir last_entry_id=${history_entry_ids[${history_last_entry_index}]}
+    local -a entry_ids=()
+    local -i entry_id=-1
+    if [ ${argc} -eq 0 ]; then
+        entry_id=${last_entry_id}
+    else
+        for index in ${!argv[@]}; do
+            arg="${argv[${index}]}"
+            pos="$(printf '%*s of %s' ${#argc} $((index + 1)) ${argc})"
+            if [[ ! "${arg}" =~ ^[0-9]+$ ]]; then
+                echo -e "[${FUNCNAME[0]} error]" "argument ${pos} is invalid (not a positive number): ${arg@Q}" 1>&2
+                continue
+            else
+                entry_ids+=("${arg}")
+            fi
+        done
+    fi
+    export IFS='|'
+    local -r entry_ids_regexp_group="($(echo -e "${entry_ids[*]}"))"
+    export IFS='\n'
+    local -r hist_time_entry_regexp="^\s*${entry_ids_regexp_group}\s*${hist_time_regexp_timestamp_tz_no_entry_id}"
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- length=0
+    local -a entry_lines=()
+    local -- history_output=''
+    local -- filtered_hist_output=''
+    local -- stripped_hist_output=''
+    history_output="$(history)"
+    filtered_hist_output=$(sed -n -E "s/${hist_time_entry_regexp}/\n\5\n/gp" <<<"${history_output}")
+    stripped_hist_output=$(sed -E 's/(^\s+|\s+$)//g' <<<"${filtered_hist_output}")
+    for entry_id in ${entry_ids[@]}; do
+        entry_lines=($(history | sed -n -E "s/${hist_time_entry_regexp}/\n\5\n/gp" | sed -E 's/(^\s+|\s+$)//g'))
+        export IFS='\n'
+        hist_commands_by_entry_id["${entry_id}"]=$(echo "${entry_lines[*]}")
+    done
+}
+history_entry_ids() {
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -A unique_keys=()
+    local -a entry_ids=()
+    export IFS='
+'
+    unique_keys=($(history | sed -n -E "s/${hist_time_regexp_timestamp_tz}/\n\1\n/gp" | grep -E '^\s*[0-9]+\s*$' | sed -E 's/(^\s+|\s+$)//g'))
+    entry_ids=($(echo "${!unique_keys[*]}" | sort -un))
+    echo "${entry_ids[*]}"
+}
+history_length() {
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- length=0
+    length=$(history | sed -n -E "s/${hist_time_regexp_timestamp_tz}/\1/gp" | wc -l)
+    echo $((length + 1))
+}
+history_show() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -A history_entries_by_entry_number=()
+    local -A history_timestamps_by_entry_number=()
+    local -a history_lines=()
+    local -i ifs_set=0
+    local -- old_ifs="${IFS:-}"
+    local -a entry_numbers=()
+    if [[ -v IFS ]]; then
+        ifs_set=1
+    fi
+    export IFS='
+'
+    local -- line=""
+    history_lines=($(history))
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        if [[ ! "${arg}" =~ ^[0-9]+$ ]]; then
+            echo -e "[${FUNCNAME[0]} warning]" "argument ${current} of ${argc} invalid (not a number): ${arg@Q}" 1>&2
+            continue
+        fi
+        entry_numbers+=("${arg}")
+    done
+    export IFS='|'
+    if [ ${#entry_numbers[@]} -eq 0 ]; then
+        entry_numbers=('[0-9]+')
+    fi
+    local -- regexp="^\s*($(echo "${entry_numbers[*]}"))\s+(@([1-9][0-9]{9,}):([+-]?[0-9]+|[A-Z]+))\s+(.*)\$"
+    export IFS='
+'
+    local -- result_string=""
+    result_string=$(echo "${history_lines[*]}" | sed -n -E "/${regexp}/{s/${regexp}/date +'#\1 %Y/%m/%d %H:%M:%S %Z \n' --date=@\3\n\5/g;G;z;h;e;p}")
+    if (($ifs_set)); then
+        export IFS="${old_ifs}"
+    else
+        unset IFS
+    fi
+    echo "${result_string}"
+}
+history_with_context() {
+    declare -- varname="var_pid${$}_hist_$(history_length)"
+    declare -g -A "${varname}"
+    local -I -n history_context="${varname}"
+    local -- git_repo_path=""
+    local -i in_git_repo=0
+    if git_repo_path=$(git rev-parse --show-toplevel); then
+        in_git_repo=1
+    fi
+    history_context["argv"]="${argv[@]}"
+    history_context["argc"]="${argc}"
+    if (($in_git_repo)); then
+        history_context["git_repo_path"]="${git_repo_path}"
+        history_context["git_head_commit"]="${git_repo_path}"
+        history_context["git_status_porcelain"]="${git_repo_path}"
+    fi
+    env | sed -n -E 's/^([A-Z_]+[A-Z0-9_]+)=(.*)$/\n\1\n/gp' | sort -u | sed -E '/^\s*$/d'
+    local -a history_related_varnames=('HISTFILE' 'HISTFILESIZE' 'HISTSIZE' 'HISTTIMEFORMAT' 'HISTCONTROL')
+    local -- hist_varname=""
+    local -- hist_varval=""
+    for hist_varname in ${history_related_varnames[@]}; do
+        if [[ -v "${hist_varname}" ]]; then
+            local -I -n hist_varval="${hist_varname}"
+            history_context["${hist_varname}"]="${hist_varval}"
+        fi
+        local -- hist_varval=""
+    done
+    local -- history_pid=${$}
+    local -- lsof_pid=""
+    lsof_pid="$(lsof -p "${history_pid}")"
+    history_context["pwd"]="$(pwd)"
+    history_context["pid"]="${history_pid}"
+    history_context["lsof"]="${lsof_pid}"
+    history_context["env"]="$(env)"
+    if [[ -v FUNCNAME[1] ]]; then
+        history_context["caller_function_name"]="${FUNCNAME[1]}"
+        if [[ -v LINENO[1] ]]; then
+            history_context["caller_function_line_number"]="${LINENO[1]}"
+        fi
+    fi
+    if [[ -v BASH_LINENO[@] ]] && [ ${#BASH_LINENO[@]} -gt 0 ]; then
+        history_context["caller_bash_line_numbers"]="$(printf '%d\t%s\n' "${BASH_LINENO[@]@K}")"
+    fi
+    if [[ -v BASH_SOURCE[@] ]] && [ ${#BASH_SOURCE[@]} -gt 0 ]; then
+        history_context["caller_bash_sources"]="$(printf '%d\t%s\n' "${BASH_SOURCE[@]@K}")"
+    fi
+    history_context["BASH_LINENO"]=$(printf '%s\n' ${BASH_LINENO[@]})
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    history_context["history"]="$(echo "$(history)")"
+}
+inactive_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_inactive}m${prefix}\x1b[1;38;2;${color_medium_inactive}m ${message}\x1b[0m" 1>&2
+}
+info() {
+    eval "${ui_msgfunc_ctx}"
+    info_prefixed "[info]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m" 1>&2
+}
+initialize_shell_d_core_global_vars() {
+    if [[ ! -v shell_d_entrypoint_source_path_relative ]]; then
+        echo -e "[shell.d entrypoint error]" "core global variable undefined: shell_d_entrypoint_source_path_relative " 1>&2
+        return 1
+    fi
+    declare -gr shell_d_entrypoint_source_directory_path="$(cd "$(dirname "${shelL_d_entrypoint_source_path_relative}")" && pwd)"
+    declare -gr shell_d_entrypoint_source_filename="$(basename "${shell_d_entrypoint_source_path_relative}")"
+    declare -r actual_shell_d_path="${shelL_d_entrypoint_source_directory_path}"
+    declare -r actual_x_d_path="${actual_shell_d_path}/x.d"
+    if [ "${actual_shell_d_path}" != "${default_shell_d_path}" ]; then
+        echo -e "[shell.d entrypoint error]" "actual_shell_d_path different than default_shell_d_path: ${actual_shell_d_path@Q} != ${default_shell_d_path@Q}" 1>&2
+        return 1
+    fi
+    if [ "${actual_x_d_path}" != "${default_x_d_path}" ]; then
+        echo -e "[shell.d entrypoint error]" "actual_x_d_path different than default_x_d_path: ${actual_x_d_path@Q} != ${default_x_d_path@Q}" 1>&2
+        return 1
+    fi
+    if ! "$(cd "${entrypoint_dirname}" && pwd)"; then
+        SHELL_D_PATH="${HOME}/.shell.d"
+    fi
+    local -- X_D_PATH="${SHELL_D_PATH}/x.d"
+}
+k() {
+    if [ -n "$*" ]; then
+        echo "unexpected arguments: \"$*\"" 1>&2
+        return 1
+    fi
+    echo -e '\x1b[0m\x1b]1337;ClearCapturedOutput\a\x1b]1337;ClearScrollback\a\x1b[0m'
+    tput clear
+    echo -e "\x1b[2J\x1b[3J\x1b[H"
+    reset
+    export PS1_VARIANT=""
+}
+l() {
+    local -- arg="${arg}"
+    if [ -z "${arg}" ]; then
+        l ~/.shell.d/0000101-functions.sh
+    else
+        if [ ! -e "${arg}" ]; then
+            case "${arg}" in
+                "f" | "-f")
+                    l ~/.shell.d/0000101-functions.sh
+                    ;;
+                "e" | "-e")
+                    l ~/.shell.d/0000110-env.sh
+                    ;;
+                "h" | "-h")
+                    l ~/.shell.d/x.d/history.sh
+                    ;;
+                "ansi")
+                    l ~/opt/lib/ansi.sh
+                    ;;
+                "a" | "-a")
+                    l ~/.shell.d/entrypoint.sh
+                    ;;
+                "c" | "-c" | "--completions" | "--autocomplete" | "--auto-complete" | "--complete")
+                    l ~/opt/lib/completions.sh
+                    ;;
+                "t" | "-t" | "--tools" | "tools")
+                    l ~/opt/lib/tools.sh
+                    ;;
+                *)
+                    cat 1>&2 <<EOF
+USAGE: ${FUNCNAME[0]} [path] | [FLAG]
+EOF
+                    ;;
+            esac
+        fi
+    fi
+}
+last_job_pid() {
+    local -i pid=-1
+    pid="${!}"
+    if [ ${pid} -gt 0 ]; then
+        printf '$!=%s' ${pid}
+    fi
+}
+list_nvm_managed_node_versions() {
+    ls --color -l $HOME/.nvm/versions/node 2>/dev/random | ansistrip | lastcol | sort -r -n
+}
+local_var_declarations() {
+    local -p | sed -E "s/${shell_script_var_declaration_regexp}/\1/g"
+}
+mute_shell_command() {
+    local -a msc_argv=($@)
+    local -i msc_argc=${!msc_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    if [ ${msc_argc} -eq 0 ]; then
+        echo -e "[${BASH_SOURCE[0]}:${BASH_LINENO[0]}]" "missing arguments" 1>&2
+        exit 1
+    fi
+    for index in ${!msc_argv[@]}; do
+        current=$(($index + 1))
+        arg="${msc_argv[$index]}"
+        case "${arg}" in
+            -h | --help)
+                echo -e "HELP" 1>&2
+                ;;
+            *) ;;
+        esac
+    done
+    grep -E '^\s*[0-9]+\s*$' <<<"${arg}"
+}
+n() {
+    export RUSTFLAGS="-C opt-level=3 -g -Zmacro-backtrace"
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    k
+    cargo n $*
+}
+notes() {
+    cd $NOTES_ROOT
+}
+orange_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_orange}m${prefix}\x1b[1;38;2;${color_medium_orange}m ${message}\x1b[0m" 1>&2
+}
+ord_num() {
+    local -i number=$(($1))
+    local -i abs=${number#-}
+    local -i last_two=$((${abs} % 100))
+    local -i last_digit=$((${abs} % 10))
+    case "${last_two}" in
+        11 | 12 | 13)
+            echo "th"
+            return
+            ;;
+    esac
+    case "${last_digit}" in
+        1)
+            echo "st"
+            return
+            ;;
+        2)
+            echo "nd"
+            return
+            ;;
+        3)
+            echo "rd"
+            return
+            ;;
+        *)
+            echo "th"
+            return
+            ;;
+    esac
+}
+ordinal() {
+    unset IFS
+    local -a ord_argv=($@)
+    local -i ord_argc=${!ord_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -a numbers=()
+    local -- ord=""
+    if [ ${ord_argc} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]}:${LINENO[0]}]" "missing arguments" 1>&2
+        exit 1
+    fi
+    for index in ${!ord_argv[@]}; do
+        current=$(($index + 1))
+        arg="${ord_argv[$index]}"
+        if grep -E '^\s*[0-9]+\s*$' >/dev/random 2>/dev/random <<<"${arg}"; then
+            numbers+=("${arg}")
+        fi
+    done
+    for no in ${numbers[@]}; do
+        ord=$(ord_num $no)
+        printf '%d%s\n' "${no}" "${ord}"
+    done
+}
+overwrite_static_state_path() {
+    bash_static_state >"${bash_static_state_path}"
+}
+plum_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_plum}m${prefix}\x1b[1;38;2;${color_medium_plum}m ${message}\x1b[0m" 1>&2
+}
+previous_command_exit_code() {
+    local -i exit_code=-1
+    exit_code="${?}"
+    if [ ${exit_code} -ge 0 ]; then
+        printf '$?=%s' ${exit_code}
+    fi
+}
+ps1_prefix() {
+    local -a parts=($(last_job_pid) $(previous_command_exit_code))
+    printf '%s ' "[${parts[@]}]"
+}
+purple_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_purple}m${prefix}\x1b[1;38;2;${color_medium_purple}m ${message}\x1b[0m" 1>&2
+}
+q() {
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    k
+    cargo q $*
+}
+r() {
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    k
+    unset RUSTFLAGS
+    cargo r $*
+}
+raw_bin_bash() {
+    bash -c "$(printf '%s;\n' ${argv[@]} | sed -E 's/(^\s*(\s*[;]+\s*)+\s*$)//g' | sed -E 's/(^\s+|\s+$)//g')"
+}
+repl() {
+    local -a stty_args=()
+    case "$1" in
+        -*no*stdin | no*stdin | -*no*echo | no*echo | capture)
+            args+=('-echo')
+            ;;
+        *)
+            args+=('sane')
+            ;;
+    esac
+    stty ${stty_args[@]} 2>/dev/random >/dev/random || true
+}
+reverse_indexed_array_by_ifs_fields() {
+    local -a array=($@)
+    local -i length=${#array[@]}
+    if [ ${length} -eq 0 ]; then
+        return
+    fi
+    local -i rev_index=0
+    local -i index=0
+    local -- item=""
+    for rev_index in ${!array[@]}; do
+        local -i index=$((${length} - ${rev_index}))
+        local -- item=${array[$index]}
+        echo "${item}"
+    done
+}
+reverse_indexed_array_by_reference() {
+    local -- array_name="$1"
+    if [ -z "${array_name}" ]; then
+        return
+    fi
+    local -I -n array="${array_name}"
+    local -i length=${#array[@]}
+    if [ ${length} -eq 0 ]; then
+        return
+    fi
+    local -i rev_index=0
+    local -i index=0
+    local -- item=""
+    for rev_index in ${!array[@]}; do
+        local -i index=$((${length} - ${rev_index}))
+        local -- item=${array[$index]}
+        echo "${item}"
+    done
+}
+rf() {
+    export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace"
+    export RUST_BACKTRACE=1
+}
+ro() {
+    unset RUSTFLAGS
+    unset RUST_BACKTRACE
+}
+scarlet_red_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_scarlet_red}m${prefix}\x1b[1;38;2;${color_medium_scarlet_red}m ${message}\x1b[0m" 1>&2
+}
+set_ifs() {
+    true
+}
+set_key_value_in_history_context() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -A arg_index_regexes=()
+    local -A arg_index_name=()
+    local -A arg_index_values=()
+    local -A arg_name_values=()
+    local -- varname_regexp='^([a-zA-Z_]+[a-zA-Z0-9_]+)$'
+    local -- value_regexp='^(.*)$'
+    local -- regexp=''
+    local -- arg_name=""
+    local -- varname=""
+    local -- key=""
+    local -- value=""
+    arg_index_name[0]="varname"
+    arg_index_name[1]="key"
+    arg_index_name[2]="value"
+    arg_index_regexes["varname"]="${varname_regexp}"
+    arg_index_regexes["key"]="${varname_regexp}"
+    arg_index_regexes["value"]="${value_regexp}"
+    if [ ${argc} -lt 3 ]; then
+        echo -e "[${FUNCNAME[0]}]" "missing arguments: <VARNAME> <KEY> <VALUE>" 1>&2
+        return 1
+    fi
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        prefix=$(printf '%*s of %s' ${argc} ${current} ${argc})
+        if [ ${index} -le 3 ]; then
+            arg_name=${arg_index_name[$index]}
+            regexp=${arg_index_regexes[$index]}
+            if [[ "${arg}" =~ ${regexp} ]]; then
+                arg_index_values["${index}"]="${arg}"
+                arg_name_values["${arg_name}"]="${arg}"
+            else
+                echo -e "[${FUNCNAME[0]} error in argument ${prefix}]" "${arg_name} argument does not match regexp ${regexp@Q}" 1>&2
+                return 1
+            fi
+        else
+            echo -e "[${FUNCNAME[0]} error in argument ${prefix}]" "unexpected argument ${arg@Q}" 1>&2
+            return 1
+        fi
+    done
+    varname=${arg_name_values['varname']}
+    key=${arg_name_values['key']}
+    value=${arg_name_values['value']}
+    local -- surrogate_map_name="${varname}_map"
+    local -- surrogate_list_name="${varname}_list"
+    local -- surrogate_list_type="${surrogate_list_name@a}"
+    local -- surrogate_map_type="${surrogate_map_name@a}"
+    if [[ ! -v "${surrogate_list_name[@]}" ]]; then
+        echo -e "[${FUNCNAME[0]} error]" "varname ${surrogate_list_name@Q} does not exist" 1>&2
+        return 1
+    else
+        if [ "${surrogate_list_name@a}" != "a" ]; then
+            echo -e "[${FUNCNAME[0]} error]" "type variable ${surrogate_list_name@Q} should be indexed array (.i.e.: 'a') but is ${surrogate_list_type@Q} (${surrogate_list_name[@]@A})$" 1>&2
+            return 1
+        fi
+    fi
+    if [[ ! -v "${surrogate_map_name[@]}" ]]; then
+        echo -e "[${FUNCNAME[0]} error]" "varname ${surrogate_map_name@Q} does not exist" 1>&2
+        return 1
+    else
+        if [ "${surrogate_map_name@a}" != "A" ]; then
+            echo -e "[${FUNCNAME[0]} error]" "type variable ${surrogate_map_name@Q} should be indexed array (.i.e.: 'A') but is ${surrogate_map_type@Q} (${surrogate_map_name[@]@A})$" 1>&2
+            return 1
+        fi
+    fi
+    local -I -n history_context="${varname}"
+    history_context["${key}"]="${value}"
+}
+shell_d_declare_ui_functions() {
+    export IFS='
+'
+    local -a color_names=($(builtin declare -p | /opt/homebrew/bin/gawk '$2 ~ /[-][-]/ && $3 ~ /^color_(light|medium|dark)_/ { print gensub(/^color_(light|medium|dark)_([a-z_]+).*/, "\\2", "g", $3) }' | sort -u))
+    local -- color_name=""
+    local -i eco=0
+    for color_name in ${color_names[@]}; do
+        local -- code="${color_name}_prefixed() {
+    local -- prefix=\"\$1\"
+    shift
+    local -- message=\"\$@\"
+    1>&2 echo -e \"\x1b[1;38;2;\${color_light_${color_name}}m\${prefix}\x1b[1;38;2;\${color_medium_${color_name}}m \${message}\x1b[0m\"
+}"
+        if ! eval "${code}"; then
+            eco=$?
+        fi
+    done
+    unset IFS
+}
+shell_d_fallback_get_canonical_path() {
+    if [ ${#} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing argument: <RELATIVE_PATH>" 1>&2
+        return 1
+    else
+        if [ ${#} -gt 1 ]; then
+            echo -e "[${FUNCNAME[0]} error]" "too many arguments" 1>&2
+            return 1
+        fi
+    fi
+    local -- working_dir=$(pwd)
+    local -- relative_path="${1}"
+    local -- relative_dirname="$(dirname "${relative_path}")"
+    local -- filename="$(basename "${1}")"
+    shell_d_sh_validate_non_empty_regular_file_argument "relative_path" "${relative_path}"
+    local -- full_dirname="$(cd "${relative_dirname}" 2>/dev/null >/dev/null && pwd)"
+    local -- full_path="${full_dirname}/${filename}"
+    echo "${full_path}" 2>&1
+}
+shell_d_fs_get_canonical_path() {
+    if [ ${#} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing argument: <RELATIVE_PATH>" 1>&2
+        return 1
+    else
+        if [ ${#} -gt 1 ]; then
+            echo -e "[${FUNCNAME[0]} error]" "too many arguments" 1>&2
+            return 1
+        fi
+    fi
+    local -- relative_path="${1}"
+    shell_d_sh_validate_non_empty_regular_file_argument "relative_path" "${relative_path}"
+    if [ -x "${HOME}/.cargo/bin/path" ]; then
+        ${HOME}/.cargo/bin/path canon "${path}"
+        return $?
+    else
+        shell_d_fallback_get_canonical_path "${path}"
+        return $?
+    fi
+}
+shell_d_load_libs() {
+    export PS4=''
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- script_path="${BASH_SOURCE[0]}"
+    local -- input_script_path=""
+    if [ ${argc} -eq 1 ]; then
+        script_path="${argv[0]}"
+    else
+        if [ ${argc} -gt 1 ]; then
+            if [ -s "${argv[@]}" ]; then
+                input_script_path="${argv[@]}"
+            else
+                for arg in ${argv[@]}; do
+                    if [ -z "${input_script_path}" ] && [ -s "${arg}" ]; then
+                        input_script_path="${arg}"
+                    else
+                        if [ -z "${input_script_path}" ] && [ -e "${arg}" ]; then
+                            echo -e "[warning]" "ignoring empty script path ${arg@Q}" 1>&2
+                        else
+                            if [ -n "${input_script_path}" ]; then
+                                echo -e "[warning]" "ignoring arg ${arg@Q} because input_script_path already set to ${input_script_path@Q}" 1>&2
+                            else
+                                echo -e "[warning]" "ignoring arg ${arg@Q} because is not an existing path" 1>&2
+                            fi
+                        fi
+                    fi
+                done
+                script_path=$(python3 -c "${shell_d_python_script}" "${input_script_path}")
+            fi
+        fi
+    fi
+    local -- script_filename="$(basename "${script_path}")"
+    local -- script_folder="$(dirname "${script_path}")"
+    local -- script_ui_path="${script_folder}/.${script_filename/%.sh/.ui}"
+    local -- script_lib_path="${script_folder}/.${script_filename/%.sh/.lib}"
+    local -a loaded=()
+    if [ -r "${script_ui_path}" ]; then
+        builtin source "${script_ui_path}"
+        loaded+=("${script_ui_path}")
+    fi
+    if [ -r "${script_lib_path}" ]; then
+        builtin source "${script_lib_path}"
+        loaded+=("${script_ui_path}")
+    fi
+    export PS4=''
+}
+shell_d_sh_check_shell_script() {
+    set +x
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    if [ ${argc} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>" 1>&2
+        return 1
+    fi
+    local -- shell_script_path="${argv[0]}"
+    shell_d_sh_validate_non_empty_regular_file_argument "shell_script_path" "${shell_script_path}"
+    shell_script_path=$(shell_d_fs_get_canonical_path "${shell_script_path}")
+    local -- ps_var="\${BASH_SOURCE[0]}:\${BASH_LINENO[0]} "
+    local -a shell_d_shell_d_sh_check_shell_script_lines=('set -mTE; set +f; set -o pipefail;' '' '' '' '' "$(cat "${shell_script_path}")")
+    shell_d_shell_d_sh_check_shell_script_command="$(printf '%s\n' ${shell_d_shell_d_sh_check_shell_script_lines[@]})"
+    local -a call_args=("bash" "--noprofile" "--norc" "-s")
+    local -- logprefix="$(slugify-string "${shell_script_path}")"
+    local -- stderr_path="${HOME}/workbench/2026-02-08/${logprefix}.pid.${$}.stderr"
+    local -- stdout_path="${HOME}/workbench/2026-02-08/${logprefix}.pid.${$}.stdout"
+    local -i code=0
+    echo 1>&2
+    if ! ${call_args[@]} 2>${stderr_path} >${stdout_path} <<<"${shell_d_shell_d_sh_check_shell_script_command}"; then
+        code=$?
+    fi
+    local -- stderr=$(sed -E '/^\s*$/d' "${stderr_path}")
+    local -i stderr_linecount=0
+    if [ -n "${stderr}" ]; then
+        local -i stderr_linecount=$(wc -l <<<"${stderr}")
+    fi
+    local -- stderr_attrs=""
+    if [ ${stderr_linecount} -gt 0 ]; then
+        echo "found errors in ${shell_script_path@Q}:" 1>&2
+        echo "${stderr}" 1>&2
+        return ${stderr_linecount}
+    fi
+}
+shell_d_sh_declare() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- value=""
+    local -A param_map=()
+    local -- pos=""
+    local -i prev_arg_value_index=0
+    local -- prev_arg_value_pos=''
+    local -i var_ty_index=0
+    local -- var_ty_pos=''
+    local -- var_ty_letter=""
+    if [ ${argc} -lt 2 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing arguments" 1>&2
+        return 1
+    fi
+    local -ra param_order=(g a A i l u x r)
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        value="${arg#-}"
+        pos="$(printf '%*s of %s' "${#argc}" ${current} ${argc})"
+        prev_arg_value_index=0
+        prev_arg_value_pos=''
+        if [[ -v param_map["${value}"] ]]; then
+            prev_arg_value_index=${param_map["${value}"]}
+            prev_arg_value_pos="$(printf '%s of %s' $((prev_arg_value_index + 1)) ${argc})"
+        fi
+        case "${arg}" in
+            -f | -F | -p)
+                echo -e "[${FUNCNAME[0]} error]" "invalid option ${pos} ${arg@Q} only acceptable in bash's builtin declare" 1>&2
+                return 1
+                ;;
+            -t)
+                echo -e "[${FUNCNAME[0]} error]" "invalid option ${pos} ${arg@Q} only acceptable in bash's function definitions" 1>&2
+                return 1
+                ;;
+            -I | -n)
+                echo -e "[${FUNCNAME[0]} error]" "invalid option ${pos} ${arg@Q} only acceptable in bash's builtin local" 1>&2
+                return 1
+                ;;
+            -a | -A | -i | -x | --)
+                if [ -n "${var_ty_letter}" ]; then
+                    echo -e "[${FUNCNAME[0]} error]" "invalid \"var type\" ${arg} option ${pos} already set to ${var_ty_letter} by argument ${var_ty_pos}" 1>&2
+                else
+                    if [[ -v param_map["${value}"] ]]; then
+                        echo -e "[${FUNCNAME[0]} warning]" "ignoring option ${pos} ${arg@Q} already provided in position ${prev_arg_value_pos}" 1>&2
+                    else
+                        var_ty_letter="${value}"
+                        var_ty_pos="${pos}"
+                        var_ty_index="${index}"
+                        param_map["${value}"]=${index}
+                    fi
+                fi
+                ;;
+            -g | -r | -l | -u)
+                if [[ ! -v param_map["${value}"] ]]; then
+                    param_map["${value}"]=${index}
+                else
+                    echo -e "[${FUNCNAME[0]} warning]" "ignoring option ${pos} ${arg@Q} already provided in position ${prev_arg_value_pos}" 1>&2
+                fi
+                ;;
+        esac
+        local -- options=""
+        for value in ${param_order[@]}; do
+            if [[ -v param_map["${value}"] ]]; then
+                options="${options}${value}"
+            fi
+        done
+    done
+}
+shell_d_sh_load_source() {
+    if [ ${#} -eq 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>" 1>&2
+        return 1
+    else
+        if [ ${#} -gt 1 ]; then
+            echo -e "[${FUNCNAME[0]} error]" "too many arguments" 1>&2
+            return 1
+        fi
+    fi
+    local -- shell_script_path="${1}"
+    shell_d_sh_validate_non_empty_regular_file_argument "shell_script_path" "${shell_script_path}"
+    shell_script_path=$(shell_d_fs_get_canonical_path "${shell_script_path}")
+}
+shell_d_sh_validate_non_empty_argument() {
+    if [[ ! -v FUNCNAME[1] ]]; then
+        echo -e "[${FUNCNAME[0]} error]" "undefined variable \${FUNCNAME[1]}this function should be called from another shell function" 1>&2
+        return 1
+    else
+        if [[ ! -v LINENO[1] ]]; then
+            echo -e "[${FUNCNAME[0]} error]" "undefined variable \${LINENO[1]}this function should be called from another shell function" 1>&2
+            return 1
+        fi
+    fi
+    local -- caller_funcname=${FUNCNAME[1]}
+    local -- caller_lineno=${LINENO[1]}
+    local -- caller_frame="${caller_funcname}:${caller_lineno}"
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    if [ ${argc} -lt 2 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing arguments: <ARGUMENT_NAME> <ARGUMENT_VALUE>" 1>&2
+        return 1
+    else
+        if [ ${argc} -gt 2 ]; then
+            echo -e "[${FUNCNAME[0]} error]" "too many arguments, this function takes exacly 2 arguments: <ARGNAME> and <VALUE>" 1>&2
+            return 1
+        fi
+    fi
+    local -- caller_argument_name="${argv[@]:0:1}"
+    local -- caller_argument_value="${argv[@]:1:1}"
+    if [ -z "${caller_argument_name}" ]; then
+        echo -e "[${FUNCNAME[0]} error]" "${caller_frame} missing argument: <ARGUMENT_NAME>" 1>&2
+        return 1
+    else
+        if [[ ! "${caller_argument_name}" =~ ^[a-zA-Z_]+[a-zA-Z0-9_]*$ ]]; then
+            echo -e "[${FUNCNAME[0]} error]" "${caller_frame} invalid variable name {caller_argument_name@Q}" 1>&2
+            return 1
+        fi
+    fi
+    if [ -z "${caller_argument_value}" ]; then
+        echo -e "[${caller_funcname} error]" "missing argument: <${caller_argument_name@U}>" 1>&2
+        return 1
+    fi
+}
+shell_d_sh_validate_non_empty_regular_file_argument() {
+    if [[ ! -v FUNCNAME[1] ]]; then
+        echo -e "[${FUNCNAME[0]} error]" "undefined variable \${FUNCNAME[1]} this function should be called from another shell function" 1>&2
+        return 1
+    else
+        if [[ ! -v BASH_LINENO[1] ]]; then
+            echo -e "[${FUNCNAME[0]} error]" "undefined variable \${BASH_LINENO[1]} this function should be called from another shell function" 1>&2
+            return 1
+        fi
+    fi
+    local -- caller_funcname=${FUNCNAME[1]}
+    local -- caller_lineno=${BASH_LINENO[1]}
+    local -- caller_frame="${caller_funcname}:${caller_lineno}"
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    if [ ${argc} -lt 2 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "missing arguments: <ARGUMENT_NAME> <ARGUMENT_VALUE>" 1>&2
+        return 1
+    else
+        if [ ${argc} -gt 2 ]; then
+            echo -e "[${FUNCNAME[0]} error]" "too many arguments, this function takes exacly 2 arguments: <ARGNAME> and <VALUE>" 1>&2
+            return 1
+        fi
+    fi
+    local -- caller_argument_name="${argv[@]:0:1}"
+    local -- caller_argument_value="${argv[@]:1:1}"
+    if [ -z "${caller_argument_name}" ]; then
+        echo -e "[${FUNCNAME[0]} error]" "${caller_frame} missing argument: <ARGUMENT_NAME>" 1>&2
+        return 1
+    else
+        if [[ ! "${caller_argument_name}" =~ ^[a-zA-Z_]+[a-zA-Z0-9_]*$ ]]; then
+            echo -e "[${FUNCNAME[0]} error]" "${caller_frame} invalid variable name {caller_argument_name@Q}" 1>&2
+            return 1
+        fi
+    fi
+    if [ -z "${caller_argument_value}" ]; then
+        echo -e "[${caller_funcname} error]" "missing argument: <${caller_argument_name@U}>" 1>&2
+        return 1
+    else
+        if [ ! -e "${caller_argument_value}" ]; then
+            echo -e "[${caller_funcname} error]" "path does not exist: ${caller_argument_value@Q}" 1>&2
+            return 1
+        else
+            if [ ! -f "${caller_argument_value}" ]; then
+                echo -e "[${caller_funcname} error]" "not a file: ${caller_argument_value@Q}" 1>&2
+                return 1
+            else
+                if [ ! -r "${caller_argument_value}" ]; then
+                    echo -e "[${caller_funcname} error]" "file not readable: ${caller_argument_value@Q}" 1>&2
+                    return 1
+                else
+                    if [ ! -s "${caller_argument_value}" ]; then
+                        echo -e "[${caller_funcname} error]" "empty file: ${caller_argument_value@Q}" 1>&2
+                        return 1
+                    fi
+                fi
+            fi
+        fi
+    fi
+}
+show_newest_node_version_nvm_managed() {
+    list_nvm_managed_node_versions | head -1
+}
+sky_blue_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_sky_blue}m${prefix}\x1b[1;38;2;${color_medium_sky_blue}m ${message}\x1b[0m" 1>&2
+}
+spawn_wezterm_cli() {
+    if [ -n "$(ps aux | ack -i 'wezterm[.]app' | ack -v ack)" ]; then
+        wezterm cli spawn ${@}
+    else
+        echo "wezterm cli spawn ${@}"
+    fi
+}
+ssh_ag() {
+    g p -r ssh -k 2>/dev/random >/dev/random
+    eval "$(ssh-agent)"
+    ssh-add -k
+    ssh-add ~/.ssh/id_gafagomo
+    ssh-add ~/.ssh/gabrielteratos@gmail.com
+}
+st() {
+    status
+}
+state() {
+    date_dirname=$(date +"%Y-%m-%d")
+    time_dirname=$(date +"%H-%M-%S-%Z")
+    state_dir_location=${HOME}/state/${date_dirname}/${time_dirname}
+    readme_location=${state_dir_location}/README.rst
+    title="STATE $(date +"%Y/%m/%d %H:%M:%S %Z")"
+    undertitle=$(sed 's/./~/g' <<<"${title}")
+    h1="${title}\n${undertitle}"
+    mkdir -p "${state_dir_location}"
+    echo -e "${h1}\n\n::\n   ${state_dir_location}\n\n" >${readme_location}
+    cd "${state_dir_location}"
+    git init
+    git add README.rst
+    git commit -am "${title}"
+}
+static_state_path_is_expired() {
+    create_state_path_or_refresh_stat_info
+    if [ ${bash_static_state_last_modified} -lt ${bash_expiration_seconds} ] || [ ${bash_static_state_last_modified_delta} -gt ${bash_expiration_seconds} ]; then
+        if [ ! -e "${bash_static_state_path}" ] || [ ! -s "${bash_static_state_path}" ]; then
+            true
+        fi
+    fi
+    export IFS='
+'
+}
+stty_outputs() {
+    unset PS4
+    local -i code=0
+    local -a stty_cmd=()
+    declare -g -A stty_outputs=()
+    local -- stty=''
+    local -- tmp=''
+    local -- stderr="$(mktemp)"
+    local -- stderr_prefix=""
+    local -- sed_command=""
+    for stty in $(which -a stty); do
+        code=0
+        stty_cmd=("${stty}" '-a')
+        if ! tmp="$(${stty_cmd[@]} 2>${stderr})"; then
+            code=$?
+        fi
+        if [ "${code}" -ne 0 ]; then
+            stderr_prefix="${stty_cmd[@]} failed with exit code ${code}"
+            sed_command="s%^%${stderr_prefix}%g"
+            stty_outputs["${stty}"]="$(sed -E "${sed_command}" "${stderr}")"
+        else
+            stty_outputs["${stty}"]="${tmp}"
+        fi
+    done
+}
+t() {
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    local -a __t__argv=($@)
+    local -a __t__argc=${#__t__argv}
+    local -a __t__argv_index=($(seq 0 $(($__t__argc))))
+    local -a __t__features=()
+    local -a __t__args=()
+    for index in ${__t__argv_index[@]}; do
+        arg="${__t__argv[$index]}"
+        if [ $index -gt 0 ]; then
+            prev_arg="${__t__argv[$(($index - 1))]}"
+        else
+            prev_arg=""
+        fi
+        next_arg="${__t__argv[$(($index + 1))]}"
+        case "$arg" in
+            "-a")
+                __t__args+=("--all-features")
+                ;;
+            "-f" | "--feature")
+                if [ -z "${next_arg}" ]; then
+                    echo "unexpected empty argument for '${arg}'" 1>&2
+                    return 1
+                else
+                    __t__args+=("--feature=${next_arg}")
+                fi
+                ;;
+        esac
+    done
+    k
+    cargo test --offline -j 1 --color always ${__t__args[@]} -- --nocapture --color always --test-threads 1
+}
+t1() {
+    export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace"
+    export RUST_BACKTRACE=1
+    t $*
+}
+terminal_fill_string() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- value=""
+    if [ ${argc} -eq 0 ]; then
+        return 1
+    fi
+    value=$(sed -E 's/[\t\r\n]+//g' <<<"${argv[@]}")
+    local -i length=${#value}
+    local -i terminal_width=${COLUMNS}
+    if [ ${terminal_width} -eq 0 ]; then
+        terminal_width=$(terminal_get_width)
+    fi
+    if [ ${terminal_width} -gt 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "\${terminal_width} should be greater than 0 at this point" 1>&2
+        return 1
+    fi
+    local -i total_width=${terminal_width}
+    local -i total_length=${terminal_width}
+    if [ ${length} -gt 0 ]; then
+        length=${terminal_width}
+    fi
+    total_length=$((((length + (length % terminal_width)) / terminal_width) * terminal_width))
+    printf '%-*s\n' "${total_length}" "${value}"
+}
+terminal_get_minwidth_to_string_unchecked() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- value=""
+    if [ ${argc} -eq 0 ]; then
+        return 0
+    fi
+    value="${argv[@]}"
+    value="${value//'	'/}"
+    value="${value//''/}"
+    value="${value//'
+'/}"
+    local -i length=${#value}
+    local -i terminal_width=${COLUMNS}
+    if [ ${terminal_width} -eq 0 ]; then
+        terminal_width=$(terminal_get_width)
+    fi
+    if [ ${terminal_width} -gt 0 ]; then
+        echo -e "[${FUNCNAME[0]} error]" "\${terminal_width} should be greater than 0 at this point" 1>&2
+        return 1
+    fi
+    local -i total_width=${terminal_width}
+    local -i total_length=${terminal_width}
+    if [ ${length} -gt 0 ]; then
+        length=${terminal_width}
+    fi
+    total_length=$((((length + (length % terminal_width)) / terminal_width) * terminal_width))
+    printf '%-*s\n' "${total_length}" "${value}"
+}
+terminal_get_width() {
+    builtin shopt -s checkwinsize
+    local -- extecho=""
+    local -- extgetwidth=""
+    local -i width=${COLUMNS}
+    if [ ${width} -le 0 ]; then
+        if extecho=$(type -P echo); then
+            ${extecho} -en ""
+            width=${COLUMNS}
+        else
+            if extgetwidth=$(which term-columns); then
+                width=$(${extgetwidth})
+            fi
+        fi
+    fi
+    if [ ${width} -le 0 ]; then
+        width=130
+    fi
+    echo "${width}"
+}
+tfull() {
+    export RUSTFLAGS="-C opt-level=0 -g -Zmacro-backtrace"
+    export RUST_BACKTRACE=full
+    t $*
+}
+third_party() {
+    target="${@}"
+    cdmkd "${HOME}/projects/third_party/${target}"
+}
+throw_error() {
+    local -- label="$1"
+    shift
+    local -- message="$@"
+    if [[ -v workbench_error_label_to_code_mapping["${label}"] ]]; then
+        local -- code=${workbench_error_label_to_code_mapping["${label}"]}
+        if [[ ! "${code}" =~ ^[0-9]+$ ]]; then
+            echo "[${FUNCNAME[0]} internal error]" "error code of label ${label@Q} is not a valid number: ${code@Q}" 1>&2
+            return 2
+        fi
+        if [ -n "${message}" ]; then
+            echo "[${label} error]" "${message}" 1>&2
+        else
+            echo "[error]" "${label//_/ }" 1>&2
+        fi
+        return ${code}
+    fi
+}
+tn() {
+    unset RUSTFLAGS
+    unset RUST_BACKTRACE
+    t $*
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+tt() {
+    if [ ! -f Cargo.toml ]; then
+        return 1
+    fi
+    local -a __t__argv=($@)
+    local -a __t__argc=${#__t__argv}
+    local -a __t__argv_index=($(seq 0 $(($__t__argc))))
+    local -a __t__features=()
+    local -a __t__args=()
+    for index in ${__t__argv_index[@]}; do
+        arg="${__t__argv[$index]}"
+        if [ $index -gt 0 ]; then
+            prev_arg="${__t__argv[$(($index - 1))]}"
+        else
+            prev_arg=""
+        fi
+        next_arg="${__t__argv[$(($index + 1))]}"
+        case "$arg" in
+            "-a")
+                __t__args+=("--all-features")
+                ;;
+            "-f" | "--feature")
+                if [ -z "${next_arg}" ]; then
+                    echo "unexpected empty argument for '${arg}'" 1>&2
+                    return 1
+                else
+                    __t__args+=("--feature=${next_arg}")
+                fi
+                ;;
+        esac
+    done
+    k
+    cargo test -j 1 --color always ${__t__args[@]} -- --nocapture --color always --test-threads 1
+}
+usage() {
+    repl no echo
+    echo -e "$(basename $0) <ARGUMENT>" 1>&2
+    repl sane
+}
+warn() {
+    eval "${ui_msgfunc_ctx}"
+    warn_prefixed "[warn]" "${@}"
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m" 1>&2
+}
+web_browser_is_open() {
+    if [ -n "$(web_browser_processes | tr -d '[:space:]')" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+web_browser_processes() {
+    local -A web_browser_processes_by_pid=($(ps aux | ack -i '(Google\s*Chrome|Firefox|Ladybug|Helium)[.]app' | ack -v ack | ack "^${USER}\s+(\d+)" | sed -n "s/^${USER}\s\+\([0-9]\+\)\s\+.*[0-9]\s\+\(\/[A-Za-z0-9].\+\)/[\1]=\"\2\"/gp"))
+    for pid in ${!web_browser_processes_by_pid[@]}; do
+        command_string=${web_browser_processes_by_pid[${pid}]}
+        echo -e "${pid}\t${command_string}"
+    done
+}
+wip() {
+    . ~/opt/lib/ansi.sh
+    local -- verbose="false"
+    if [ -n "$1" ]; then
+        case "$1" in
+            "-v")
+                verbose="true"
+                shift
+                ;;
+            *) ;;
+        esac
+    fi
+    local -a what=($@)
+    if [ ${#what[@]} -eq 0 ]; then
+        bar_text_left 233 231 "missing description"
+        return 1
+    fi
+    local -- bashpid="$$"
+    local -- title="WIP ON $(date +"%Y/%m/%d %H:%M:%S") (bash pid: ${bashpid})"
+    local -- under=$(echo "$(seq ${#title})" | tr -d '[:digit:]' | tr '\n' '~')
+    entries=$(lsof | ack -i "(bash | ghostty | wezterm | terminal)" | grep cwd | lastcol | ack -v "^${HOME}\$" | sort -u | sed "s/^/$(date +"%s") /g")
+    export HISTTIMEFORMAT="${hist_time_format_timestamp_tz}"
+    local -- note=$(echo -e "${title}\n${under}\n\n${what[@]} in directory $(pwd)\n\n${entries}\n\n$(history)\n\n")
+    base_log_path=$HOME/projects/notes/wip/mit-context
+    ts=$(nowts | xargs slugify-string)
+    log_path=${base_log_path}.${ts}.txt
+    mkdir -p $(dirname "${log_path}")
+    echo -e "${note}" >${log_path}
+    if [ "${verbose}" == "true" ]; then
+        echo "wrote: ${log_path}" 1>&2
+    fi
+}
+workbench_category_names_length() {
+    echo "${#workbench_category_to_directory_name_mapping[@]}"
+}
+workbench_category_names_list() {
+    builtin printf '%s\n' "${!workbench_category_to_directory_name_mapping[@]}"
+}
+workbench_engine_check() {
+    workbench_engine_check_validate_categories
+}
+workbench_engine_check_validate_categories() {
+    if [ ${workbench_category_count} -eq 0 ]; then
+        throw_error "empty_list" "no category names mapped in \${workbench_category_to_directory_name_mapping}"
+        return
+    fi
+    local -- category=''
+    local -a cats=($(workbench_category_names_list))
+    local -- prefix=""
+    local -i index=0
+    local -i current=0
+    for index in ${!cats[@]}; do
+        current=$((index + 1))
+        prefix="$(printf '%*s of %s' ${#workbench_category_count} ${current}" ${current}")"
+        local -- prefix=""
+        category=${cats[$index]}
+        if [[ ! -v workbench_category_to_directory_name_mapping["${category}"] ]]; then
+            echo "[uncharted category error]" "no directory name mapped to the category ${category@Q}" 1>&2
+            return 404
+        fi
+        return
+    done
+}
+workbench_load() {
+    workbench_root="$HOME/workbench"
+    workbench_last_epoch=$(date +%s)
+    workbench_day=$(date +"%Y-%m-%d" --date=@${workbench_last_epoch})
+    workbench_logs_safe_path="${workbench_root}/logs/${workbench_day}"
+    workbench_path="${workbench_root}/${workbench_day}"
+    workbench_logs="${workbench_path}/logs"
+    workbench_manifest="${workbench_path}/.workbench.created"
+    workbench_todays_locations=(["logs"]="${workbench_logs_safe_path}" ["path"]="${workbench_path}")
+    workbench_stderr="${workbench_logs}/stderr.log"
+    workbench_stdout="${workbench_logs}/stdout.log"
+    declare -gx stderr="${workbench_stderr}"
+    declare -gx stdout="${workbench_stdout}"
+    workbench_category_setup
+}
+workbench_load_current_date() {
+    local -i code=0
+    local -- current_date=""
+    local -r regexp='[[:space:]]\n]*(([0-9]{4})-([0-9]{2})-([0-9]{2}))[[:space:]]\n]*'
+    if [ -s "${workbench_current_state_path}" ]; then
+        if ! current_date=$(sed -E "s/^${regexp}\$/\1/g;t date q9; :date {p}"); then
+            code=$?
+        fi
+    fi
+}
+x() {
+    clsreset
+    export PS1_VARIANT=x
+    cdmkd ~/*scratch*/.x/
+}
+xD() {
+    export PS4=''
+    local -a path_list=($@)
+    local -i path_count=${#path_list[@]}
+    local SHELL_D_PATH="${HOME}/.shell.d"
+    local X_D_PATH="${SHELL_D_PATH}/x.d"
+    local -- sh=""
+    if [ ${path_count} -eq 0 ]; then
+        echo -e "[error]" "xD missing argument(s): <PATH> [PATH...]" 1>&2
+    fi
+    for sh in ${path_list[@]}; do
+        if [ -e "${SHELL_D_PATH}/${sh}" ] && [ -r "${SHELL_D_PATH}/${sh}" ] && [ -s "${SHELL_D_PATH}/${sh}" ]; then
+            builtin source "${SHELL_D_PATH}/${sh}"
+            shell_d_load_libs "${SHELL_D_PATH}/${sh}"
+        else
+            if [ -e "${X_D_PATH}/${sh}" ] && [ -r "${X_D_PATH}/${sh}" ] && [ -s "${X_D_PATH}/${sh}" ]; then
+                builtin source "${X_D_PATH}/${sh}"
+                shell_d_load_libs "${X_D_PATH}/${sh}"
+            else
+                echo -e "[error]" "xD could not find readable non-empty file ${sh@Q}" 1>&2
+                return 5
+            fi
+        fi
+    done
+}
+yellow_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    echo -e "\x1b[1;38;2;${color_light_yellow}m${prefix}\x1b[1;38;2;${color_medium_yellow}m ${message}\x1b[0m" 1>&2
+}
+set +x
+export IFS=$'
+'
+export PS1='\u@\h:\w\$ '
+cls() {
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+}
