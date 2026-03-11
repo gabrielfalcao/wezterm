@@ -666,7 +666,7 @@ entrypoint() {
 
     if [ -x "${HOME}/.cargo/bin/ps1" ]; then
         eval "$(${HOME}/.cargo/bin/ps1 --env)"
-        export PROMPT_COMMAND='shell_d_sh_prompt_command'
+        # export PROMPT_COMMAND='shell_d_sh_prompt_command'
     else
         export PS1='\u@\h:\w\$ '
     fi
