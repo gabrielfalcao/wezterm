@@ -3535,14 +3535,21 @@ cls() {
     1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 }
 
-if [[ ! -v expected_ps1_bin_path ]]; then
-    declare -gr expected_ps1_bin_path="${HOME}/.cargo/bin/ps1"
-fi
+export PS1='\u@\w\$ '
 
-export PS1='\u@\h:\w\$ '
-if [ -f "${expected_ps1_bin_path}" ] && [ -x "${expected_ps1_bin_path}" ] && [ -s "${expected_ps1_bin_path}" ]; then
-    eval "$(${expected_ps1_bin_path})"
-else
+bootstrap_prompt() {
+    unset PROMPT_COMMAND
+
+    if [[ ! -v expected_ps1_bin_path ]]; then
+        declare -gr expected_ps1_bin_path="${HOME}/.cargo/bin/ps1"
+    fi
+
     export PS1='\u@\w\$ '
-
-fi
+    set -x
+    if [ -f "${expected_ps1_bin_path}" ] && [ -x "${expected_ps1_bin_path}" ] && [ -s "${expected_ps1_bin_path}" ]; then
+        eval "$(${expected_ps1_bin_path})"
+    else
+        export PS1='\u@\w\$ '
+    fi
+    set +x
+}
