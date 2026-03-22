@@ -167,22 +167,20 @@ export TERM="xterm-256color"
 export TERM_PROGRAM="WezTerm"
 export TERM_PROGRAM_VERSION="20251107-060518-3c7412da"
 
-
 # export TMPDIR="/var/folders/5l/0pt7q7yd5md3r8888fgcksw80000gn/T/"
 export TZ="UTC"
-if [[ -v  XPC_FLAGS ]]; then
+if [[ -v XPC_FLAGS ]]; then
     1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_FLAGS)"
 fi
-if [[ -v  XPC_SERVICE_NAME ]]; then
+if [[ -v XPC_SERVICE_NAME ]]; then
     1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_SERVICE_NAME)"
 fi
-if [[ -v  __CFBundleIdentifier ]]; then
+if [[ -v __CFBundleIdentifier ]]; then
     1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CFBundleIdentifier)"
 fi
-if [[ -v  __CF_USER_TEXT_ENCODING ]]; then
+if [[ -v __CF_USER_TEXT_ENCODING ]]; then
     1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CF_USER_TEXT_ENCODING)"
 fi
-
 
 # end of func='shell_d_export_state_part1_variables'
 
@@ -3530,12 +3528,21 @@ yellow_prefixed() {
 
 # end of func='shell_d_export_state_part5_functions'
 
-set +x
-export IFS=$'
-'
-
-export PS1='\u@\h:\w\$ '
+set +xv
+export IFS=$'\n'
 
 cls() {
     1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 }
+
+if [[ ! -v expected_ps1_bin_path ]]; then
+    declare -gr expected_ps1_bin_path="${HOME}/.cargo/bin/ps1"
+fi
+
+export PS1='\u@\h:\w\$ '
+if [ -f "${expected_ps1_bin_path}" ] && [ -x "${expected_ps1_bin_path}" ] && [ -s "${expected_ps1_bin_path}" ]; then
+    eval "$(${expected_ps1_bin_path})"
+else
+    export PS1='\u@\w\$ '
+
+fi
