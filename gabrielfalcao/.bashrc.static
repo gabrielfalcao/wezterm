@@ -169,18 +169,6 @@ export TERM_PROGRAM_VERSION="20251107-060518-3c7412da"
 
 # export TMPDIR="/var/folders/5l/0pt7q7yd5md3r8888fgcksw80000gn/T/"
 export TZ="UTC"
-if [[ -v XPC_FLAGS ]]; then
-    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_FLAGS)"
-fi
-if [[ -v XPC_SERVICE_NAME ]]; then
-    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p XPC_SERVICE_NAME)"
-fi
-if [[ -v __CFBundleIdentifier ]]; then
-    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CFBundleIdentifier)"
-fi
-if [[ -v __CF_USER_TEXT_ENCODING ]]; then
-    1>&2 echo -e "[${BASH_SOURCE[0]} info]" "env var set: $(declare -p __CF_USER_TEXT_ENCODING)"
-fi
 
 # end of func='shell_d_export_state_part1_variables'
 

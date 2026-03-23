@@ -1,5 +1,5 @@
-set +x
-# . ~/.bashrc.static
+set +xv
+. ~/.bashrc.static
 
 cls() {
     1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"

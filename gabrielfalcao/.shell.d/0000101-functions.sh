@@ -515,13 +515,13 @@ terminal_get_minwidth_to_string_unchecked() {
 
 third_party() {
     target="${@}"
-    cdmkd "${HOME}/projects/third_party/${target}"
+    mkpushd "${HOME}/projects/third_party/${target}"
 }
 alias 3=third_party
 
 # work() {
 #     target="${@}"
-#     cdmkd "${HOME}/projects/work/${target}"
+#     mkpushd "${HOME}/projects/work/${target}"
 # }
 # alias w=work
 

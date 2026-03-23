@@ -1,83 +1,87 @@
 #!/usr/bin/env bash
 
-set -e
-declare -a volumes=(
-    "NO%20NAME"
-    "nothing%201"
-    "Time%20Machine%20Backups"
-    "UNTITLED"
-    "Untitled"
-    "UNTITLED%202"
-    TemplarKnight
-    WaveMandala1T
-    AiryMcLeod
-    DEFCON-24
-    DR-05
-    GREEN5GB
-    Kindle
-    NONAME
-    NOTHING
-    OF
-    Pedrita1 Pedrita2
-    8x16g
-    SAMDATA-Red
-    Untitled
-    Untitled42
-    WaveMandala
-    crypto
-    GARMIN
-    gabe-private
-    gabe-public
-    gabe-shared
-    gabriel
-    gabriel
-    gabriel-private
-    gabriel-public
-    gabriel-shared
-    gabrielfalcao
-    garuda-bkp
-    garuda-bkp
-    hanuman-bkp
-    medula22
-    mudface-bkp
-    mudface-external
-    newstore-bkp
-    rosencreuz
-    rotekafer
-    sec04212023
-    simba
-    takitaki
-    work-2020-2022
-    X2133
-    "DATA"
-    MalaysianNonSSD
-    nothing
-)
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
 
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
 
-function retry-force-eject-volume() {
-    name="${@/\%20/ }"
+if [ "$(id -u)" != "0" ] && [ "$(id -un)" != "root" ]; then
+    sudo -E ${this_script_path}
+    exit 0
+fi
+
+on_exit() {
+    set +x
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+list_external_volumes() {
+    df | df-mountpoint.gawk
+}
+retry_force_eject_volume() {
+    name="${@}"
     volume="/Volumes/${name}/"
     if [ ! -e "$(basename "${volume}")" ]; then
         return
         # echo -e "\x1b[1;38;5;220m$(basename "${volume}") \x1b[1;38;5;33mdoes not appear to be present\x1b[0m"
-    elif 2>/dev/null sudo diskutil unmount force "$(basename "${volume}")"; then
+    elif 2>/dev/null diskutil unmount force "$(basename "${volume}")"; then
         echo -e "\x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;220mwas ejected forcefully\x1b[0m"
     else
         echo -e "\x1b[1;38;5;220mfailed to eject \x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;145m(maybe in use or already ejected ?)\x1b[0m"
-    fi;
+    fi
+}
+kill_processes_hogging_volume() {
+    name="${@}"
+    volume="/Volumes/${name}"
+    lsof | gawk "(\$0 ~ /${volumes//\/\\\/}/){
+	location = \"\"
+	for (i = 9; i <= NF; i++) {
+		len = length(\$i)
+		last = \"\"
+		if (len > 0) {
+			last = FS
+		} else {
+			last = \"\"
+		}
+		location = sprintf(\"%s%s%s\", location, \$i, last)
+	}
+	print (location)
+}"
 }
 
-function eject-volume() {
-    name="${@/\%20/ }"
+eject_volume() {
+    name="${@}"
     volume="/Volumes/${name}/"
-    if 2>/dev/null sudo diskutil unmount "$(basename "${volume}")"; then
+    if 2>/dev/null diskutil unmount "$(basename "${volume}")"; then
         echo -e "\x1b[1;38;5;154m$(basename "${volume}") \x1b[1;38;5;220mwas ejected\x1b[0m"
     else
-        retry-force-eject-volume "${name}"
-    fi;
+        retry_force_eject_volume "${name}"
+    fi
 }
 
-for name in ${volumes[*]}; do
-    eject-volume "${name}"
-done
+main() {
+    for name in $(list_external_volumes); do
+        eject_volume "${name}"
+    done
+}
+
+# if [ "${0}" == "${script_name}" ]; then
+#     main
+# else
+#     1>&2 echo -e "${script_name} appears to being used as a library by ${0@Q}"
+# fi
+main

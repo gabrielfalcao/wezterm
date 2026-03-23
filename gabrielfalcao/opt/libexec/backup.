@@ -24,7 +24,7 @@ function display_colored() {
     elif [ $color -lt 0 ]; then
         1>&2 echo -e "display_colored: first argument min value should be 0, actual: ${color}"
     fi
-    shift
+   shift
     desc="$1"
     1>&2 echo -en "\x1b[1;48;5;${color}m\x1b[1;38;5;16m${desc}\x1b[0m"
     shift
@@ -81,9 +81,9 @@ function calc_indent_text() {
         display_error "calc_indent_text" "MISSING TEXT"
         exit 1
     fi
-    if [ $text_width -gt 3 ]; then
-        dbg2 "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
-    fi
+    # if [ $text_width -gt 3 ]; then
+    #     dbg2 "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
+    # fi
     if [ ${padby} -gt ${text_width} ]; then
         padby=$(( $padby - ${text_width} ))
     elif [ ${padby} -lt ${text_width} ]; then
@@ -97,9 +97,9 @@ function calc_indent_text() {
     if [ $padby -lt 0 ]; then
         padby=0
     fi
-    if [ $text_width -gt 3 ]; then
-        dbg "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
-    fi
+    # if [ $text_width -gt 3 ]; then
+    #     dbg "calc_indent_text" "text_width=${text_width} padby=${padby} text='${text}'"
+    # fi
     echo -n $padby
 }
 function make_indent() {
@@ -127,10 +127,10 @@ function indent_rev() {
 # production
 USERLAND_USERNAME=gabrielfalcao
 USERLAND_HOME=/Users/gabrielfalcao
-TARGET_BASE=/Volumes/nothing/APFEL
+TARGET_BASE=/Volumes/nothing
 LOG_FOLDER=$USERLAND_HOME/opt/var/log
 mkdir -p "$LOG_FOLDER"
-LOG_PATH="${LOG_FOLDER}/$(slugify-string "$0")-$(t16g)"
+LOG_PATH="${LOG_FOLDER}/$(heck-string --to=snake "$0").$(now).$(nows)"
 LOG_PATH_OUT="${LOG_PATH}.out.log"
 LOG_PATH_ERR="${LOG_PATH}.err.log"
 LINECOUNT=$(cat "${BASH_SOURCE[0]}" | wc -l)
@@ -212,7 +212,7 @@ function resolve_target_folder() {
     debug "${LINENO}" "resolve_target_folder:noslash" "opt=${opt}"
     # log_err "resolving target folder for \x1b[1;38;5;71m$(path canon -f "$@")\x1b[0m"
     if [ "${opt/#\//}" == "${opt}" ]; then
-        item="${TARGET_BASE}/Langley"
+        item="${TARGET_BASE}/APFEL"
         debug "${LINENO}" "resolve_target_folder" "item=${item}"
         item="$(no_trailing_slash "$item")"
         debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
@@ -220,14 +220,14 @@ function resolve_target_folder() {
     else
         if [ "${opt/#\/System/}" == "${opt}" ]; then
             log_err "\x1b[1;38;5;170m\"$opt\" does not appear to start with /System\x1b[0m"
-            item="${TARGET_BASE}/Langley_Root"
+            item="${TARGET_BASE}/APFEL_Root"
             debug "${LINENO}" "resolve_target_folder" "item=${item}"
             item="$(no_trailing_slash "$item")"
             debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
             color="33"
         else
             log_err "\x1b[1;38;5;160m\"$opt\" appears to start with /System\x1b[0m"
-            item="${TARGET_BASE}/Langley_System"
+            item="${TARGET_BASE}/APFEL_System"
             debug "${LINENO}" "resolve_target_folder" "item=${item}"
             item="$(no_trailing_slash "$item")"
             debug "${LINENO}" "resolve_target_folder:noslash" "item=${item}"
@@ -339,65 +339,66 @@ function backup_home_items() {
     set -e
 }
 
-# back_this_up "/usr/local"
-# back_this_up "/opt"
-# back_this_up "/var/log"
-# back_this_up "/Applications"
 back_this_up "projects"
+back_this_up "workbench"
 back_this_up "godot"
 back_this_up "Kino"
-back_this_up "*scratch*" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+back_this_up "go"
+back_this_up "opt"
+back_this_up ".gnupg"
+back_this_up ".ssh"
+back_this_up ".shell.d"
+back_this_up ".config"
+back_this_up ".emacs.d"
 # back_this_up "*scratch*" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
-# back_this_up "*scratch*/Data"
-# back_this_up "__sandbox__"
-# back_this_up "*sandbox*"
-# back_this_up "*nons*"
-# back_this_up ".wezterm.lua"
-# back_this_up "SDKs"
-# back_this_up ".bun"
-# back_this_up ".gnupg"
-# back_this_up ".ssh"
-# back_this_up ".shell.d"
-# back_this_up ".config"
-# back_this_up ".emacs.d"
-# back_this_up ".nvm"
-# back_this_up ".yarn"
-# back_this_up ".local"
-# back_this_up ".logs"
-# back_this_up "Music"
-# back_this_up "JUCE"
-# back_this_up "Unity"
-# back_this_up "Blender"
+back_this_up "*scratch*" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+back_this_up "*scratch*/Data"
+back_this_up "__sandbox__"
+back_this_up "*sandbox*"
+back_this_up "*nons*"
+back_this_up ".wezterm.lua"
+back_this_up "SDKs"
+back_this_up ".bun"
+back_this_up ".nvm"
+back_this_up ".yarn"
+back_this_up ".local"
+back_this_up ".logs"
+back_this_up "Music"
+back_this_up "JUCE"
+back_this_up "Unity"
+back_this_up "Blender"
 back_this_up "Documents"
-# back_this_up "Splice"
+back_this_up "Splice"
 back_this_up "Downloads"
 back_this_up "Bildern"
 back_this_up "Büchen"
-# back_this_up "Kino"
-# back_this_up "LOL"
-# back_this_up "Publications"
-# back_this_up "tmp"
+back_this_up "Kino"
+back_this_up "LOL"
+back_this_up "Publications"
+back_this_up "tmp"
 back_this_up "Desktop"
 back_this_up "Movies"
 back_this_up "Pictures"
 back_this_up "Library"
 back_this_up "Applications"
-back_this_up "go"
-back_this_up "opt"
-# backup_macintosh_hd_library
-# backup_home_items
-# backup_system_library
-# back_this_up "Library/HTTPStorages"
-# back_this_up "Library/Caches"
-# back_this_up "Library/LaunchAgents"
-# back_this_up "Library/LaunchDaemons"
-# back_this_up "Library/Logs"
-# back_this_up "Library/Audio/Plug-Ins"
-# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/var-db-dslocal-nodes-default-users-$(date +"%Y%m%d-%H%M%S").zip" "/var/db/dslocal/nodes/default/users"
-# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Preferences-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Preferences"
-# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/Library-Containers-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Containers/"
-# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/Langley_Root/keychains-$(date +"%Y%m%d-%H%M%S").zip" $(pat ~/Library/Preferences/com.apple.security.plist | jq .DLDBSearchList[].DbName | tr -d '"')
-# back_this_up "Library/Application%20Support"
+back_this_up "/usr/local"
+back_this_up "/opt"
+back_this_up "/var/log"
+back_this_up "/Applications"
+back_this_up "Library/Application%20Support"
+back_this_up "Library/HTTPStorages"
+back_this_up "Library/Caches"
+back_this_up "Library/LaunchAgents"
+back_this_up "Library/LaunchDaemons"
+back_this_up "Library/Logs"
+back_this_up "Library/Audio/Plug-Ins"
+backup_macintosh_hd_library
+backup_home_items
+backup_system_library
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/APFEL_Root/var-db-dslocal-nodes-default-users-$(date +"%Y%m%d-%H%M%S").zip" "/var/db/dslocal/nodes/default/users"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/APFEL_Root/Library-Preferences-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Preferences"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/APFEL_Root/Library-Containers-$(date +"%Y%m%d-%H%M%S").zip" "/Library/Preferences" "~/Library/Containers/"
+# 2>/dev/null 1>/dev/null zip -r "${TARGET_BASE}/APFEL_Root/keychains-$(date +"%Y%m%d-%H%M%S").zip" $(pat ~/Library/Preferences/com.apple.security.plist | jq .DLDBSearchList[].DbName | tr -d '"')
 
 # # # # # back_this_up ".git"
 # # # # # back_this_up ".casa"
@@ -417,11 +418,26 @@ back_this_up "opt"
 # # # # # back_this_up "album-covers"
 # # # # # back_this_up "srv"
 
+declare -i allow_eject=0
+declare -- choice=''
+declare -- prompt_msg=$'back finished, do you wish to eject?\n\t[Y]es/[N]o '
 if not_dry_run; then
     set +e
-    2>/dev/null diskutil unmount "${TARGET_BASE}";
-    2>/dev/null diskutil unmount force "${TARGET_BASE}";
-    2>/dev/null 1>/dev/null which g;
-    eject-disks
-    eject-usb-disks
+    read -p "${prompt_msg}" choice
+    until [ -n "${choice}" ] && [[ "${choice@L}" =~ ^\s*([y](es)?|[n](o)?|[c](ancel)?)\s*$ ]]; do
+        1>&2 echo -e "\x1b[0m\x1b[1;48;2;211;215;207m\x1b[1;38;2;239;41;41minvalid choice:\x1b[7m${choice@Q}\x1b[0m\n"
+        read -p "${prompt_msg}" choice
+    done
+
+    if [[ "${choice@L}" =~ ^\s*([n](o)?)\s*$ ]]; then
+        exit 0
+    elif [[ "${choice@L}" =~ ^\s*([y](es))\?\s*$ ]]; then
+        2>/dev/null diskutil unmount "${TARGET_BASE}";
+        2>/dev/null diskutil unmount force "${TARGET_BASE}";
+        2>/dev/null 1>/dev/null which g;
+        eject-disks
+        eject-usb-disks
+        exit 0
+    fi
+
 fi

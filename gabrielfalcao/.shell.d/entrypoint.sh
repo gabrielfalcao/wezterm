@@ -3,18 +3,36 @@
 export TZ=UTC
 declare -gir shell_d_started_at=$(date --utc +%s)
 declare -gi shell_d_pid=${$}
-
+# declare -g shell_d_default_tmp_stderr=$(mktemp)
 declare -g default_shell_d_path="${HOME}/.shell.d"
 declare -g default_x_d_path="${default_shell_d_path}/x.d"
 
 declare -gr shell_d_internal_log_dir="${default_shell_d_path}/logs/$(date -u +'%Y-%m-%d')"
 mkdir -p "${shell_d_internal_log_dir}"
 
+# (replace-regexp
+#    regexp: "\\(trap\\(\\s-+\\)\\|^\\(function\\s-+\\)\\)\\s-*\\(\\([_]+shell_d_sh_\\)\\(ps4\\|trap\\)\\([_]\\)\\(function\\)[_]?\\([a-z0-9]+[a-zA-Z0-9_]*\\|[a-z0-9_]+?\\)\\([_]+\\)\\)\\s-*\\([]\\)"
+#    to-string: \,(regex!)
+# )
+# (replace-regexp
+#     regexp: "^\\(\\s-*[#]\\s-*\\)?\\(\\s-*\\)\\(trap\\)\\s-+\\([a-zA-Z0-9_]+[^[:space:]\n]*\\)\\s-*\\([[:space:]\\n]+\\)\\([a-zA-Z0-9_]+\\)\\(\\s-*\\)$"
+#    to-string: \,(regex!)
+# )
+
+#;; \(\([_]+shell_d_sh_\)\(ps4\|trap\)\([_]\)\(function\)[_]?\([a-z0-9]+[a-zA-Z0-9_]*\|[a-z0-9_]+?\)\([_]+\)\)
+declare -gr shell_d_internal_default_artifact_suffix="pid_${$}.ppid_${PPID}.$(builtin printf '%010x' ${shell_d_started_at})"
+
 if [[ -v WEZTERM_PANE ]]; then
-    declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/entrypoint.pid_$$.pane_${WEZTERM_PANE}.${shell_d_started_at}.log"
+    declare -gr shell_d_internal_log_path="wezterm_pane.${WEZTERM_PANE}.${shell_d_internal_default_artifact_suffix}.log"
 else
-    declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/entrypoint.pid_$$.${shell_d_started_at}.log"
+    declare -gr shell_d_internal_log_path="${shell_d_internal_default_artifact_suffix}.log"
 fi
+declare -gar shell_d_sh_env_vars_to_observe=(
+    'XPC_FLAGS'
+    'XPC_SERVICE_NAME'
+    '__CFBundleIdentifier'
+    '__CF_USER_TEXT_ENCODING'
+)
 
 shell_d_sh_log_error() {
     local -a argv=($@)
@@ -95,6 +113,39 @@ shell_d_sh_initialize_env_vars() {
             fi
         fi
         export "${env_var@U}"="${env_value}"
+    done
+}
+shell_d_internal_security_checks() {
+    local -i cargo_bin_created=-1
+    local -i cargo_bin_modified=-1
+    local -- cargo_bin_item=""
+    local -- name=""
+
+    for cargo_bin_item in ${shell_d_rust_bin_path}/*; do
+        cargo_bin_created=$(gstat -c '%W' "${cargo_bin_item}")
+        cargo_bin_modified=$(gstat -c '%W' "${cargo_bin_item}")
+        name=$(basename "${cargo_bin_item}")
+
+        if [ -x "${cargo_bin_item}" ]; then
+            if [ -x "/bin/${name}" ]; then
+                shadow="/bin/${name}"
+                shell_d_internal_fn_log 'CRITICAL' "removing executable permissions from ${cargo_bin_item@Q} because it shadows the path ${shadow@Q}"
+                chmod a-x "${cargo_bin_item}"
+                shell_d_internal_fn_log 'CRITICAL' "you should probably investigate what third-party rust crate installed (.i.e. \"created\") ${cargo_bin_item@Q} on $(date --date=@${cargo_bin_created} +'%Y/%m-%d %H:%M:%S %Z')"
+                hash -r "${name}"
+            fi
+        fi
+    done
+
+    for varname in ${shell_d_sh_env_vars_to_observe[@]}; do
+        if [[ -v refvar ]]; then
+            unset -n refvar
+        fi
+        if [[ -v "${varname}" ]]; then
+            local -I -n refvar="${varname}"
+            shell_d_internal_fn_log "INFO" "env var ${varname} is set to ${refvar[@]@Q}"
+            unset -n refvar
+        fi
     done
 }
 shell_d_sh_history_entries_suffixed_with_entry_id_and_timestamp() {
@@ -334,16 +385,34 @@ __shell_d_sh_trap_function_ctrlc__() {
     shell_d_sh_log_error "\x1b[0m\rAborted with Ctrl-C\x1b[0m"
     exit 1
 }
-trap __shell_d_sh_trap_function_exit__ exit
-trap __shell_d_sh_trap_function_ctrlc__ hup
+trap __shell_d_sh_trap_function_exit__ EXIT
+trap __shell_d_sh_trap_function_ctrlc__ HUP
 
-trap __shell_d_sh_trap_function_exit__ exit
 # trap __shell_d_sh_trap_function_return__ RETURN
 # trap __shell_d_sh_trap_function_debug__ DEBUG
-trap __shell_d_sh_trap_function_backtrace__ ERR
-set -o errtrace # Ensure ERR trap is inherited by functions
+
+# <ensure ERR trap is inherited by functions>
+set -o errtrace
 set -o functrace
 set -o pipefail
+trap __shell_d_sh_trap_function_backtrace__ ERR
+# </ensure ERR trap is inherited by functions>
+
+if [[ ! -v workbench_path ]]; then
+    declare -- _workbench_path="${HOME}/workbench/2026-02-12"
+    if [ -e "${_workbench_path}" ] && [ ! -d "${_workbench_path}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "workbench path ${_workbench_path@Q} exists but is not a directory: $(gstat -c '%F' "${_workbench_path}")"
+    else
+        mkdir -p "${_workbench_path}"
+        declare -g workbench_path=${_workbench_path}
+        unset _workbench_path
+    fi
+fi
+
+if [[ -v workbench_path ]] && [ -n "${workbench_path}" ] && [ -d "${workbench_path}" ]; then
+    declare -g shell_d_fs_stdout=${workbench_path}/shell_d_stdout.$$.log
+    declare -g shell_d_fs_stderr=${workbench_path}/shell_d_stderr.$$.log
+fi
 
 shell_d_fs_get_tty_path() {
     lsof -p "${$}" | awk '{ print $NF }' | grep /dev/tty | sort -u | head -1
@@ -591,10 +660,55 @@ if [ -s "${HOME}/.rustup/settings.toml" ]; then
     declare -g shell_d_rust_toolchain=$(${shell_d_root_path}/rust/get-default-toolchain.sh) # WIP
 fi
 
+shell_d_internal_fn_log() {
+    # shell_d_internal_fn_log 'CRITICAL' "removing executable permissions from ${cargo_bin_item@Q} because it shadows the path ${shadow@Q}"
+    local -- message=""
+    local -- level="INFO"
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- pos=""
+    local -- pot_level=""
+
+    local -i now=$(date -u +'%s')
+    local -- log_timestamp="$(date --date=@${now} +'%Y/%m/%d %H:%M:%S %Z')"
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments: <LOG_LEVEL> <MESSAGE> [...MESSAGE]"
+        return 1
+    elif [ ${argc} -ge 2 ]; then
+        pot_level="${argv[@]:0:1}"
+        case "${pot_level@U}" in
+            "TRACE" | "DEBUG" | "INFO" | "WARN" | "WARNING" | "ERROR" | "CRITICAL")
+                level="${pot_level@U}"
+                argv=(${argv[@]:1})
+                ;;
+            *)
+                level="INFO"
+                ;;
+        esac
+    fi
+
+    # unset IFS
+    export IFS=$'\x20'
+
+    message=$(builtin printf '%s ' ${argv[@]} | /opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin/sed -E 's/\s+$//g')
+    local -- message_prefix="[${level@U}] [${log_timestamp}]"
+    local -a message_parts=("${message_prefix}" "${message}")
+
+    local -- log_output="$(builtin echo -e "${message_parts[@]}")"
+    1>&2 builtin echo -e "${log_output}"
+    1>${shell_d_internal_log_path} builtin echo -e "${log_output}"
+}
+
 if [ -s "${HOME}/.cargo/env" ] && [ -x "${HOME}/.cargo/bin/cargo" ]; then
     declare -g shell_d_rust_root_path="${HOME}/.cargo"
     declare -g shell_d_rust_bin_path="${shell_d_rust_root_path}/bin"
     declare -g shell_d_rust_env_path="${shell_d_rust_root_path}/env"
+
+    shell_d_internal_security_checks
 else
     declare -g shell_d_rust_root_path=""
     declare -g shell_d_rust_bin_path=""
@@ -618,12 +732,14 @@ else
     declare -g shell_d_python_bin_path=""
 fi
 
-declare -g shell_d_python_script="$(cat ~/.shell.d/py3/shell_d.py)"
-
-if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
-    echo "${shell_d_python_script@Q}"
-    exit 1
-fi
+#
+# declare -g shell_d_python_script="$(cat ~/.shell.d/py3/shell_d.py)"
+#
+# if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
+#     echo "${shell_d_python_script@Q}"
+#     exit 1
+# fi
+#
 
 # initialize_shell_d_core_global_vars() {
 #     if [[ ! -v shell_d_entrypoint_source_path_relative ]]; then
@@ -650,7 +766,56 @@ fi
 #     local -- X_D_PATH="${SHELL_D_PATH}/x.d"
 
 # }
+declare -gA shell_d_sh_uptime_map=()
 
+shell_d_internal_bash_uptime() {
+    local -ri uptime_seconds=$((SECONDS))
+    local -i side_effect_seconds=${uptime_seconds}
+    local -i seconds_left=${uptime_seconds}
+
+    ## 0=`        time_parts+=("$(( seconds_left / day ))d")`
+    ## 1=`        `
+    ## 2=`time_parts+=("$(( seconds_left / day ))d")`
+    ## 3=``
+    ## 4=`"$(( seconds_left / day ))d"`
+    ## 5=``
+    ## 6=`$(( seconds_left / day ))`
+    ## 7=`$(( seconds_left / `
+    ## 8=`day`
+    ## 9=` ))`
+    ## 10=``
+    ## 11=``
+    ## 12=`d`
+    ## 13=``
+    ## ^\(\s-*\)\(time_parts[+][=][(]\(\s-*\)\("\(\s-*\)\(\([^"\n]+\)\(day\|hour\|minute\|second\)\([^"\n]+\)\(\s-*\)\)\(\s-*\)\([dhms]\)"\)\(\s-*\)[)]\) → \,(let* ((time-unit (match-string 8)) (arith-display (match-string 6)) (arith-unit (match-string 12)) (tmp-var-decl (format "tmp_%s_with_time_unit=%s" time-unit arith-display)) (time-parts-new-item (match-string 4)) (time-parts-push (format "time_parts+=(\"%s\")" time-parts-new-item ))) (string-join (list tmp-var-decl (format "time_parts+=(%s)" time-parts-new-item)  ) "          \n"))
+    local -ri minute=$((60))
+    local -ri hour=$((minute * 60))
+    local -ri day=$((hour * 24))
+    local -ri days=$((day * 2))
+    local -a time_parts=()
+    local -i tmp_day=0
+    local -i tmp_hour=0
+    local -i tmp_minute=0
+    local -i tmp_second=0
+
+    if [[ ${side_effect_seconds} -ge ${day} ]]; then
+        time_parts+=("$((seconds_left / day))d")
+        seconds_left=$((side_effect_seconds % day))
+        side_effect_seconds=$(((side_effect_seconds / day) + seconds_left))
+    fi
+    if [[ ${side_effect_seconds} -ge ${hour} ]]; then
+        time_parts+=("$((seconds_left / hour))h")
+        seconds_left=$((side_effect_seconds % hour))
+        side_effect_seconds=$(((side_effect_seconds / hour) + seconds_left))
+    fi
+    if [[ ${side_effect_seconds} -ge ${minute} ]]; then
+        time_parts+=("$((seconds_left / minute))m")
+        seconds_left=$((side_effect_seconds % minute))
+        side_effect_seconds=$(((side_effect_seconds / minute) + seconds_left))
+    fi
+    time_parts+=("$((seconds_left))s")
+    printf '%s' ${time_parts[@]}
+}
 entrypoint() {
     # shell_d_sh_load_libs "${BASH_SOURCE[0]}"
 
@@ -688,7 +853,7 @@ entrypoint() {
     #	"[\\\$\\\$=\$\$]"
     #    )
 
-    export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(( SECONDS ))s][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
+    export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(shell_d_internal_bash_uptime)][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
     # # See `man bash'
     # export EXECIGNORE=""
     # export BASH_XTRACEFD
@@ -724,6 +889,9 @@ entrypoint() {
     shell_d_sh_load_source "${X_D_PATH}/emacs.sh"
 
     shell_d_sh_load_source "${STAGING_PATH}/export_shell_env_vars.sh"
+    shell_d_sh_load_source "${STAGING_PATH}/history.sh"
+    shell_d_sh_load_source "${X_D_PATH}/coreutils.sh"
+    shell_d_sh_load_source "${X_D_PATH}/py3.sh"
 
     unset s brew_path path gq
 }
@@ -1144,8 +1312,6 @@ unset entrypoint postentry
 
 umask 007
 
-declare -gr shell_d_histcmd_at_startup_finished="${HISTCMD}"
-
 declare -gir shell_d_finished_at=$(date --utc +%s)
 # <TODO: write report of new shell session at end of entrypoint.sh>
 # path: workbench/$(today)/.shell-sessions/session.pid.$$.tty.${tty_name}.$(nowdz).json
@@ -1178,3 +1344,15 @@ declare -gir shell_d_finished_at=$(date --utc +%s)
 # exec 5>&- # Close the file descriptor
 # declare -g my_tty_name=$(basename $(tty))
 # echo "${$}" > "${HOME}/.shell.d/entrypoint.${my_tty_name}.${WEZTERM_PANE}.finished"
+
+# if [[ -v SHLVL ]] && [[ "${SHLVL}" -eq 1 ]]; then
+#     declare -i shell_d_internal_subshell_level_2_exit_code=0
+#     declare -a shell_d_internal_subshell_level_2_argv=()
+#     shell_d_internal_subshell_level_2_argv=( ${gnu_bash_libexec} --init-file "${BASH_SOURCE[0]}" -l  )
+#     if ${shell_d_internal_subshell_level_2_argv[@]}; then
+#         shell_d_internal_subshell_level_2_exit_code=0
+#     else
+#         shell_d_internal_subshell_level_2_exit_code=$?
+#         1>&2 echo -e "command \x1b[1;38;2;F13976m${shell_d_internal_subshell_level_2_argv[@]}"
+#     fi
+# fi
