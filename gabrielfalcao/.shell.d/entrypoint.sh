@@ -1,4 +1,8 @@
-. ${HOME}/.bashrc.env.static
+# . ${HOME}/.bashrc.env.static
+
+# exec 5>${HOME}/.shell.d/trace.pid_$$.ppid_${PPID}.log
+# export BASH_XTRACEFD=5
+# set -x
 
 export TZ=UTC
 declare -gir shell_d_started_at=$(date --utc +%s)
@@ -137,16 +141,17 @@ shell_d_internal_security_checks() {
         fi
     done
 
-    for varname in ${shell_d_sh_env_vars_to_observe[@]}; do
-        if [[ -v refvar ]]; then
-            unset -n refvar
-        fi
-        if [[ -v "${varname}" ]]; then
-            local -I -n refvar="${varname}"
-            shell_d_internal_fn_log "INFO" "env var ${varname} is set to ${refvar[@]@Q}"
-            unset -n refvar
-        fi
-    done
+    # for varname in ${shell_d_sh_env_vars_to_observe[@]}; do
+    #     if [[ -v refvar ]]; then
+    #         unset -n refvar
+    #     fi
+    #     if [[ -v "${varname}" ]]; then
+    #         local -I -n refvar="${varname}"
+    #         shell_d_internal_fn_log "INFO" "env var ${varname} is set to ${refvar[@]@Q}"
+    #         unset -n refvar
+    #     fi
+    # done
+
 }
 shell_d_sh_history_entries_suffixed_with_entry_id_and_timestamp() {
     local -a argv=($@)
@@ -856,7 +861,6 @@ entrypoint() {
     export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(shell_d_internal_bash_uptime)][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
     # # See `man bash'
     # export EXECIGNORE=""
-    # export BASH_XTRACEFD
     xD "locale.sh"
     xD "homebrew.sh"
     xD "path.sh"
@@ -1137,119 +1141,119 @@ shell_d_sh_load_source() {
 #    local -p
 #}
 
-shell_d_dump_vars_to_file_and_stderr() {
-    local -a argv=($@)
-    local -i argc=${#argv[@]}
-    local -i index=0
-    local -i current=0
-    local -- arg=""
-    local -- name=""
-    local -- var_value=""
-    local -- var_type=""
-    local -- ty_char=""
-    local -- value=""
-    local -- declaration=""
-    local -a varnames_to_dump=()
-    local -A varname_type_char_map=()
-    local -A var_declaration_map=()
-    local -A var_value_map=()
-    local -i widest_varname=0
-    local -i widest_value=0
-    local -a dump_filename_parts=()
-
-    logfile_parts+=("bash.pid.${$}")
-    if [[ -v WEZTERM_PANE ]] && [[ "${WEZTERM_PANE}" =~ ^[0-9]+$ ]]; then
-        logfile_parts+=("wezterm.pane_id.${WEZTERM_PANE}")
-    fi
-    if [ ${argc} -eq 0 ]; then
-        shell_d_sh_log_error "[${FUNCNAME[0]} error]" "missing arguments"
-        return 1
-    fi
-
-    for index in ${!argv[@]}; do
-        current=$(($index + 1))
-        arg="${argv[$index]}"
-        if [[ -v refvar ]]; then
-            unset -n refvar
-        fi
-        if [[ -v "${arg}" ]]; then
-            if [[ -v shell_d_dumped_varname_map["${arg}"] ]]; then
-                continue
-            fi
-
-            local -I -n refvar="${arg}"
-            shell_d_dumped_varname_map["${arg}"]="${refvar}"
-            if [[ ! -v varname_type_char_map["${arg}"] ]]; then
-                varname_type_char_map["${arg}"]="${refvar@a}"
-                var_declaration_map["${arg}"]="${refvar[@]@A}"
-                var_value="${refvar[@]}"
-                var_value_map["${arg}"]="${var_value}"
-                varnames_to_dump+=("${arg}")
-                if [ ${widest_value} -lt ${#var_value} ]; then
-                    widest_value=${#var_value}
-                fi
-                if [ ${widest_varname} -lt ${#arg} ]; then
-                    widest_varname=${#arg}
-                fi
-            fi
-            unset -n refvar
-        else
-            shell_d_sh_log_error "[${FUNCNAME[0]} warning]" "var does not exist: ${arg@Q}"
-            continue
-        fi
-    done
-
-    export IFS=$'\n'
-
-    local -- declaration_flags=""
-    local -- declaration_name=""
-    local -- declaration_value=""
-    local -a declaration_values=()
-    for index in ${!varnames_to_dump[@]}; do
-        name="${varnames_to_dump[${index}]}"
-        var_value="${var_value_map[${name}]}"
-        declaration="${var_declaration_map[${name}]}"
-        declaration_flags="$(awk '{ print $2 }' <<<"${declaration}")"
-        declaration_name="$(awk '{ print(gensub(/=.*$/, "", "g", $3)) }' <<<"${declaration}")"
-        ty_char="${varname_type_char_map[${name}]}"
-        declaration_value="$(awk '{ print(gensub(/^[^=]=/, "", "g", $NF)) }' <<<"${declaration}")"
-
-        1>&2 printf '%s' $'\x1b[0m\x1b[0;38;2;115;210;22m\n'
-        1>&2 declare -p ${!arg*} ${!index*} ${!current*} ${!name*} ${!var*} ${!val*} ${!declaration*} ${!wide*} ${!dump*} ${!ty*}
-        1>&2 printf '%s' $'\x1b[0m\n'
-        if [[ -v refvar ]]; then
-            1>&2 declare -p refvar
-        fi
-
-        if [[ -v refvar ]]; then
-            unset -n refvar
-        fi
-
-        if [[ "${ty_char}" =~ [Aa] ]]; then
-            local -I -n refvar="${name}"
-            declaration_values=($(echo "${refvar[*]}"))
-        else
-            declaration_values=("${declaration_value}")
-        fi
-        local -- sed_regexp='^\s*((declare|local)\s+([-]([-]|[a-zA-Z]+))?\s*)?([a-zA-Z_]+[a-zA-Z0-9_]*)=(.*)'
-        local -- sed_replacement='\x1b[1;38;5;242m\5\x1b[1;48;5;222m\x1b[1;38;5;233m \4 \x1b[0m=\x1b[1;38;5;231m\6\x1b[0m'
-        local -- sed_command="s/${sed_regexp}/${sed_replacement}/gp"
-
-        # shell_d_sh_log_error ""
-        # shell_d_sh_log_error "${name[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${var_value[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${declaration[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${declaration_name[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${declaration_flags[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${declaration_values[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${declaration_value[@]@A}" | sed -n -E "${sed_command}"
-        # shell_d_sh_log_error "${ty_char[@]@A}" | sed -n -E "${sed_command}"
-        # 1>&2 echo -en "\x1b[0m"
-        # shell_d_sh_log_error ""
-        # TODO: use bash variable parser
-
-    done
-}
+#shell_d_dump_vars_to_file_and_stderr() {
+#    local -a argv=($@)
+#    local -i argc=${#argv[@]}
+#    local -i index=0
+#    local -i current=0
+#    local -- arg=""
+#    local -- name=""
+#    local -- var_value=""
+#    local -- var_type=""
+#    local -- ty_char=""
+#    local -- value=""
+#    local -- declaration=""
+#    local -a varnames_to_dump=()
+#    local -A varname_type_char_map=()
+#    local -A var_declaration_map=()
+#    local -A var_value_map=()
+#    local -i widest_varname=0
+#    local -i widest_value=0
+#    local -a dump_filename_parts=()
+#
+#    logfile_parts+=("bash.pid.${$}")
+#    if [[ -v WEZTERM_PANE ]] && [[ "${WEZTERM_PANE}" =~ ^[0-9]+$ ]]; then
+#        logfile_parts+=("wezterm.pane_id.${WEZTERM_PANE}")
+#    fi
+#    if [ ${argc} -eq 0 ]; then
+#        shell_d_sh_log_error "[${FUNCNAME[0]} error]" "missing arguments"
+#        return 1
+#    fi
+#
+#    for index in ${!argv[@]}; do
+#        current=$(($index + 1))
+#        arg="${argv[$index]}"
+#        if [[ -v refvar ]]; then
+#            unset -n refvar
+#        fi
+#        if [[ -v "${arg}" ]]; then
+#            if [[ -v shell_d_dumped_varname_map["${arg}"] ]]; then
+#                continue
+#            fi
+#
+#            local -I -n refvar="${arg}"
+#            shell_d_dumped_varname_map["${arg}"]="${refvar}"
+#            if [[ ! -v varname_type_char_map["${arg}"] ]]; then
+#                varname_type_char_map["${arg}"]="${refvar@a}"
+#                var_declaration_map["${arg}"]="${refvar[@]@A}"
+#                var_value="${refvar[@]}"
+#                var_value_map["${arg}"]="${var_value}"
+#                varnames_to_dump+=("${arg}")
+#                if [ ${widest_value} -lt ${#var_value} ]; then
+#                    widest_value=${#var_value}
+#                fi
+#                if [ ${widest_varname} -lt ${#arg} ]; then
+#                    widest_varname=${#arg}
+#                fi
+#            fi
+#            unset -n refvar
+#        else
+#            shell_d_sh_log_error "[${FUNCNAME[0]} warning]" "var does not exist: ${arg@Q}"
+#            continue
+#        fi
+#    done
+#
+#    export IFS=$'\n'
+#
+#    local -- declaration_flags=""
+#    local -- declaration_name=""
+#    local -- declaration_value=""
+#    local -a declaration_values=()
+#    for index in ${!varnames_to_dump[@]}; do
+#        name="${varnames_to_dump[${index}]}"
+#        var_value="${var_value_map[${name}]}"
+#        declaration="${var_declaration_map[${name}]}"
+#        declaration_flags="$(awk '{ print $2 }' <<<"${declaration}")"
+#        declaration_name="$(awk '{ print(gensub(/=.*$/, "", "g", $3)) }' <<<"${declaration}")"
+#        ty_char="${varname_type_char_map[${name}]}"
+#        declaration_value="$(awk '{ print(gensub(/^[^=]=/, "", "g", $NF)) }' <<<"${declaration}")"
+#
+#        1>&2 printf '%s' $'\x1b[0m\x1b[0;38;2;115;210;22m\n'
+#        1>&2 declare -p ${!arg*} ${!index*} ${!current*} ${!name*} ${!var*} ${!val*} ${!declaration*} ${!wide*} ${!dump*} ${!ty*}
+#        1>&2 printf '%s' $'\x1b[0m\n'
+#        if [[ -v refvar ]]; then
+#            1>&2 declare -p refvar
+#        fi
+#
+#        if [[ -v refvar ]]; then
+#            unset -n refvar
+#        fi
+#
+#        if [[ "${ty_char}" =~ [Aa] ]]; then
+#            local -I -n refvar="${name}"
+#            declaration_values=($(echo "${refvar[*]}"))
+#        else
+#            declaration_values=("${declaration_value}")
+#        fi
+#        local -- sed_regexp='^\s*((declare|local)\s+([-]([-]|[a-zA-Z]+))?\s*)?([a-zA-Z_]+[a-zA-Z0-9_]*)=(.*)'
+#        local -- sed_replacement='\x1b[1;38;5;242m\5\x1b[1;48;5;222m\x1b[1;38;5;233m \4 \x1b[0m=\x1b[1;38;5;231m\6\x1b[0m'
+#        local -- sed_command="s/${sed_regexp}/${sed_replacement}/gp"
+#
+#        # shell_d_sh_log_error ""
+#        # shell_d_sh_log_error "${name[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${var_value[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${declaration[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${declaration_name[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${declaration_flags[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${declaration_values[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${declaration_value[@]@A}" | sed -n -E "${sed_command}"
+#        # shell_d_sh_log_error "${ty_char[@]@A}" | sed -n -E "${sed_command}"
+#        # 1>&2 echo -en "\x1b[0m"
+#        # shell_d_sh_log_error ""
+#        # TODO: use bash variable parser
+#
+#    done
+#}
 xD() {
     export PS4=''
     local -a path_list=($@)
