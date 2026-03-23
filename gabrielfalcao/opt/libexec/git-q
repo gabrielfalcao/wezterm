@@ -129,12 +129,19 @@ files_to_git_add=(
 
 if [ ${#files_to_git_add[@]} -eq 0 ]; then
     files_to_git_add=(
+        $(git status --porcelain | grep -E -v '[?][?]' | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath")
+
+    )
+fi
+
+if [ ${#files_to_git_add[@]} -eq 0 ]; then
+    files_to_git_add=(
         $(git status --porcelain | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath")
     )
 fi
 
 files_to_git_remove=(
-    $(git status --porcelain | grep -E '^([D]|[[:space:]][D])' | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath")
+    $((git status --porcelain | grep -E '^([D]|[[:space:]][D])' ; echo) | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath")
 )
 declare -g extension=''
 declare -g ext=''
