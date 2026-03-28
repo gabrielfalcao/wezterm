@@ -1,11 +1,32 @@
 (setq-default force-load-messages t)
 (setq-default debug-on-error t)
+(defcustom
+  $font-family$
+  "JetBrains Mono"
+  "default font family used in `~/.emacs.d/c/ui.el'"
 
-(progn ; font
-  ;; (setq-default $font-family$ "JetBrains Mono")
-  ;; (setq-default $font-size$ "14")
-  ;; (setq-default $font-name$ (string-join (list $font-family$ $font-size$) "-"))
-  (setq-default $font-name$ "JetBrains Mono-14"))
+  :type 'string
+  :group 'emacs.d.c
+  :tag "default font-family used across `~/.emacs.d/c'"
+  )
+(defcustom
+  $font-size$
+  16
+  "default font size used in `~/.emacs.d/c/ui.el'"
+
+  :type 'natnum
+  :group 'emacs.d.c
+  :tag "default font-size used across `~/.emacs.d/c'"
+  )
+
+;;(setq-default $font-name$
+;;	      (string-join (mapcar (lambda (item)
+;;				     (format "%s" item))
+;;						 (list $font-family$ $font-size$))
+;;					 "-"))
+;;
+(setq-default $font-name$ "JetBrains Mono-16")
+
 
 (setq-default warning-minimum-level
               (setq-default warning-minimum-log-level :debug))
@@ -80,7 +101,7 @@
 (progn
   (add-to-list 'load-path "~/.emacs.d/3pty")
   (add-to-list 'load-path "~/.emacs.d/c")
-  (safe-load-library "boot")
+  (load-file "~/.emacs.d/c/boot.el")
   (safe-load-library "elfmt"))
 
 (custom-set-faces
@@ -97,4 +118,9 @@
 (setq-default debug-on-error nil)
 (put 'downcase-region 'disabled nil)
 
-(disable-bars)
+(load-file (expand-file-name "~/.emacs.d/c/staging/write-to-minibuffer.el"))
+
+(condition-case err
+    (disable-bars)
+  (error
+   (c-message "failed to `disable-bars': %S" err)))
