@@ -1,0 +1,298 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_title="${script_name/%.sh/}"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -a files_to_check=()
+declare -i exit_code=0
+
+declare -- error_prefix_color_rgb="239;41;41";
+declare -- error_color_rgb="204;0;0";
+declare -- warn_prefix_color_rgb="252;373;62"
+declare -- warn_color_rgb="245;121;20"
+declare -- info_prefix_color_rgb="114;159;207"
+declare -- info_color_rgb="52;101;164"
+declare -- debug_prefix_color_rgb="138;226;52";
+declare -- debug_color_rgb="115;210;22";
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+process_argv() {
+    local -i current=0
+    local -i index=0
+    local -- arg=""
+    local -i failed=0
+
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+
+        if [ ! -f "${arg}" ]; then
+            error_prefixed "[error]" "not a regular file: ${arg@Q}"
+            failed=$(( $failed + 1 ))
+        elif [ ! -s "${arg}" ]; then
+            warn_prefixed "[warn]" "ignoring empty file: ${arg@Q}"
+        else
+            files_to_check+=( "${arg}" )
+        fi
+    done
+    repl sane
+}
+
+check_file() {
+    unset IFS
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]}]" "missing arguments"
+        return 1
+    elif [ ${argc} -lt 3 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]}]" "takes exactly 3 arguments, received ${argc}"
+        return 1
+    fi
+
+    local -i files_pos=${argv[0]}
+    local -i files_len=${argv[1]}
+    local -- analysis_target="${argv[@]:2}"
+
+    if [ -z "${analysis_target}" ]; then
+        error_prefixed "[${script_title} error]" "missing argument"
+        return 1
+    elif [ ! -f "${analysis_target}" ]; then
+        error_prefixed "[${script_title} error]" "file does not exist"
+        return 1
+    elif [ ! -r "${analysis_target}" ]; then
+        error_prefixed "[${script_title} error]" "file is not readable"
+        return 1
+    elif [ ! -s "${analysis_target}" ]; then
+        error_prefixed "[${script_title} error]" "file is empty"
+        return 1
+    fi
+    export IFS=$'\n'
+    local -a lines=( $(cat "${analysis_target}") )
+    local -i total_lines=${#lines[@]}
+    local -A passed_lines=()
+    local -A failed_lines=()
+    local -i current_line=0
+    local -i last_passed_line=0
+    local -i last_failed_line=0
+    local -i exit_code=0
+    local -- working_file=$(mktemp)
+    local -- stderr_file=$(mktemp)
+    local -- stderr=""
+    local -- stdout_file=$(mktemp)
+    local -- stdout=""
+    local -A uniq_errors=()
+    local -A errors_shown=()
+    local -a line_column_error_ctx=()
+    local -i widest_line_length=0
+    info_prefixed "[checking file ${files_pos}/${files_len}]" "${path}"
+    info_prefixed "[checking lines ${current_line}-${total_lines}]" "starting"
+    stderr_regex_pattern="^\s*${working_file//\//\\\/}:([0-9]+):([0-9]+):\s(.*)\$"
+    stderr_regex_replace="\n\1\n\2\n\3\n"
+    stderr_regex_sed_command="/${stderr_regex_pattern}/{s/${stderr_regex_pattern}/${stderr_regex_replace}/gp};t success q1;:success q0"
+    # stderr_regex_pattern="^\s*${working_file//\//\\\/}:([0-9]+):([0-9]+):\s(.*)\$"
+    # stderr_regex_replace="column \2 \3"
+    # stderr_regex_sed_command="/${stderr_regex_pattern}/{s/${stderr_regex_pattern}/${stderr_regex_replace}/gp};t success q1;:success q0"
+    local -i widest_line_length=0
+
+    local -i ctx_lineno=0
+    local -i ctx_colno=0
+    local -- error_string=0
+
+    until [ ${current_line} -eq ${total_lines} ]; do
+        local -- singleline=${lines[$current_line]}
+        if [ ${#singleline} -gt ${widest_line_length} ]; then
+            widest_line_length=${#singleline}
+        fi
+        current_line=$(( $current_line + 1 ))
+        info_prefixed "[checking lines ${current_line}-${total_lines}]" "shfmt"
+        1>&2 echo -en "\x1b[A\r"
+
+        1>${working_file} builtin printf '%s\n' "${lines[@]:0:${current_line}}"
+        if ! 2>${stderr_file} 1>${stdout_file} ${HOME}/go/bin/shfmt "${working_file}"; then
+            exit_code=$?
+            stderr=$(cat ${stderr_file})
+            line_column_error_ctx=($(sed -n -E "${stderr_regex_sed_command}" <<< "${stderr}"))
+            ctx_lineno=${line_column_error_ctx[@]:0:1}
+            ctx_colno=${line_column_error_ctx[@]:1:1}
+            error_description=${line_column_error_ctx[@]:2}
+            if [[ ! -v uniq_errors["${error_description}"] ]]; then
+                uniq_errors+=(["${error_description}"]="${ctx_lineno}:${ctx_colno}")
+            fi
+            last_failed_line=${current_line}
+            failed_lines+=([${current_line}]="${stderr}")
+            warn_prefixed "[checking lines ${current_line}-${total_lines}]" "shfmt failed"
+            1>&2 echo -en "\x1b[A\r"
+            continue
+            # 1>&2 echo -en "\x1b[A\r"
+        fi
+
+        info_prefixed "[checking lines ${current_line}-${total_lines}]" "/bin/sh"
+
+        if ! 2>${stderr_file} 1>${stdout_file} /bin/sh "${working_file}"; then
+            exit_code=$?
+            stderr=$(sed -n -E "${stderr_regex_sed_command}" "${stderr_file}")
+            last_failed_line=${current_line}
+            failed_lines+=([${current_line}]="${stderr}")
+            1>&2 echo -en "\x1b[A\r"
+            warn_prefixed "[checking lines ${current_line}-${total_lines}]" "sh failed"
+        else
+            last_passed_line=${current_line}
+            passed_lines+=([${current_line}]="$(builtin printf '%s\n' "${lines[@]:0:${current_line}}")")
+            1>&2 echo -en "\x1b[A\r"
+            debug_prefixed "[checking lines ${current_line}-${total_lines}]" "passed"
+        fi
+    done
+
+    if [ ${last_passed_line} -eq ${total_lines} ]; then
+        debug_prefixed "[checking file ${files_pos}/${files_len}]" "finished successfully"
+    else
+        error_prefixed "[checking file ${files_pos}/${files_len}]" "${#failed_lines[@]} errors"
+        # local -i prefix_length=$(( ${#total_lines} + ${widest_line_length} ))
+
+        for lineno in $(seq 1${total_lines}); do
+            local -- prefix="line ${lineno}"
+            if [[ -v failed_lines[$lineno] ]]; then
+                local -- stderr="${failed_lines[$lineno]}"
+                line_column_error_ctx=($(sed -n -E "${stderr_regex_sed_command}" <<< "${stderr}"))
+                ctx_lineno=${line_column_error_ctx[@]:0:1}
+                ctx_colno=${line_column_error_ctx[@]:1:1}
+                error_description=${line_column_error_ctx[@]:2}
+
+                if [[ -v errors_shown["${error_description}"] ]]; then
+                    continue
+                else
+                    errors_shown+=(["${error_description}"]="${ctx_lineno}:${ctx_colno}")
+                fi
+
+                # prefix=$(printf '%*sline %s %*s column %-*s' ${#total_lines} '' ${#widest_line_length} ${ctx_lineno} ${#widest_line_length} ${ctx_colno})
+
+                prefix=$(printf 'line %*s column %-*s' ${#total_lines} ${ctx_lineno} ${#widest_line_length} ${ctx_colno})
+                error_prefixed "${prefix}" "${error_description}"
+                local -- line_full=${lines[$(( ${ctx_lineno} - 1 ))]}
+                # export IFS=$'\n'
+                unset IFS
+                local -- line_parts=($(sed -E "s/^(.{${ctx_colno}})(.)(.*)\$/\n\1\n\2\n\3\n/g" <<< "${line_full}" ))
+                # error_prefixed "${prefix}" "\x1b[1;38;5;231m${#line_full}\x1b[0m"
+                # 1>&2 echo -e "${line_parts[@]@A}"
+                # break
+                # warn_prefixed "stderr" "${stderr}"
+
+            # elif [[ -v passed_lines[$lineno] ]]; then
+            #     warn_prefixed "${prefix}" "ok"
+            fi
+        done
+    fi
+    unset IFS
+}
+
+main() {
+    local -- path=""
+    local -i index=0
+    local -i current=0
+    local -i total_files=${#files_to_check[@]}
+    for index in ${!files_to_check[@]}; do
+        current=$(( $index + 1 ))
+        path="${files_to_check[$index]}"
+        check_file "${current}" "${total_files}" "${path}"
+    done
+}
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    repl no echo
+    if process_argv ${argv[@]}; then
+        main
+    fi
+    repl sane
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

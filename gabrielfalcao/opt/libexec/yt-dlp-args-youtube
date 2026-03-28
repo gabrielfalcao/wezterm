@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+declare -i code=-1
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+# --merge-output-format
+declare -a yt_dlp_args_main=(
+    # '-t'
+    # 'mkv'
+    '--retries'
+    '37'
+    '--continue'
+    '--mtime'
+    '--write-info-json'
+    '--write-subs'
+    '--write-auto-subs'
+    '--write-playlist-metafiles'
+    '--write-thumbnail'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+    # '--console-title'
+    # '--write-pages'
+    '--sub-format'
+    'srt'
+    '--js-runtimes'
+    'deno:"${HOME}/.deno/bin/deno"'
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v25.8.1/bin/node"'
+
+    '--js-runtimes'
+    'bun:"${HOME}/.bun/bin/bun"'
+
+    '--cookies'
+    "${HOME}/.config/yt-dlp.youtube.cookies.txt"
+
+    # '--recode-video'
+    # 'mkv'
+
+    # '--force-keyframes-at-cuts'
+
+    # '-o'
+    # '"test'
+    # 'video.%(ext)s"'
+
+    # '--embed-subs'
+    # '--embed-thumbnail'
+    # '--embed-chapters'
+    # '--embed-info-json'
+)
+echo "${yt_dlp_args_main[*]}"

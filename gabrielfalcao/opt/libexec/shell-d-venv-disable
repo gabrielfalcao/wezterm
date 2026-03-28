@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+    1>/dev/null 2>/dev/null stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -a stdin_lines=()
+declare -i stdin_line_count=0
+
+# has_params "boolean flag" - .i.e.:  "(( ${has_params} ))"
+#
+# "false' if the sum of ${argc} + ${stdin_line_count} is 0
+# otherwise, otherwise 1 (or any positive integer: true)
+declare -i has_params=$((argc))
+has_params=$((argc + stdin_line_count))
+
+declare -i code=0
+
+declare -i current=0
+
+declare -i index=0
+declare -- arg=''
+declare -- param=''
+
+declare -i next_index=0
+declare -- next_arg=''
+declare -- next_param=''
+
+declare -i skip_next=0
+
+declare -i lineno=0
+declare -i line_number=0
+declare -- line=''
+
+declare -- argument=''
+declare -- field=''
+declare -- key=''
+declare -- name=''
+declare -- path=''
+declare -- value=''
+
+
+declare -- regex=""
+declare -- minor_regex=""
+
+
+
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+# # minor_regex="$(echo -n {6..16} | sed -E 's/\s+/|/g; s/^([0-9|]+)$/(\1)?/g')"
+# minor_regex="$(echo -n {6..16} | sed -E 's/\s+/|/g; s/^([0-9|]+)$/(\1)?/g')"
+# declare -p minor_regex regex
+#
+# echo
+#
+
+minor_regex="([6-9]|1[0-6])"
+regex=".*/(i?python|pip)(3([.]${minor_regex})?)?"
+
+declare -- shell_script="";
+
+shell_script=$'#!/usr/bin/env bash
+
+set -umeTE;
+set +f;
+set -o pipefail;
+
+export IFS=\x24\x27\x5c\x6e\x27;
+
+declare -a argv=( \x24\x7b\x40\x7d )
+declare -i argc=\x24\x7b\x23argv\x5b\x40\x5d\x7d
+
+
+declare -gr    path=\x22\x24{argv[@]}\x22
+declare -gr abspath=\x22\x24(path canon \x22\x24{path}\x22)\x22;
+declare -gr    dereference=\x24\x22\x24(gstat -c \x27%N\x27 \x22\x24{path}\x22)\x22
+declare -gr    kind=\x24\x22\x24(gstat -c \x27%F\x27 \x22\x24{path}\x22)\x22
+
+echo \x22\x24{kind} \x24{dereference} to \x24{abspath}\x22
+
+if [ -L "${path}" ]; then
+    chmod a-x "${path}"
+fi
+chmod a-x "${abspath}"
+
+'
+
+
+declare -- find_exec_script_path="$(mktemp).sh"
+1>${find_exec_script_path} echo "${shell_script}"
+chmod a+x "${find_exec_script_path}"
+#
+#
+#if ! echo "${shell_script}" | shfmt-o > /dev/null; then
+#    code=$?
+#fi
+#
+#if [ ${code} -ne 0 ]; then
+#    exit ${code}
+#fi
+#
+#
+#echo -en "\x1b[2J\x1b[3J\x1b[H"
+#
+#unset PS2 PS3 PS4
+#set -x
+
+find -P ~/opt/libexec -mindepth 1 -maxdepth 1 -type l -regextype egrep -regex "${regex}" -exec "${find_exec_script_path}" '{}' \;

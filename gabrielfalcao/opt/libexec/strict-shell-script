@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -a stdin_lines=()
+declare -i stdin_line_count=0
+
+# has_params "boolean flag" - .i.e.:  "(( ${has_params} ))"
+#
+# "false' if the sum of ${argc} + ${stdin_line_count} is 0
+# otherwise, otherwise 1 (or any positive integer: true)
+declare -i has_params=$((argc))
+has_params=$((argc + stdin_line_count))
+
+declare -i code=0
+
+declare -i current=0
+
+declare -i index=0
+declare -- arg=''
+declare -- param=''
+
+declare -i next_index=0
+declare -- next_arg=''
+declare -- next_param=''
+
+declare -i skip_next=0
+
+declare -i lineno=0
+declare -i line_number=0
+declare -- line=''
+
+declare -- argument=''
+declare -- field=''
+declare -- key=''
+declare -- name=''
+declare -- path=''
+declare -- value=''
+
+declare -- stderr="$(mktemp)"
+declare -a bash_params=()
+declare -a code_lines=()
+
+declare -- varname_regexp_pattern='[a-zA-Z_]+[a-zA-Z0-9_]*'
+declare -- varname_regexp_group="(${varname_regexp_pattern})"
+declare -- varname_regexp="^${varname_regexp_pattern}\$"
+declare -- value_regexp_group="((${varname_regexp_pattern}+|[^[:space:]\n]+|[\\][[:space:]\n])+)"
+declare -- variable_assignment_regexp="^[--]${varname_regexp}=${value_regexp_group}\$"
+
+declare -a escapes=()
+declare -a quote_variants_esc=(
+    # '"'    > "
+    '\x22' # '"'
+
+    # "'"    > '
+    '\x27' # "'"
+
+    # '`'    > `
+    '\x60' # '`'
+)
+
+export IFS=$'\n'
+declare -a quote_variants=()
+
+# quote_variants=( $(for value in ${quote_variants_esc[@]}; do echo -e "${value}"; done))
+
+quote_variants=(
+    $(printf '\n%s\n' ${quote_variants_esc[@]})
+)
+
+declare -r lax_varname_regexp_pattern='[a-zA-Z_]*[a-zA-Z0-9_]*'
+declare -r varname_regexp_pattern='[a-zA-Z_]+[a-zA-Z0-9_]*'
+declare -r lax_varname_regexp_group="(${lax_varname_regexp_pattern})"
+declare -r varname_regexp_group="(${varname_regexp_pattern})"
+
+make_regexp_match_variable_containing() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -a group_members=()
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]}:${LINENO[0]}]" "missing arguments"
+        return 1
+    fi
+
+    local -- regexp_start='^([[:space:]]*)((declare|local)[[:space:]]+([-]([-]|[a-zA-Z]+)[[:space:]]+))?'
+    local -- regexp_end='=(.*)$'
+    local -- regexp_middle=""
+    if [ ${#group_members[@]} -gt 0 ]; then
+        export IFS=$'|'
+        local -- regexp_group="($(echo "${group_members[*]}"))"
+        regexp_middle="${lax_varname_regexp_pattern}${regexp_group}${lax_varname_regexp_pattern}"
+    else
+        regexp_middle="${varname_regexp_pattern}"
+    fi
+    export IFS=$''
+
+}
+
+
+for index in ${!argv[@]}; do
+    current=$(($index + 1))
+    arg="${argv[$index]}"
+    case "${arg}" in
+        -h | --help)
+            1>&2 echo -e "HELP"
+            ;;
+        *) ;;
+    esac
+done
+
+1>&2 echo "\${variable_assignment_regexp}"
+echo "${variable_assignment_regexp}"
+
+exit 0
+
+#####
+#####
+###### <ARGV>
+#####for index in ${!argv[@]}; do
+#####    current=$((${index} + 1))
+#####    arg="${argv[${index}]}"
+#####
+#####    if [[ "${arg}" =~ ${variable_assignment_regexp} ]]; then
+#####
+#####        field=$(sed -E "s/${variable_assignment_regexp}/")
+#####    else
+#####        case "${arg}" in
+#####            -e | --env) ;;
+#####            --*=*)
+#####                1>&2 echo -e "HELP"
+#####                ;;
+#####            *) ;;
+#####        esac
+#####    fi
+#####done
+###### </ARGV>
+#####
+###### <STDIN>
+#####stdin_lines=()
+#####stdin_line_count=0
+#####
+#####if [ ! -t 0 ]; then
+#####    export IFS=$'\n'
+#####    while read line; do
+#####        if ! stdin_lines+=("${line}"); then
+#####            continue
+#####        fi
+#####    done </dev/stdin
+#####elif [ ${#code_lines[@]} -eq 0 ]; then
+#####    1>&2 echo -e "[${script_name} error]" 'stdin is a tty and code not provided via command-line'
+#####    exit 1
+#####fi
+#####stdin_line_count=${#stdin_lines[@]}
+#####has_params=$((argc + stdin_line_count))
+###### </STDIN>
+#####
+#####export IFS=$'\n'
+#####
+#####if ! ((${has_params})); then
+#####    1>&2 echo "[${script_name} error] missing command-line arguments (or stdin data)"
+#####    exit 1
+#####fi
+#####

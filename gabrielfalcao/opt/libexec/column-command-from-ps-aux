@@ -1,0 +1,9 @@
+#!/usr/bin/env gawk -f
+
+{
+    result = "";
+    for (i=11;i<NF;i++) {
+        result = sprintf("%s%s%s", result, $i, FS)
+    }
+        print(result)
+}

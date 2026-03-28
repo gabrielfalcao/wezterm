@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+# unset IFS
+# export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -a ps_field_names=(
+    '%cpu'
+    '%mem'
+    'acflag'
+    'acflg'
+    'args'
+    'blocked'
+    'comm'
+    'command'
+    'cpu'
+    'cputime'
+    'etime'
+    'f'
+    'flags'
+    'gid'
+    'group'
+    'inblk'
+    'inblock'
+    'jobc'
+    'ktrace'
+    'ktracep'
+    'lim'
+    'login'
+    'logname'
+    'lstart'
+    'majflt'
+    'minflt'
+    'msgrcv'
+    'msgsnd'
+    'ni'
+    'nice'
+    'nivcsw'
+    'nsignals'
+    'nsigs'
+    'nswap'
+    'nvcsw'
+    'nwchan'
+    'oublk'
+    'oublock'
+    'p_ru'
+    'paddr'
+    'pagein'
+    'pcpu'
+    'pending'
+    'pgid'
+    'pid'
+    'pmem'
+    'ppid'
+    'pri'
+    'prsna'
+    'pstime'
+    'putime'
+    're'
+    'rgid'
+    'rgroup'
+    'rss'
+    'ruid'
+    'ruser'
+    'sess'
+    'sig'
+    'sigmask'
+    'sl'
+    'start'
+    'stat'
+    'state'
+    'stime'
+    'svgid'
+    'svuid'
+    'tdev'
+    'time'
+    'tpgid'
+    'tsess'
+    'tsiz'
+    'tt'
+    'tty'
+    'ucomm'
+    'uid'
+    'upr'
+    'user'
+    'usrpri'
+    'utime'
+    'vsize'
+    'vsz'
+    'wchan'
+    'wq'
+    'wqb'
+    'wql'
+    'wqr'
+    'xstat'
+)
+declare -a requested_pids=()
+declare -A pid_to_parent_pid=()
+declare -A parent_pid_to_pid=()
+declare -A args_to_pid=()
+declare -A pid_to_args=()
+declare -gar base_fields=(ppid pid)
+declare -gA ps_axo_output_by_pid=()
+
+field_name_to_varname() {
+
+    local -a argv=(${@})
+    local -i arg_count=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -i error=0
+
+    local -- error_msg=""
+    local -- field_name=""
+
+    case "${arg_count}" in
+        0)
+            error_msg=$(printf "missing argument: <FIELD_NAME>")
+            error=$((arg_count + 1))
+            ;;
+        1)
+            field_name="${argv[@]:0:1}"
+            error=0
+            ;;
+        *)
+            error_msg="too many arguments; function takes exactly 1 argument (FIELD_NAME), got ${arg_count}: ${argv[@]@Q}"
+            error=$((arg_count + 1))
+            ;;
+    esac
+
+    if (($error)); then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "${error_msg}"
+        return ${error}
+    fi
+
+    printf '%s\n' "$(sed -E 's/[^a-zA-Z0-9_]+/_/g' <<< "${field_name}")"
+}
+process_argv() {
+    if [ ${argc} -eq 0 ]; then
+        requested_pids=( $(ps axo pid) )
+    fi
+
+    # if [ ${argc} -eq 0 ]; then
+    #     1>&2 echo -e "[${script_name} error]" "missing arguments"
+    #     return 1
+    # fi
+    #
+    # for index in ${!argv[@]}; do
+    #     current=$(($index + 1))
+    #     arg="${argv[$index]}"
+    #     case "${arg}" in
+    #         -h | --help)
+    #             1>&2 echo -e "HELP"
+    #             ;;
+    #         *) ;;
+    #     esac
+    # done
+    true
+}
+main() {
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- field=""
+
+    local -a
+
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    process_argv && main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

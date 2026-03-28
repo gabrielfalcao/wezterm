@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -i first_subexpr=0
+declare -i last_subexpr=${argv[0]:-8}
+declare -a subexprs=()
+
+# 1>&2 echo -e '\n\n'
+
+# declare -p first_subexpr last_subexpr subexprs
+subexprs=( $(seq ${first_subexpr} ${last_subexpr} | sed -z  -E 's/([0-9]+)[[:space:]\\x0a]*/<subexpr:\1>\\x0a\\\1\\x0a<\\x2fsubexpr:\1>\\x0a\\x0a/g') )
+
+# 1>&2 echo -e '\n\n'
+
+# 1>&2 echo "${subexprs[@]}"
+echo "${subexprs[@]}"
+
+#gen-regexp-replacement-group-debug

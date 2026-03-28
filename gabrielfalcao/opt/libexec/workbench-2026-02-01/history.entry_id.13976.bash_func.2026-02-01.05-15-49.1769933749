@@ -1,0 +1,29 @@
+13993  @1769932656:UTC     declare -- target_file="$(which timestamp-filename)";          declare -- timed_suffix=$(slugify-string "$(gstat -c 'type: %F created: %W modified: %Y accessed: %X' "${target_file}" )");       echo "${target_file}.${timed_suffix}"
+13994  @1769932673:UTC     git st
+13995  @1769932679:UTC     git dh -- timestamp-filename
+13996  @1769932693:UTC     declare -- target_file="$(which timestamp-filename)";          declare -- timed_suffix=$(slugify-string "$(gstat -c 'type: %F created: %W modified: %Y accessed: %X' "${target_file}" )");
+13997  @1769932694:UTC     echo "${target_file}.${timed_suffix}"
+13998  @1769932885:UTC     declare -- target_path="$(which timestamp-filename)";          declare -- timed_suffix=$(gstat -c 'type: %F created: %W modified: %Y accessed: %X' "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo "${target_name}.${timed_suffix}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}"
+13999  @1769932888:UTC     cls;declare -- target_path="$(which timestamp-filename)";          declare -- timed_suffix=$(gstat -c 'type: %F created: %W modified: %Y accessed: %X' "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo "${target_name}.${timed_suffix}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}"
+14000  @1769932931:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -- timed_suffix=$(gstat -c 'type: %F created: %W modified: %Y accessed: %X' "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo "${target_name}.${timed_suffix}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}"
+14001  @1769932939:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -- timed_suffix=$(gstat -c  'type: %F created: %W modified: %Y accessed: %X' "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo "${target_name}.${timed_suffix}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}"
+14002  @1769932979:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -- timed_suffix=$(gstat -c  'type: %F created: %W modified: %Y accessed: %X' "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo -e "${target_name@Q}\n${timed_suffix@A}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}"
+14003  @1769933015:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -a timed_suffix=$(gstat -c  ' type: %F
+ created: %W
+ modified: %Y
+ accessed: %X'
+ "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo -e "${target_name@Q}\n${timed_suffix@A}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}";
+14004  @1769933051:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -a timed_suffix=$(gstat -c  ' type: %F
+ created: %W
+ modified: %Y
+ accessed: %X' \
+ "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; echo -e "${target_name@Q}\n${timed_suffix@A}";                                     echo "${timed_suffix[@]@A}"; echo "timed_suffix: ${timed_suffix} # type=${timed_suffix@a}";
+14005  @1769933108:UTC     export IFS=$'\n';cls;declare -- target_path="$(which timestamp-filename)";          declare -a timed_suffix=$(gstat -c  ' type: %F
+ created: %W
+ modified: %Y
+ accessed: %X' \
+ "${target_path}");                            declare -- target_name="$(basename "${target_path}")"; declare -a varnames=( timed_suffix target_path target_name );
+14006  @1769933114:UTC     display_vars() { local -a names=(${@}); local -i total=${#names[@]}; local -i index=0; local -- var=''; local -- varname=''; local -- value=''; local -- refvar=''; if ! (( ${total} )); then     return 1; fi;  for index in ${!names[@]}; do     current=$(( index + 1 ));     varname="${names[$index]}";     if [[ ! -v "${varname}" ]]; then         1>&2 "[${FUNCNAME[0]} error]" "variable not declared: ${varname@Q}""
+";         return 404;     fi;     declare -- refvartype="${refvar@Q}";     1>&2 "[${FUNCNAME[0]} info]" "type of \${refvar} is: ${refvartype@Q}";     1>&2 "[${FUNCNAME[0]} info]" "value \${refvartype@A} is: ${refvartype@A}";     1>&2 echo
+14007  @1769933749:UTC     declare -- mobile_workbench='';mobile_workbench="$(pwd)/workbench-$(today)"; declare -- bash_func_tmp_filename="bash_func.$(nowdz)"; declare -- bash_func_tmp_path="${mobile_workbench}/${bash_func_tmp_filename}"; mkdir -p "${mobile_workbench}" && touch "${bash_func_tmp_path}"  && pushd "${mobile_workbench}" && file  "${bash_func_tmp_filename}" && gstat -c '%F %N %W %W' "${bash_func_tmp_filename}";
+14008  @1769933794:UTC     echo "$(echo;echo;history;echo;echo)" > "${bash_func_tmp_filename}"

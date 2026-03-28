@@ -1,0 +1,86 @@
+#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
+
+# wz-parse-get-text-output: parses each effective bash history line from
+# output of ``wezterm cli get-text``, either from command-line or from
+# subprocess call. For the latter case, Accepts pane-id option to pass
+# to ``wezterm cli get-text --pane-id=<pane-id>``
+#
+# supports outputting parse result to stdout and/or writing to file
+
+import sys
+import click
+import re
+import os
+import json
+import subprocess
+
+from pathlib import Path
+from subprocess import Popen
+
+
+def popen_wezterm_cli(*args, **kwargs):
+    bin_path = shutil.which("wezterm")
+    if not bin_path:
+        raise RuntimeError(f"could not find path to executable: \x27wezterm\x27")
+
+    return bin_path
+
+
+def subprocess_wezterm_cli_get_text(
+    pane_id: int, start_line: int, **extra_popen_kwargs
+):
+    popen_prog_args = [
+        popen_wezterm_cli(),
+        "cli",
+        "get-text",
+        "--escapes",
+        f"--pane-id={pane_id}",
+        f"--start-line={start_line}",
+    ]
+    popen_initial_kwargs = dict(
+        close_fds=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        text=True,
+    )
+    popen_core_kwargs = dict(
+        args=popen_prog_args,
+    )
+    popen_base_kwargs = dict(
+        **popen_core_kwargs,
+        **popen_initial_kwargs,
+    )
+    popen_kwargs = dict(
+        **popen_base_kwargs,
+        **extra_popen_kwargs,
+    )
+    popen_kwargs.update(popen_core_kwargs)
+
+    return Popen(**popen_kwargs)
+
+#
+# # stdout_bytes, stderr_bytes = process.communicate()
+# # stdout = stderr_bytes.decode('utf-8')
+#
+# stdout, stderr = process.communicate()
+#
+# print(json.loads(stdout))
+#
+
+DEFAULT_PANE_ID=default=os.getenv("WEZTERM_PANE", None)
+
+@click.command()
+@click.option("-p", "--pane-id", type=int, default=DEFAULT_PANE_ID)
+def main(pane_id=DEFAULT_PANE_ID):
+    """
+    retrieves all output from one wezterm pane at a timex
+    """
+    pane_output_text = ""
+    start_line = -1000
+    text = subprocess_wezterm_cli_get_text(pane_id=pane_id start_line=start_line)
+
+
+
+if __name__ == "__main__":
+    main()

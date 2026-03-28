@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -umeTE;
+set +f;
+set -o pipefail
+
+declare -a argv=(${@})
+declare -i argc=${#}
+declare -i index=0;
+declare -i current=0;
+declare -- arg=""
+declare -- pos=""
+declare -- value=""
+
+declare -a shfmt_params=()
+declare -A param_map=()
+
+#for index in ${!argv[@]}; do
+#    next_index=${index};
+#    arg="${argv[${index}]}"
+#
+#    value=""
+#
+#    next_arg=""
+#    next_index=$(( index + 1 ))
+#    if [ ${next_index} -lt ${argc} ]; then
+#    next_arg="${argv[${next_index}]}"
+#fi
+#
+#    if [[ "${arg}" =~ [a-z]+=(.+)$ ]]; then
+#        value=$(sed -n -E 's/^[-][a-z0-9-]+=(.+)$/\1/gp' <<< "${arg}")
+#    elif [[ ! "${next_arg}" =~ ^([-][a-z]{1,2}|[-]{2}[a-z0-9-]+) ]]; then
+#        value="${next_arg}"
+#    fi
+#
+#    case "${arg}" in
+#        -ln | --language-dialect | -ln=* | --language-dialect=*)
+#        param_map["language-dialect"]
+#;;
+##  -l[=0], --list[=0]  list files whose formatting differs from shfmt; paths are separated by a newline or a null character if -l=0
+##  -w,     --write     write result to file instead of stdout
+##  -d,     --diff      error with a diff when the formatting differs
+##  --apply-ignore      always apply EditorConfig ignore rules
+##  --filename str      provide a name for the standard input file
+#
+##  -ln, --language-dialect str  bash/posix/mksh/bats, default "auto"
+##  -p,  --posix                 shorthand for -ln=posix
+##  -s,  --simplify              simplify the code
+#
+##  -i,  --indent uint       0 for tabs (default), >0 for number of spaces
+##  -bn, --binary-next-line  binary ops like && and | may start a line
+##  -ci, --case-indent       switch cases will be indented
+##  -sr, --space-redirects   redirect operators will be followed by a space
+##  -kp, --keep-padding      keep column alignment paddings
+##  -fn, --func-next-line    function opening braces are placed on a separate line
+##  -mn, --minify             minify the code to reduce its size (implies -s)
+#    esac
+#done
+
+#shfmt -bn -sr -fn -kp -ci --indent=4 -ln=bash $@ < /dev/stdin
+shfmt -bn  -ci --indent=4 -ln=bash ${argv[@]} < /dev/stdin

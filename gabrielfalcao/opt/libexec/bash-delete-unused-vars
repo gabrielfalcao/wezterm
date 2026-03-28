@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# TODO: tool takes a list of variable names and a path to shell script, finds and deletes all declarations of variables which are not used
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -- file_type=""
+declare -a target_files=()
+
+for index in ${!argv[@]}; do
+    current=$((${index} + 1))
+    arg="${argv[${index}]}"
+
+    file_type=''
+
+    if [ ! -e "${arg}" ]; then
+        1>&2 echo -e "[${script_name} warning]" "ignoring invalid path argument: ${arg@Q}"
+        continue
+    fi
+    if [ -f "${arg}" ]; then
+        target_files+=("$(path canon "${arg}")")
+        continue
+    else
+        file_type=$(stat -c "%F" "${arg}")
+        1>&2 echo -e "[${script_name} warning]" "ignoring ${file_type} ${arg@Q}"
+    fi
+done
+
+if [ ${#target_files[@]} -eq ]; then
+        1>&2 echo -e "[${script_name} error]" "missing argument: <PATH TO FILE>"
+    exit 1
+fi
+
+declare -gr var_declaration_regexp='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?$'
+declare -gr var_name_replacement=''
+#()(()())(())((()()()))
+
+get_vars_from_file() {
+    local -- path="${@}"
+    sed -n -E "s/${var_declaration_regexp}/${replacement}/gp" "${path}"
+}
+
+[$][{]\(arg\|key\|name\|param\|path\|stderr\|value\|current\|index\|line_number\|lineno\|next_index\|skip_next\)[}]

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+
+eval "$(ssh-agent)"
+
+ssh-add -k
+ssh-add ~/.ssh/id_gafagomo
+ssh-add ~/.ssh/gabrielteratos@gmail.com

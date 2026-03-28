@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+# '^[[:space:]]*(([0-9]+)([.][0-9]+)?)[[:space:]]+([KMGTP][B]|[b])[[:space:]]+(total|[^[:space:]]+.*])[[:space:]]*$'
+# '[[:space:]]*(([0-9]+)([.][0-9]+)?)[[:space:]]+([KMGTP][B]|[b])[[:space:]]+(total|[^[:space:]]+.*])[[:space:]]*'
+
+declare -a dua_usage_regex_parts=(
+
+    '^'
+
+    '[[:space:]]*(([0-9]+)([.][0-9]+)?)[[:space:]]+([KMGTP][B]|[b])[[:space:]]+(total|[^[:space:]]+.*])[[:space:]]*'
+
+    '$'
+
+)
+declare -- dua_usage_regex='^[[:space:]]*(([0-9]+)([.][0-9]+)?)[[:space:]]+([KMGTP][B]|[b])[[:space:]]+(total|[^[:space:]]+.*])[[:space:]]*$'
+declare -- sed_command1='s/^\\s*(([0-9]+)([.][0-9]+)?)\\s+([KMGT][B]|[b])\\s+(total|[^[:space:]]+.*])\\s*\$/\\n\\1\\n\\2\\n\\3\\n\\4\\n\\5\\n/gp'

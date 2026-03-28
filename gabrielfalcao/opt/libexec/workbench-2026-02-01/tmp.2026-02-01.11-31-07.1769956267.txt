@@ -1,0 +1,25 @@
+cls;declare -- wip_path="$(path canon ~/.shell.d/)"; declare -- wip_path_collapsed=$(path canon -f "${wip_path}"); declare -- wip_path_urlencoded="${wip_path_collapsed//\//%2f}";declare -- tmp_deep="$(pwd)/${wip_path_collapsed}";declare -- tmp_encoded="$(pwd)/${wip_path_urlencoded}"; mkdir -p "$(dirname "${tmp_deep}")"; mkdir -p "$(dirname "${tmp_encoded}")"; declare -a tmp_paths=(   "${tmp_deep}"  "${tmp_encoded}" ); echo "${tmp_paths[*]}" | xargs -Ixpathx run-string-shell-script path=xpathx <<EOF
+declare -- target="xpathx";
+
+if [ ! -e "${target}" ]; then
+mkdir -p "${target}"
+fi
+
+declare -- info="";
+declare -- collapsed="";
+
+declare -- relative="${target##$(pwd)/}";
+declare -- relative_safe="${relative}";
+
+if [ "${relative}" != "${target}" ]; then;
+    relative_safe="./${relative}"
+    collapsed="${relative_safe}"
+else
+    collapsed=$(path canon -f "${target}")
+fi;
+
+collapsed=$(path canon -f "${target}");
+info=$(gstat -c "%F created %W" "${target}")
+1>&2 echo -e "${collapsed} is a ${info}"
+
+EOF

@@ -1,0 +1,12 @@
+(let* (
+       (rgb-hex-code            (match-string 1))
+       (hex-red                 (match-string 2))
+       (hex-green               (match-string 3))
+       (hex-blue                (match-string 4))
+       (color-name              (match-string 5))
+       (color-tone              (match-string 6))
+       (ansi-truecolor-red      (match-string 10))
+       (ansi-truecolor-green    (match-string 11))
+       (ansi-truecolor-blue     (match-string 12))
+       )
+  )

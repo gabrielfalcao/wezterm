@@ -1,0 +1,1 @@
+declare -- emacs_output_prefix="$(pwd)/emacs-debug-init.$(nowdz).ppid.$$";declare -- stderr="${emacs_output_prefix}.stderr.log"; declare -- stdout="${emacs_output_prefix}.stdout.log"; 2>${stderr} 1>${stdout} /Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11 --debug-init < /dev/null

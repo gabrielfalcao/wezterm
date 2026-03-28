@@ -1,0 +1,143 @@
+#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
+
+# # WIP: ~/.shell.d/py3/ipython_init.py
+import sys
+import click
+import ast
+import os
+import json
+import inspect
+import isort
+from types import ModuleType
+from collections.abc import Iterator, Iterable
+from typing import Self, Any, T, TypeVar, List, Tuple, Union
+from itertools import chain
+from pprint import pprint, pformat
+from pathlib import Path
+
+def canon(path, parent=False):
+    if not path:
+        return path
+
+    result = Path(path).expanduser().absolute()
+    if not parent:
+        return result
+
+    return canon(result.parent)
+
+
+def base(path):
+    return os.path.splitext(canon(path).name)[0]
+
+def extension(path):
+    return os.path.splitext(canon(path).name)[1]
+
+
+import click
+
+
+@click.command()
+@click.argument("python_files", type=click.File("r"),nargs=-1)
+@click.option("-i", "--import-stmt", is_flag=True, help="output import statement")
+@click.option("-a", "--all-contents", is_flag=True, help="output import ... from")
+def main(python_files, import_stmt=False, all_contents=False):
+    """
+    parses python output from the command ``parted --list --script --python``
+
+    PYTHON_FILE: path to python file, or ``-`` for stdin
+    """
+    result = [get_code_from_file(f, import_stmt, include_import_from=all_contents) for f in python_files]
+    if import_stmt:
+        print(isort.code("\n".join(result)))
+    else:
+        items = []
+        for i in filter(bool, (l.strip() for l in flatten((l.split(',') for l in result)))):
+            if i not in items:
+                items.append(i)
+
+        print(",\n".join(items))
+
+
+
+
+class Sequence[T]:
+    "iterable or generator"
+
+class Chainable[T: Sequence[T]]:
+    ""
+
+def flatten(items: Chainable[T]) -> List[T]:
+    return list(chain((i if isinstance(i, (Iterator, Iterable)) else [i] for i in items )))
+
+def extract_exportable_nodes(nodes: Union[ast.Module, List[ast.AST]], include_import_from=False) -> List[ast.AST]:
+    if isinstance(nodes, ast.Module):
+        nodes = nodes.body
+    elif not isinstance(nodes, Iterable):
+        raise TypeError(f"nodes is neither {ast.Module} nor an iterable but a instead {type(nodes).__name__}: {repr(nodes)}")
+
+    skip_types = [ast.Import]
+    if not include_import_from:
+        skip_types.extend((ast.Import, ast.ImportFrom))
+
+    candidates = [node for node in nodes if not isinstance(node, tuple(skip_types))]
+    gen = [extract_names(node) for node in candidates]
+    debug()
+    return flatten(gen)
+
+def get_code_from_file(python_file: click.File, import_stmt=False, include_import_from=False) -> str:
+    path = Path(python_file.name)
+    opath = path
+    if path.is_file() and not extension(path.name).lstrip('.') in ('py', 'pyc'):
+        return ''
+    nodes = extract_exportable_nodes(ast.parse(python_file.read()), include_import_from=include_import_from)
+    member_comma_separated = ",".join(flatten([extract_names(m) for m in nodes if not isinstance(m, tuple(skip_types))]))
+    mod_names = []
+    if path.is_file() and base(path) != '__init__':
+        mod_names.insert(0, base(path))
+        path = canon(path.parent)
+    elif path.is_file():
+        path = canon(path.parent)
+        mod_names.insert(0, base(path))
+        path = canon(path.parent)
+
+
+    while path.is_dir() and canon(path.joinpath('__init__.py')).is_file():
+        mod_names.insert(0, base(path))
+        path = canon(path.parent)
+
+    mod_name = ".".join(mod_names)
+
+
+    if import_stmt:
+        return isort.code(f"from {mod_name} import (\n{member_comma_separated}\n)")
+    else:
+        return member_comma_separated
+
+
+
+def extract_names(item: ast.AST) -> List[str]:
+    if isinstance(item, ast.Assign):
+        return [t.id for t in item.targets]
+    elif isinstance(item, ast.ImportFrom):
+        debug()
+        return [t.id for t in item.targets]
+    else:
+        name = getattr(item, 'name', None)
+        if isinstance(name, str):
+            return [item.name]
+    return []
+
+def get_members_of_module(mod: ModuleType):
+    return [(k, v) for k, v in inspect.getmembers(mod) if getattr(v, '__module__', None) == mod.__name__]
+
+def debug(clear: bool = True):
+    if clear:
+        sys.stderr.write("\x1b[2J\x1b[3J\x1b[H")
+        sys.stderr.flush()
+
+    import ipdb, inspect
+    frame = inspect.currentframe()
+    ipdb.set_trace(frame=frame.f_back)
+
+if __name__ == '__main__':
+    main()

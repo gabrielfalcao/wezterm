@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty "${stty_args[@]}"
+}
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -- file_type=""
+declare -- full_path=""
+declare -A target_file_name_to_type_map=()
+declare -A file_name_to_path_map=()
+
+declare -r var_declaration_regexp='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?$'
+
+declare -ri nstat_keys=4
+declare -a stat_labels=(created modified accessed type)
+declare -a stat_letter=(W Y X F)
+declare -a stat_format=$(printf '%%%s\\n\n' "${stat_letter[@]}")
+
+declare -a stat_info_arrays=(
+    'stat_labels'
+    'stat_letter'
+    'stat_format'
+)
+declare -i stat_info_array_count=${#stat_info_arrays[@]}
+
+declare -a stat_values=()
+
+declare -a target_files=()
+
+validate_internals() {
+    local -i index=0
+    local -i current=0
+    local -- varname=""
+    local -- refvar=""
+    local -- var_type=""
+    local -- pos=""
+    for index in ${!stat_info_arrays[@]}; do
+        if [[ -v refvar ]] && [[ "${refvar@a}" =~ [n] ]]; then
+            unset -n refvar
+            local -- refvar=""
+        fi
+        var_type=""
+        current=$((index + 1))
+        varname="${stat_info_arrays[$index]}"
+        pos=$(printf '%*s of %s' ${#stat_info_array_count} ${current} ${argc})
+
+        if [[ ! -v "${varname}" ]]; then
+            1>&2 echo -e "[${script_name} internal error]" "variable ${varname} does not exist at all"
+            return ${current}
+        else
+            local -I -n refvar="${varname}"
+            var_type="${refvar@a}"
+            local -a info_set=(
+                $(echo -e "\x1b[1;38;5;231m[var_type]\x1b[0m\x1b[1;38;5;220m[${var_type}]\x1b[0m")
+                $(echo -e "\x1b[1;38;5;231m[varname@A]\x1b[0m\x1b[1;38;5;220m[${varname@A}]\x1b[0m")
+                $(echo -e "\x1b[1;38;5;231m[varname[@]@A]\x1b[0m\x1b[1;38;5;220m[${varname[@]@A}]\x1b[0m")
+            )
+
+            1>&2 printf "\x1b[1;38;5;154m[variable ${varname}]\x1b[0m%s\x1b[0m\n" ${info_set[@]}
+
+            if [ ${#refvar[@]} -ne ${nstat_keys} ]; then
+                1>&2 echo -e "[${script_name} internal error]" "expected ${varname} to have ${nstat_keys} items, but it has ${#refvar[@]}"
+                return ${current}
+            fi
+            local -I -n refvar="${varname}"
+            var_type="${refvar@a}"
+
+            # 1>&2 printf "\x1b[1;38;5;154m[variable ${varname}]\x1b[0m%s\x1b[1;38;5;249m${pos}\x1b[0m\n" ${info_set[@]}
+            unset -n refvar
+        fi
+    done
+}
+
+pathtimes ()
+{
+    local -- path=$(path canon "$@");
+    gstat -c "
+%W ${path}
+%Y ${path}
+" "${path}" | sed -E '/^\s*$/d'
+}
+
+process_argv() {
+    validate_internals
+    repl no echo
+
+    for index in ${!argv[@]}; do
+        current=$((${index} + 1))
+        arg="${argv[${index}]}"
+
+        stat_values=()
+        full_path=""
+        file_type=""
+
+        if [ ! -e "${arg}" ]; then
+            1>&2 echo -e "[${script_name} warning]" "ignoring invalid path argument: ${arg@Q}"
+            continue
+        else
+            full_path=$(path canon "${arg}")
+            stat_values=($(gstat -c "$(echo "${stat_format[*]}")" "${full_path}"))
+            if [ ${#stat_values[@]} -ne ${nstat_keys} ]; then
+                1>&2 echo -e "[${script_name} internal error]" "expected stat_values to have ${nstat_keys} items, but it has ${#stat_values[@]}"
+                return ${current}
+            fi
+            if [[ ! -v target_file_name_to_type_map["${arg}"] ]]; then
+                target_file_name_to_type_map["${arg}"]="${file_type}"
+                file_name_to_type_map["${arg}"]="${full_path}"
+                target_files+=("${full_path}")
+            else
+                1>&2 echo -e "[${script_name} warning]" "ignoring duplicate argument ${pos}"
+                continue
+            fi
+        fi
+    done
+    repl sane
+}
+
+main() {
+    true
+}
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    if process_argv "${argv[@]}"; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

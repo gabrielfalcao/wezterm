@@ -1,0 +1,26 @@
+
+  -d|--date)
+    --debug)
+
+  -f|--file)
+  -I[FMT]|--iso-8601)
+
+    --resolution)
+
+  -R|--rfc-email)
+
+    --rfc-3339)
+
+  -r|--reference)
+  -s|--set)
+  -u|--utc, --universal)
+    --help)
+    --version)
+
+#IyEvdXNyL2Jpbi9lbnYgYmFzaAoKZGVjbGFyZSAtYSBhcmd2PSgkQCkKZGVjbGFyZSAtaSBhcmdjPSR7IWFyZ3ZbQF19CmRlY2xhcmUgLWkgaW5kZXg9MApkZWNsYXJlIC1pIGN1cnJlbnQ9MApkZWNsYXJlIC0tIGFyZz0iIgoKaWYgWyAke2FyZ2N9IC1lcSAwIF07IHRoZW4KICAgIDE+JjIgZWNobyAtZSAiWyR7QkFTSF9TT1VSQ0VbMF19OiR7QkFTSF9MSU5FTk9bMF19XSIgIm1pc3NpbmcgYXJndW1lbnRzIgogICAgZXhpdCAxCmZpCgpmb3IgaW5kZXggaW4gJHshYXJndltAXX07IGRvCiAgICBjdXJyZW50PSQoKCRpbmRleCArIDEpKQogICAgYXJnPSIke2FyZ3ZbJGluZGV4XX0iCiAgICBjYXNlICIke2FyZ30iIGluCiAgICAgICAgLWh8LS1oZWxwKQogICAgICAgICAgICAxPiYyIGVjaG8gLWUgIkhFTFAiCiAgICAgICAgICAgIDs7CiAgICAgICAgKikKICAgICAgICAgICAgOzsKICAgIGVzYWMKZG9uZQoKCgppZiBbIC10IDEgXTsgdGhlbgogICAgZGF0ZSArIiVZLSVtLSVkLSVIJU0lUy0lWiV6IgplbHNlCiAgICBkYXRlICsiJVktJW0tJWQtJUglTSVTLSVaJXoiIHwgdHIgLWQgJ1s6c3BhY2U6XScKZmkK
+
+ → \1\2|\5)
+# (s-+)([-]([a-zA-Z]+|[[]|[]])+)(,s-+([-][-]([^=*]*|[a-z0-9-]))(=.*)?)+
+# (\1)
+# (\2(\3))
+# (\4(\5(\6))(\7))

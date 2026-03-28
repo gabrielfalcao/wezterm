@@ -1,0 +1,296 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+declare -- actual_user="$(id -un)"
+declare -- actual_uid="$(id -u)"
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+this_script_path="${script_path}/${script_name}"
+
+ps4_display() {
+    if [[ -v FUNCNAME[1] ]] && [[ -v LINENO[1] ]]; then
+        echo -n "[${FUNCNAME[1]}:${LINENO[1]}] "
+    else
+        echo -n "[${BASH_SOURCE[0]}:${BASH_LINENO[1]}] "
+    fi
+}
+export PS4='$(ps4_display) [\$?=$?] '
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -i exit_code=0
+declare -i argv_return_code=0
+declare -i stdin_return_code=0
+declare -- curdir="$PWD"
+declare -- stderr=$(mktemp)
+declare -i verbose=0
+declare -a target_paths=(
+    # /tmp
+)
+declare -a chmod_args=()
+declare -a chown_args=()
+
+declare -- prefix="[${script_name} error]"
+declare -- stat_bin=""
+declare -- error_prefix_color_rgb="239;41;41"
+declare -- error_color_rgb="204;0;0"
+
+declare -- achtung_prefix_color_rgb="245;121;0"
+declare -- achtung_color_rgb="206;92;0"
+
+declare -- warn_prefix_color_rgb="252;233;79"
+declare -- warn_color_rgb="237;212;00"
+
+declare -- info_prefix_color_rgb="52;101;164"
+declare -- info_color_rgb="114;159;207;"
+
+declare -- msg_prefix_color_rgb="186;189;182"
+declare -- msg_color_rgb="136;138;133"
+
+declare -- display_prefix_color_rgb="238;238;236"
+declare -- display_color_rgb="211;215;207"
+
+declare -- debug_prefix_color_rgb="138;226;52"
+declare -- debug_color_rgb="115;210;22"
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty "${stty_args[@]}"
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "${script_name} <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+
+achtung_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${achtung_prefix_color_rgb}m${prefix}\x1b[1;38;2;${achtung_color_rgb}m ${message}\x1b[0m"
+}
+achtung() {
+    local -- linenum="${BASH_LINENO[0]}"
+    achtung_prefixed "[achtung]  [${script_name}:${linenum}]" "${@}"
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+msg() {
+    local -- linenum="${BASH_LINENO[0]}"
+    msg_prefixed "[msg]  [${script_name}:${linenum}]" "${@}"
+}
+msg_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${msg_prefix_color_rgb}m${prefix}\x1b[1;38;2;${msg_color_rgb}m ${message}\x1b[0m"
+}
+display() {
+    local -- linenum="${BASH_LINENO[0]}"
+    display_prefixed "[display]  [${script_name}:${linenum}]" "${@}"
+}
+display_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${display_prefix_color_rgb}m${prefix}\x1b[1;38;2;${display_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ "$BASH_TRACE" = "" ] && [ "$BASH_LOGLEVEL" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+builtin hash -r
+if ! stat_bin=$(builtin type -t -P "gstat"); then
+    if ! stat_bin=$(builtin type -t -P "stat"); then
+        error_prefixed "${prefix}" "cannot find binary executable of 'stat'"
+        exit 1
+    fi
+fi
+
+stat() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- prefix="[${script_name} function ${FUNCNAME[0]} error]"
+    local -i exit_code=0
+    local -- stderr=$(mktemp)
+    local -- stdout=$(mktemp)
+    local -a message_body=()
+
+    if [ ${argc} -eq 0 ]; then
+        error_prefixed "${prefix}" "missing argument: <PATH>"
+        exit 1
+    fi
+    if ! 2>${stderr} 1>${stdout} ${stat_bin} ${argv[@]}; then
+        exit_code=$?
+        export IFS=$'\n'
+        message_body=(
+            $(2>/dev/random cat "${stderr}" || true)
+            $(2>/dev/random cat "${stdout}" || true)
+        )
+        unset IFS
+        error_message="$(printf '%s\n' "${message_body[@]}")"
+        1>&2 echo -e "${error_message}"
+        return ${exit_code}
+    else
+        cat ${stdout}
+    fi
+}
+main() {
+    local -- ty=""
+    local -- arg=""
+    local -i index=0
+    local -i current=0
+    local -- prefix="[${script_name} error]"
+    local -- permissions=''
+
+    if [ ${argc} -eq 0 ]; then
+        error_prefixed "${prefix}" "missing argument: <PATH>"
+        exit 1
+    fi
+    for index in ${!argv[@]}; do
+        current=$(( index + 1 ))
+        arg="${argv[$index]}"
+        local -- prefix="[${script_name} error in argument ${current}/${argc}]"
+
+        if [ -z "${arg}" ]; then
+            error_prefixed "${prefix}" "empty arg: ${arg@Q}"
+            exit 1
+        fi
+        if [ ! -e "${arg}" ]; then
+            error_prefixed "${prefix}" "path does not exist: ${arg@Q}"
+            exit 1
+        fi
+        path=""
+        case "${arg}" in
+            --verbose|-verbose|-v)
+                verbose=$(( verbose + ${current} ))
+                chmod_args=(
+                    -v
+                )
+                continue
+                ;;
+            --quiet|--silent|-quiet|-silent)
+                verbose=0
+                chmod_args=(
+
+                )
+                continue
+                ;;
+            *)
+                path="${arg}"
+                ;;
+        esac
+        ty=$(stat -c %F "${path}")
+        resolved_path=$(path canon "${path}")
+        resolved_ty=$(stat -c %F "${resolved_path}")
+        unset IFS
+        # path=${resolved_path}
+        case "${ty}" in
+            "directory")
+                1>&2 echo "${path@Q} is ${ty}"
+                permissions='a+rx'
+                chmod ${chmod_args[@]} "${permissions}" "${path}"
+                find ${path} -mindepth 1 -type d -exec chmod ${chmod_args[@]} "${permissions}" {} \;
+                permissions='a+r'
+                find ${path} -mindepth 1 -not -type d -exec chmod ${chmod_args[@]} "${permissions}" {} \;
+                ;;
+            *)
+                permissions='a+r'
+                chmod ${chmod_args[@]} "${permissions}" "${path}"
+
+                if [ "${ty}" != "${resolved_ty}" ]; then
+                    if [ "${resolved_ty}" == "directory" ]; then
+                        permissions='a+rx'
+                        chmod ${chmod_args[@]} "${permissions}" "${resolved_ty}"
+                        find ${resolved_path} -mindepth 1 -type d -exec chmod ${chmod_args[@]} "${permissions}" {} \;
+                        permissions='a+r'
+                        find ${resolved_path} -mindepth 1 -not -type d -exec chmod ${chmod_args[@]} "${permissions}" {} \;
+                        continue
+                    fi
+                fi
+                permissions='a+r'
+                chmod ${chmod_args[@]} "${permissions}" "${path}"
+
+
+        fi
+                ;;
+        esac
+
+    done
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

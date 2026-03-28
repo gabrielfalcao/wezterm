@@ -1,0 +1,47 @@
+diff --git a/workbench-commit-logs b/workbench-commit-logs
+index c3fc926..3606566 100755
+--- a/workbench-commit-logs
++++ b/workbench-commit-logs
+@@ -95,9 +95,21 @@ cls
+ ##### ################################################################################################################################################## #####
+ ##############################################################################################################################################################
+ 
+-declare -gr sed_regexp='^([?][?[:space:]]|[AM][[:space:]]||[[:space:]][AM])\s-(([0-9A-Z_a-z./-]+.*?)[.](log|pem|json|gz|bz2|zip|[tj]s[x]?|txt|sh|std(out|err)([.][a-zA-Z0-9]+)?))$'
+-declare -gr sed_to_string=$'\x5c2\x5cn'
+-declare -gr sed_command="s,${sed_regexp},${sed_to_string},g; t success q1; :success p"
++declare -gr sed_regexp='^([A-Z][[:space:]]|[?][?])\s-+(([0-9A-Z_a-z./-]+.*?)[.](log|pem|json|gz|bz2|zip|[tj]s[x]?|txt|sh|std(out|err)([.][a-zA-Z0-9]+)?))$'
++declare -gr subexp_start=$(sed -E 's/[^(]+//g' <<< "${sed_regexp}")
++declare -gi total_sed_regexp_subexps=$(wc -c <<< "${subexp_start}")
++declare -g  sed_to_string=$(sed-genrep-debug-groups ${total_sed_regexp_subexps})
++declare -g  sed_to_string='0: \\0\\n  1: \\1\\n  2: \\2\\n  3: \\3\\n  4: \\4\\n  5: \\5\\n  6: \\6\\n  7: \\7'
++
++# 1>&2 echo
++# 1>&2 declare -p sed_regexp
++# 1>&2 declare -p subexp_start
++# 1>&2 declare -p total_sed_regexp_subexps
++# 1>&2 echo
++# 1>&2 declare -p sed_to_string
++# exit 33
++# declare -gr sed_to_string=$'\\'
++declare -gr sed_command="s,${sed_regexp},${sed_to_string},g; t success H; :success p"
+ 
+ declare -- subshell_script=$(
+     echo -e "\n"
+@@ -114,14 +126,15 @@ trap on_exit exit;
+     echo -e 'declare -i code=0;';
+     echo -e 'set +x;'
+     # echo -e 'set -x;'
+-    echo "if git status --porcelain | 2>\${sed_stderr} sed -n -E ${sed_command@Q}; then"
++    echo "if git status --porcelain | 2>\${sed_stderr} sed --debug -n -E ${sed_command@Q}; then"
+     echo '    code=0;'
+     echo 'else'
+     echo '    code=$?;'
+     echo 'fi'
+     echo ''
+     echo 'if [ ${code} -ne 0 ]; then'
+-    echo "    1>&2 echo \"command sed -n -E '${sed_command[@]@Q}' failed with code \${code}\""
++    # echo '    echo -e "\x1b[2J\x1b[3J\x1b[H\n";'
++    echo "    1>&2 echo \"command \\\"sed -n -E ${sed_command[@]@Q}\\\" failed with code \${code}\""
+     echo "    1>&2 cat \${sed_stderr};"
+     echo '    exit ${code}'
+     echo 'fi'

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -i code=0
+
+if [ -t 0 ]; then
+    1>&2 echo -e "[error]" "stdin is a terminal"
+    exit 1
+fi
+
+awk 'BEGIN { global_idx=0; } { target_plats[global_idx]=$1; global_idx+=1; } END { for (idx=0; idx < global_idx; idx++){ if (idx==0) { printf("("); } printf("%s", target_plats[idx]); not_last=((idx+1) < global_idx); if (not_last) { printf("|"); } else { printf(")\n"); }; }; }' < /dev/stdin

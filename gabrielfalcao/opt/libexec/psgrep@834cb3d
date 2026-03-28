@@ -1,0 +1,48 @@
+#!/usr/bin/env gawk -f
+
+BEGIN {
+    IGNORECASE = 1
+    PROCINFO["sorted_in"] = "@val_str_asc"
+    # printf ("\033[2J\033[3J\033[H") > "/dev/stderr"
+    ARGC = 1
+    actual_argc=length (PROCINFO["argv"]);
+    regex_procs="sudo"
+
+    if (actual_argc > 3) {
+        regex_procs="("
+        loop_suffix="|"
+        for (i=3;i<actual_argc;i++) {
+            arg=PROCINFO["argv"][i];
+            if ((i + 1) == actual_argc) {
+                loop_suffix=")"
+            } else {
+                loop_suffix="|"
+
+            }
+            regex_procs=sprintf("%s%s%s", regex_procs, arg, loop_suffix)
+        }
+    }
+    # printf("\x1b[0m\x1b[1;38;5;220m%s\n\x1b[0m\n", regex_procs) > "/dev/stderr"
+
+}
+
+{
+    if (($2 != PROCINFO["pid"]) && ($2 != PROCINFO["ppid"]) && ($NF ~ regex_procs)) {
+        print $2
+    }
+}
+
+#END {
+#    delete varnames
+#    varnames[varname_index++] = "pid"
+#    varnames[varname_index++] = "ppid"
+#    for (key in varnames) {
+#        varname = varnames[key]
+#        value = PROCINFO[varname]
+#        printf( "PROCINFO['%s'] => '%s'\n", varname, value) > "/dev/stderr"
+#    }
+#    for (i=3;i<actual_argc;i++) {
+#        arg=PROCINFO["argv"][i];
+#        printf("\x1b[0m\x1b[1;38;5;220mPROCINFO['argv']['\x1b[1;38;5;231m%s\x1b[1;38;5;220m'] \x1b[1;38;5;231m=> \x1b[1;38;5;251m%s\x1b[0m\n", key, PROCINFO["argv"][i]) > "/dev/stderr"
+#    }
+#}

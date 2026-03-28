@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+declare -- channel="nightly-2025-09-09"
+
+declare -i line_number_start=${LINENO[0]}
+declare -a known_components=(
+    "rustc"         #  The Rust compiler and Rustdoc.
+    "cargo"         #  Cargo is a package manager and build tool.
+    "rustfmt"       #  Rustfmt is a tool for automatically formatting code.
+    "rust-std"      #  This is the Rust standard library. There is a separate rust-std component for each target that rustc supports, such as rust-std-x86_64-pc-windows-msvc. See the Cross-compilation chapter for more detail.
+    "rust-docs"     #  This is a local copy of the Rust documentation. Use the rustup doc command to open the documentation in a web browser. Run rustup doc --help for more options.
+    "rust-analyzer" #  rust-analyzer is a language server that provides support for editors and IDEs.
+    "clippy"        #  Clippy is a lint tool that provides extra checks for common mistakes and stylistic choices.
+    "miri"          #  Miri is an experimental Rust interpreter, which can be used for checking for undefined-behavior.
+    "rust-src"      #  This is a local copy of the source code of the Rust standard library. This can be used by some tools, such as rust-analyzer, to provide auto-completion for functions within the standard library; Miri which is a Rust interpreter; and Cargo’s experimental build-std feature, which allows you to rebuild the standard library locally.
+    "rust-mingw"    #  This contains a linker and platform libraries for building on the x86_64-pc-windows-gnu platform.
+    "llvm-tools"    #  This component contains a collection of LLVM tools. This component has not been stabilized and may change in the future and is provided as-is. Availability of individual LLVM tools may change over LLVM versions (including removal of specific LLVM tools), and is not subject to compiler or toolchain stability guarantees. See #85658.
+    "rustc-dev"     #  This component contains the compiler as a library. Most users will not need this; it is only needed for development of tools that link to the compiler, such as making modifications to Clippy.
+)
+declare -i line_number_end=$(( LINENO[0] - 1))
+declare -i line_number_delta=$(( line_number_end - line_number_start ))
+head -${line_number_end} "${BASH_SOURCE[0]}" | tail -${line_number_delta} | grep -E '(rust-std|rustfmt|cargo|rust-docs|rustc-dev|rustc|clippy|miri|llvm-tools)' | tee ${BASH_SOURCE[0]}.chosen
+
+declare -a chosen_components=(
+    "rustc"         #  The Rust compiler and Rustdoc.
+    "cargo"         #  Cargo is a package manager and build tool.
+    "rustfmt"       #  Rustfmt is a tool for automatically formatting code.
+    "rust-std"      #  This is the Rust standard library. There is a separate rust-std component for each target that rustc supports, such as rust-std-x86_64-pc-windows-msvc. See the Cross-compilation chapter for more detail.
+    "rust-docs"     #  This is a local copy of the Rust documentation. Use the rustup doc command to open the documentation in a web browser. Run rustup doc --help for more options.
+    "clippy"        #  Clippy is a lint tool that provides extra checks for common mistakes and stylistic choices.
+    "miri"          #  Miri is an experimental Rust interpreter, which can be used for checking for undefined-behavior.
+    "llvm-tools"    #  This component contains a collection of LLVM tools. This component has not been stabilized and may change in the future and is provided as-is. Availability of individual LLVM tools may change over LLVM versions (including removal of specific LLVM tools), and is not subject to compiler or toolchain stability guarantees. See #85658.
+    "rustc-dev"     #  This component contains the compiler as a library. Most users will not need this; it is only needed for development of tools that link to the compiler, such as making modifications to Clippy.
+)
+declare -a chosen_platforms=(
+    "apple-darwin"
+    "unknown-linux-gnu"
+    "wasip2"
+    "pc-windows-msvc"
+)
+
+declare -a chosen_architectures=(
+    "aarch64"
+    "x86_64"
+    "wasm"
+    "i686"
+    # "riscv64gc"
+    # "i586"
+)
+declare -- chosen_platforms_regexp=$(printf '%s\n' "${chosen_platforms[@]}" | stdin-lines-to-extended-regexp-group-pattern)
+declare -- chosen_architectures_regexp=$(printf '%s\n' "${chosen_architectures[@]}" | grep -E "${chosen_platforms_regexp}" | stdin-lines-to-extended-regexp-group-pattern)
+declare -- targets_regex=$(rustup target list | grep -E "${chosen_architectures_regexp}" | stdin-lines-to-extended-regexp-group-pattern)
+# declare -- targets_regex=$(rustup target list | stdin-lines-to-extended-regexp-group-pattern)

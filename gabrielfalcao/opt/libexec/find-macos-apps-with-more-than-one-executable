@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -- find_output_app_names_by_created_at=""
+declare -A application_names=()
+declare -a path_env_lines=()
+
+find_output_app_names_by_created_at=$(find /Applications -mindepth 1 -maxdepth 1 -exec gstat -c '%W {}' {} \; | sort -nr)
+# find_output_app_names_by_created_at=$(find /Applications -maxdepth 3 -path '*/Contents/MacOS' -exec find {} -maxdepth 1 -type f -executable -exec gstat -c '%W %N' \{\} \\\; \;)
+
+gawk 'BEGIN { FS="/" } { app_name=$3; exec_name=$NF; execs_by_app[app_name][app_counter[app_name]++]=exec_name;} END { for (app in execs_by_app) { total=app_counter[app]; if (total < 2 ) { continue;} path_env_add[env_lines++]=sprintf("            -a /Applications/%s/Contents/MacOS \\", app); printf("%s: %d executables\n", app, total, path_env_add); for (i=0;i<app_counter[app];i++) {printf("    %d: %s\n", i, execs_by_app[app][i]); } } print("\n\n"); for (key in path_env_add) { print(path_env_add[key])  }'

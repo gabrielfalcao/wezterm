@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+# wz-ls '.[]| select(.cwd | test(".*(tree.?sitter).*")) | {window_id,tab_id,pane_id,cwd,tty_name} | "wezterm cli set-tab-title --pane-id=\(.pane_id) --tab-id=\(.tab_id) \"tree-sitter-\(.cwd | match("^file://(((.*?)([^/]+))[/])(((.*?)([^/]*))[/]*)$") | .captures | .[7].string)\";"'
+wz-ls '.[] | {window_id,tab_id,pane_id,cwd,tty_name} | "wezterm cli set-tab-title --tab-id=\(.tab_id) \"\(.cwd | match("^file://(((.*?)([^/]+))[/])(((.*?)([^/]*))[/]*)$") | .captures | .[7].string)\";"'
+wz-ls '.[] | {window_id,tab_id,pane_id,cwd,tty_name} | "wezterm cli set-window-title --window-id=\(.window_id) \"\(.cwd | match("^file://(((.*?)([^/]+))[/])(((.*?)([^/]*))[/]*)$") | .captures | .[7].string)\";"'
+# wz-ls '.[] | {window_id,tab_id,pane_id,cwd,tty_name} | "wezterm cli activate-tab --tab-id=\(.tab_id);"'
+# wz-ls '.[] | {window_id,tab_id,pane_id,cwd,tty_name} | "wezterm cli activate-pane --pane-id=\(.pane_id);"'

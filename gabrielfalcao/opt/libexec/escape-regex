@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -- stderr_path=$(mktemp)
+on_exit() {
+    rm -f "${stderr_path}" || true
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\rAborted with Ctrl-C\x1b"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a sed_params=('-E')
+declare -a backslash_escape_group_chars=(
+    '['
+    ']'
+    '^'
+    '('
+    ')'
+)
+declare -- backslash_escape_group="($(printf '[\%s]|' ${backslash_escape_group_chars[@]} | sed -E 's/[|]$//g'))"
+declare -r sed_command="s@(.)@[\1]@g; t next q1; :next s@\[${backslash_escape_group}\]@g"
+declare -- input=""
+declare -i code=0
+
+if [ ${#} -gt 0 ]; then
+    input="$(echo "${@}")"
+elif [ ! -t 0 ]; then
+    export IFS=$'\n'
+    input="$(cat /dev/stdin)"
+else
+    1>&2 echo -e "[${script_name} error] missing regex input either via command-line argument or stdin"
+    exit 1
+fi
+
+declare -- stderr=''
+declare -- shell_command="sed ${sed_params[@]} ${sed_command@Q} <<<${input@Q}"
+declare -- shell_command_display="$(echo -en '\x60')${shell_command}$(echo -en '\x60')"
+if ! 2>${stderr_path} sed ${sed_params[@]} "${sed_command}" <<<"${input}"; then
+    code=$?
+fi
+
+parse_sed_error() {
+    local -i local_code=0
+    if ! highlight-char-at-index.gawk -v sed_command="$(sed -E 's/(^|[^\\])[\\]([^\\]|$)/\1\\\\\2/g' <<< "${sed_command}")" "${stderr_path}"; then
+        local_code=$?
+    fi
+    return ${local_code}
+}
+if [ ${code} -gt 0 ] || [ -s "${stderr_path}" ]; then
+    #stderr="$(cat "${stderr_path}")"
+    ## sed: -e expression #1, char 65: unterminated `s' command
+    #
+    #1>&2 echo "error in command ${shell_command_display}:"
+    #1>&2 echo "${stderr}"
+    parse_sed_error
+fi

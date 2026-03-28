@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+# regex-findall: simply search the given regex against optional 2nd
+# command-line argument or stdin if 2nd arg not provided
+
+import re
+import sys
+import json
+from pprint import pprint
+import click
+from click import BadParameter, UsageError
+
+
+def read_stdin():
+    if sys.stdin.isatty():
+        return ""
+
+    return "\n".join(sys.stdin.readlines())
+
+
+def compile_regexp(ctx, command, value) -> re.Pattern:
+    try:
+        return re.compile(value)
+    except Exception as err:
+        raise BadParameter(
+            f"{value} is not a valid regular expression", param_hint=[value], ctx=ctx
+        )
+
+
+@click.command()
+@click.argument("regexp", required=True, callback=compile_regexp, default=r'((?:[a-z0-9_-]+[.])+(?:org|com|net|[a-z]{2,4}))')
+@click.argument("text", default=read_stdin())
+def main(regexp, text):
+    print("\n".join(regexp.findall(text)))
+
+
+if __name__ == "__main__":
+    main()

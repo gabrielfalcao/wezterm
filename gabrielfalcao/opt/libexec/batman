@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+# (replace-regexp
+#    regexp: "\(^\s-*\)\(declare\|local\)\(\s-+\)\([-]\)\([^g[:space:]]+\)\s-+ → \,(let* ((builtin (match-string 1)) (opt (match-string 3)) (parts (list builtin " -"))) (cond ((string= opt "-") "g") (t (format "g%s" opt))))"
+#    to-string \,(regex!))
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -- arg_name=""
+declare -- arg_value=""
+declare -- language="man"
+declare -- self_lsof_p_output=$(lsof -p ${self_pid})
+declare -g fd0
+declare -A argv_path_by_index=()
+declare -a argv=(${@})
+declare -g tty_name=''
+declare -i argc=${#argv[@]}
+declare -i argv_has_readable_files=0
+declare -i parent_pid="${PPID}"
+declare -i self_pid="${$}"
+declare -i argv_path_count=0
+declare -i curdir=0
+declare -i has_tty=0
+declare -i index=0
+declare -i total_tty_fs_ok=0
+declare -i total_tty_processed=0
+declare -i total_tty_resolved=0
+declare -i total_tty_tmp=0
+declare -gA fs_ok_tty_map=()
+declare -gA resolved_tty_map=()
+declare -gA symlink_tty_map=()
+declare -ga all_tty_list=()
+declare -ga processed_tty_list=()
+
+
+
+cls() {
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+}
+
+process_argv() {
+    if [ ${argc} -ge 0 ]; then
+        for index in ${!argv[@]}; do
+            arg_value=${argv[${index}]}
+            if [ -f "${arg_value}" ] && [ -r "${arg_value}" ] && [ -s "${arg_value}" ]; then
+                argv_path_by_index[${index}]=${arg_value}
+                argv_path_count=${#argv_path_by_index[@]}
+            fi
+        done
+        if [ ${argv_has_readable_files} -lt 0 ]; then
+            argv_has_readable_files=$((argv_has_readable_files * -1))
+        fi
+        argv_has_readable_files=$((argv_has_readable_files + argv_path_count))
+    fi
+}
+
+process_tty() {
+    local -- tmp_tty=''
+    local -- resolved_tty=''
+
+    all_tty_list+=($(type -a -P tty))
+    for tmp_tty in ${all_tty_list[@]}; do
+        resolved_tty="${tmp_tty}"
+        if [ ! -x "${tmp_tty}" ]; then
+            1>&2 echo -e "skipping non-executable tty  ${tmp_tty@Q}"
+            continue
+        elif [ ! -r "${tmp_tty}" ]; then
+            1>&2 echo -e "skipping non-readable tty ${tmp_tty@Q}"
+            continue
+        elif [ ! -s "${tmp_tty}" ]; then
+            1>&2 echo -e "skipping empty tty ${tmp_tty@Q}"
+            continue
+        fi
+        if [ -L "${tmp_tty}" ]; then
+            resolved_tty=$(path canon "${tmp_tty}")
+        fi
+        if [ "${tmp_tty}" != "${resolved_tty}" ]; then
+            if [[ ! -v resolved_tty_map["${resolved_tty}"] ]]; then
+                resolved_tty_map["${resolved_tty}"]="${tmp_tty}"
+            fi
+            if [[ ! -v symlink_tty_map["${resolved_tty}"] ]]; then
+                symlink_tty_map["${tmp_tty}"]="${resolved_tty}"
+            fi
+
+            if [ ! -x "${resolved_tty}" ]; then
+                1>&2 echo -e "skipping non-executable tty  ${resolved_tty@Q}"
+                continue
+            elif [ ! -r "${resolved_tty}" ]; then
+                1>&2 echo -e "skipping non-readable tty ${resolved_tty@Q}"
+                continue
+            elif [ ! -s "${resolved_tty}" ]; then
+                1>&2 echo -e "skipping empty tty ${resolved_tty@Q}"
+                continue
+            fi
+            if [[ ! -v fs_ok_tty_map["${resolved_tty}"] ]]; then
+                fs_ok_tty_map["${resolved_tty}"]="${resolved_tty}"
+                processed_tty_list+=("${resolved_tty}")
+                continue
+            fi
+        else
+            if [[ ! -v resolved_tty_map["${tmp_tty}"] ]]; then
+                resolved_tty_map["${resolved_tty}"]="${tmp_tty}"
+            fi
+            if [[ ! -v fs_ok_tty_map["${tmp_tty}"] ]]; then
+                fs_ok_tty_map["${resolved_tty}"]="${tmp_tty}"
+                processed_tty_list+=("${resolved_tty}")
+                continue
+            fi
+        fi
+    done
+    total_tty_processed=${#processed_tty_list[@]}
+    total_tty_resolved=${#resolved_tty_map[@]}
+    total_tty_fs_ok=${#fs_ok_tty_map[@]}
+    total_tty_tmp=${#symlink_tty_map[@]}
+
+    1>&2 echo -en "\x1b[0m\x1b[1;38;5;202m"
+    1>&2 declare -p argv argc argv_path_by_index index curdir language arg_name arg_value argv_has_readable_files argv_path_count self_pid parent_pid self_lsof_p_output all_tty_list processed_tty_list fs_ok_tty_map symlink_tty_map resolved_tty_map tty_name has_tty total_tty_processed total_tty_resolved total_tty_fs_ok total_tty_tmp
+    1>&2 echo -en "\x1b[0m\n\x1b[1;38;5;222m"
+    1>&2 echo -en "\n\x1b[0m\n"
+
+    1>&2 echo -e "total_tty_fs_ok"
+    if [ ${total_tty_processed} -eq 0 ]; then
+        echo "/dev/stdin"
+        return 1
+    else
+        echo "${processed_tty_list[@]:0:1}"
+    fi
+
+}
+process_inputs() {
+    process_argv && process_tty
+}
+bat_man() {
+    cls
+    bat --paging=always --plain -l ${language} ${argv[@]} </dev/stdin
+}
+
+if [ ${argv_has_readable_files} -eq 0 ] && [ -t 0 ]; then
+    1>&2 echo -e "[${script_name} error]" "no input files were provided via command-line and stdin is a TTY"
+    exit $?
+elif process_inputs; then
+    if [ ${argv_has_readable_files} -gt 0 ] && [ -t 0 ]; then
+        bat_man
+    else
+        bat_man </dev/stdin
+    fi
+fi

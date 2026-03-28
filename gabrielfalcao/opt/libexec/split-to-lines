@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+
+unset IFS
+export IFS=$'\n'
+
+# declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+# declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -- stdin_content=""
+declare -- argv_content=""
+declare -- mixed_content=""
+
+if [ ! -t 0 ]; then
+    stdin_content="$(cat < /dev/stdin)"
+fi
+if [ ${argc} -gt 0 ]; then
+    argv_content="$(echo "${argv[*]}")"
+fi
+
+mixed_content="
+${argv_content}
+${stdin_content}
+"
+
+echo "${mixed_content}" | sed -z -E 's/[[:space:]\n]+/\n\n/g' | sed -E  '/^\s*$/d' 
+

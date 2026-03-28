@@ -1,0 +1,458 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+# export IFS=$'\n'
+
+declare -- regular_file_script_name="now-cli"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+
+declare -a argv=(${@})
+declare -i argc=${#}
+declare -- gnu_date_argv=()
+declare -- name=$(basename "$0")
+declare -- exec_path="${script_path}/${script_name}"
+declare -- actual_path=""
+
+zone() {
+    local -- prefix="${@}"
+    if [[ -v TZ ]]; then
+        echo -n "${prefix}${TZ}"
+    else
+        zone="LOCAL"
+    fi
+}
+
+actual_path=$(path canon "${0}")
+
+on_exit() {
+    true
+}
+on_ctrlc() {
+    1>&2 echo -e "\r\x1b[A\r${name} (${actual_path}) Aborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -A time_formats_by_label=()
+declare -A bash_functions_by_label=()
+declare -A label_by_alias=()
+declare -A label_by_exec_name=()
+declare -a symlink_exec_names=()
+declare -a heck_exec_name_suffixes=(
+    "kebab"
+    "camel"
+    "pascal"
+    "shouty-kebab"
+    "shouty-snake"
+    "snake"
+    "train"
+    "title"
+)
+bash_functions_by_label["unix_sod"]="unix_timestamp_start_of_day"
+
+label_by_alias["unix_sod"]="unix_sod"
+label_by_alias["unix_start_of_day"]="unix_sod"
+label_by_alias["unix_timestamp_sod"]="unix_sod"
+label_by_alias["unix_timestamp_start_of_day"]="unix_sod"
+label_by_alias["unix_ts_sod"]="unix_sod"
+label_by_alias["unix_ts_start_of_day"]="unix_sod"
+
+time_formats_by_label["fs"]="%Y-%m-%d.%H-%M-%S$(zone '.')"
+time_formats_by_label["fs2"]="%Y-%m-%d_%H-%M-%S$(zone '_')"
+time_formats_by_label["aapl"]="%Y-%m-%d at %H.%M.%S %p"
+time_formats_by_label["today"]="%Y-%m-%d"
+time_formats_by_label["hours"]="%H-%M-%S"
+time_formats_by_label["date"]="%Y-%m-%d"
+time_formats_by_label["time"]="%H-%M-%S"
+time_formats_by_label["dots"]="%Y-%m-%d.%H-%M-%S.%s"
+time_formats_by_label["datetime"]="%Y-%m-%d.%H-%M-%S"
+time_formats_by_label["unix"]="%s"
+time_formats_by_label["human"]="%Y/%m/%d %H:%M:%S$(zone ' ')"
+
+# date/time/zone (filesystem-friendly)
+label_by_exec_name["nowz"]="fs"
+label_by_exec_name["nowfs"]="fs"
+
+# date/time/zone (filesystem-friendly but less readable than `nowfs`)
+label_by_exec_name["now"]="fs2"
+
+# date/time/zone (Apple style)
+label_by_exec_name["nowaapl"]="aapl"
+
+# today
+label_by_exec_name["nowt"]="today"
+label_by_exec_name["today"]="today"
+
+# hours, minutes, seconds
+label_by_exec_name["nowh"]="hours"
+
+# unix timestamp (seconds since epoch)
+label_by_exec_name["nows"]="unix"
+
+# date/time/zone human friendly
+label_by_exec_name["nowts"]="human"
+
+# datetime
+label_by_exec_name["nowdt"]="datetime"
+label_by_exec_name["datetime"]="datetime"
+
+# $(today).$(nowh).$(nows)
+label_by_exec_name["nowds"]="dots"
+label_by_exec_name["nowdz"]="dots"
+label_by_exec_name["now-dots"]="dots"
+label_by_exec_name["now-dotz"]="dots"
+label_by_exec_name["nowdots"]="dots"
+label_by_exec_name["nowdotz"]="dots"
+
+declare -A transformation_printf_command_templates_by_exec_name=()
+declare -A transformation_exec_name_by_symlink_exec_name=()
+declare -A file_type_by_exec_path=()
+declare -a exec_path_list=()
+declare -i widest_path_len=0
+declare -i widest_type_len=0
+
+tidy_up_globals() {
+    local -- function_name=''
+    local -- current_value=''
+    local -i index=0
+    local -i current=0
+    local -- pos=""
+    local -a global_functions=()
+    local -i total_global_functions=0
+    local -a this_script_defined_functions=()
+    local -i total_this_script_defined_functions=0
+
+    export IFS=$'\n'
+    global_functions=($(declare -F | sed -n -E 's/^\s*(declare\s+[-][Ff]+\s*)\s*([a-zA-Z_]+[a-zA-Z0-9_]*)\s*([=]?(.*))?$/\2\n/gp'))
+    total_global_functions=${#global_functions[@]}
+
+    for index in ${!global_functions[@]}; do
+        current=$((index + 1))
+        function_name="${global_functions[$index]}"
+        pos="$(printf "%*s of %s" ${#total_global_functions} "${current}" "${total_global_functions}")"
+        if [[ -v bash_functions_by_label["${function_name}"] ]]; then
+            current_value=${bash_functions_by_label["${function_name}"]}
+            if [ "${current_value}" != "${function_name}" ]; then
+                1>&2 echo -e "[${script_name} warning]" "bash_functions_by_label[${function_name@Q}] already refined to ${current_value@Q}"
+                continue
+            fi
+        else
+            bash_functions_by_label["${function_name}"]="${function_name}"
+        fi
+        function_name=""
+        pos=''
+        current=0
+        index=0
+    done
+}
+
+get_file_type() {
+    local -- path="$@"
+
+    if [ ! -e "${path}" ]; then
+        echo "missing"
+    else
+        gstat -c '%F' "${path}"
+    fi
+}
+
+check_link_paths() {
+    local -- link=""
+    local -- exec_name=""
+    local -- current_type=""
+    local -- expected_link_path=""
+    local -- suffix=''
+
+    for exec_name in ${!label_by_exec_name[@]}; do
+        expected_link_path="${script_path}/${exec_name}"
+        if [ ${#expected_link_path} -gt ${widest_path_len} ]; then
+            widest_path_len=${#expected_link_path}
+        fi
+        ftype=$(get_file_type "${expected_link_path}")
+        if [ ${#ftype} -gt ${widest_type_len} ]; then
+            widest_type_len=${#ftype}
+        fi
+        file_type_by_exec_path["${expected_link_path}"]="${ftype}"
+    done
+
+}
+print_link_paths() {
+    check_link_paths
+    local -- target_path=""
+    local -- path_type=""
+    local -- ty_color=""
+    for target_path in ${!file_type_by_exec_path[@]}; do
+        path_type="${file_type_by_exec_path[${target_path}]}"
+        case "${path_type}" in
+            "symbolic link")
+                path_type="OK"
+                ty_color="\x1b[1;48;5;233m\x1b[1;38;5;112m"
+                ;;
+            "missing")
+                path_type="missing link"
+                ty_color="\x1b[1;48;5;233m\x1b[1;38;2;255;25;120m"
+                ;;
+            *)
+                ty_color="\x1b[1;48;5;233m\x1b[1;38;2;219;80;69m"
+                ;;
+        esac
+        printf "\x1b[1;48;5;235\x1b[1;38;5;231m%-*s ${ty_color}%*s\x1b[0m\n" ${widest_path_len} "${target_path}" ${widest_type_len} "${path_type}"
+    done
+}
+relink_exec_paths() {
+    check_link_paths
+    local -- target_path=""
+    local -- path_type=""
+    local -- diff_contents=""
+    local -i failures=0
+    for target_path in ${!file_type_by_exec_path[@]}; do
+        path_type="${file_type_by_exec_path[${target_path}]}"
+        if [[ "${path_type}" =~ ^(missing|symbolic link)$ ]]; then
+            rm -f "${target_path}"
+            ln -s "${actual_path}" "${target_path}"
+        elif ! diff_contents=$(diff -u "${target_path}" "${actual_path}"); then
+            1>&2 echo "[warning]" "${target_path@Q} is a ${path_type@Q} (not a symlink to ${actual_path@Q}) and its contents differ from that of ${actual_path@Q}"
+            1>&2 echo "[warning]" "contents of ${target_path@Q} differ from ${actual_path@Q}:"
+            1>&2 sed -E 's/^/\t/g' <<<"${diff_contents}"
+            failures=$((failures + 1))
+        fi
+    done
+
+    return ${failures}
+}
+export IFS=$'|'
+declare -r exec_name_regexp_group="($(echo "${!label_by_exec_name[*]}"))"
+declare -r time_formats_regexp_group="($(echo "${!time_formats_by_label[*]}"))"
+declare -r exec_name_regexp="^$(echo "${exec_name_regexp_group}")\$"
+declare -r time_formats_regexp="^$(echo "${time_formats_regexp_group}")\$"
+declare -ra regexp_varnames=(
+    'exec_name_regexp_group'
+    'time_formats_regexp_group'
+    'exec_name_regexp'
+    'time_formats_regexp'
+)
+declare -i max_key_width=0
+declare -i max_key_width_unbound=0
+declare -i max_line_width=0
+declare -i max_line_width_unbound=0
+declare -i term_width=${COLUMNS:-130}
+declare -- repr_regexp_separator=' => '
+declare -i repr_separator_length=${#repr_regexp_separator}
+declare -i item_length=0
+declare -i varname_length=0
+declare -i value_length=0
+declare -i key_length=0
+
+for varname in ${regexp_varnames[@]}; do
+    if [[ ! -v "${varname}" ]]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "variable not declared: ${varname@Q}"
+        continue
+    fi
+    declare -I -n refvar="${varname}"
+
+    varname_length=${#varname}
+    value_length=${#refvar}
+    key_length=$((varname_length + repr_separator_length))
+    item_length=$((varname_length + value_length + repr_separator_length))
+
+    if [ ${item_length} -gt ${max_line_width} ]; then
+        max_line_width=${item_length}
+    fi
+    if [ ${item_length} -gt ${max_line_width_unbound} ]; then
+        max_line_width_unbound=${item_length}
+    fi
+
+    if [ ${item_length} -gt ${term_width} ]; then
+        continue
+    fi
+
+    if [ ${key_length} -gt ${max_key_width} ]; then
+        max_key_width=${key_length}
+    fi
+    if [ ${key_length} -gt ${max_key_width_unbound} ]; then
+        max_key_width_unbound=${key_length}
+    fi
+    unset -n refvar
+done
+
+print_regexps() {
+    local -- varname=''
+    local -- refvar=''
+    for varname in ${regexp_varnames[@]}; do
+        if [[ ! -v "${varname}" ]]; then
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "variable not declared: ${varname@Q}"
+            continue
+        fi
+        local -I -n refvar="${varname}"
+        1>&2 printf '\x1b[1;38;5;220m%*s\x1b[0m => \x1b[1;38;5;231m%-*s\x1b[0m\n' "$((max_key_width - 4))" "${varname}" $((term_width - max_key_width)) "${refvar}"
+        unset -n refvar
+    done
+
+}
+export IFS=$'\n'
+
+if [ "${name}" == "${regular_file_script_name}" ]; then
+    print_regexps
+    declare -i index=0
+    declare -i current=0
+    declare -- pos=''
+    declare -i regular_script_print_format=0
+    for index in ${!argv[@]}; do
+        arg=${argv[${index}]}
+        pos=$(printf '%*s of %s' ${#argc} ${current} ${argc})
+        case "${arg}" in
+            --relink | relink)
+                relink_exec_paths
+                exit $?
+                ;;
+            --check | --print-links | --check-links | --list-links | --link-status | --list-exec-paths)
+                print_link_paths
+                exit $?
+                ;;
+            *)
+                # set -x
+                if [[ "${arg}" =~ ${exec_name_regexp} ]]; then
+                    1>&2 echo "<arg ${pos}>"
+                    1>&2 echo "exec_name=${arg@Q}"
+                    1>&2 echo "</arg ${pos}>"
+                    regular_script_print_format=$((regular_script_print_format + 1))
+                elif [[ "${arg}" =~ ${time_formats_regexp} ]]; then
+                    1>&2 echo "<arg ${pos}>"
+                    1>&2 echo "time_format=${arg@Q}"
+                    1>&2 echo "</arg ${pos}>"
+                    regular_script_print_format=$((regular_script_print_format + 1))
+                fi
+                # set +x
+                ;;
+        esac
+    done
+    if ! ((${regular_script_print_format})); then
+        1>&2 echo -e "${script_name} is designed to be executed from symlinks named as nowz, nowt, now etc - the only exception is to invoke '${script_name} --relink/--check/--print-links/--check-links', which then recreates such symlinks"
+        exit 1
+    fi
+else
+    for arg in ${argv[@]}; do
+        case "${arg@L}" in
+            --utc | utc | --universal | universal | -u)
+                export TZ=UTC
+                # gnu_date_argv+=("--utc") # TZ env var already takes care of this
+                ;;
+            --local | local | --naive | naive | --no-tz | no-tz | --no*tz | no*tz | notz | --notz)
+                unset TZ
+                ;;
+            *)
+                gnu_date_argv+=("${arg}")
+                ;;
+        esac
+    done
+fi
+
+declare -- exec_label=""
+declare -- format=""
+declare -- pure_format=""
+
+if [[ -v label_by_exec_name["${name}"] ]]; then
+    exec_label=${label_by_exec_name["${name}"]}
+    if [[ ! -v time_formats_by_label["${exec_label}"] ]]; then
+        1>&2 echo -e "[unexpected error]" "no format declared for label ${exec_label@Q}"
+        exit 404
+    fi
+    pure_format="${time_formats_by_label["${exec_label}"]}"
+    format="${pure_format}"
+fi
+declare -- date_prog_bin=""
+declare -- tmp_bin=""
+declare -- stdout=""
+declare -- stderr=$(mktemp)
+declare -i code=0
+declare -i try_gdate=0
+if tmp_bin=$(type -t -P date) && [ -n "${tmp_bin}" ]; then
+    if ! stdout=$(2>${stderr} ${tmp_bin} "+%s" --date=572756400); then
+        code=$?
+    fi
+    if [ ${code} -ne 0 ]; then
+        try_gdate=1
+    fi
+fi
+if [ -z "${stdout}" ] || [ ${code} -ne 0 ]; then
+    if ! tmp_bin=$(which gdate || which -a date | grep gnubin); then
+        code=$?
+    fi
+    if [ ${code} -ne 0 ]; then
+        1>&2 echo "[system error]" "it appears that the GNU implementation of the date command is not available."
+        1>&2 echo "[system error]" "Make sure GNU/coreutils is installed and its bin location(s) are listed in \$PATH"
+        exit ${code}
+    else
+        date_prog_bin=${tmp_bin}
+    fi
+elif [ -n "${stdout}" ] && [ "${stdout}" == "572756400" ]; then
+    date_prog_bin=${tmp_bin}
+fi
+
+if [ -z "${date_prog_bin}" ]; then
+    1>&2 echo -e "[unexpected error]" "\${date_prog_bin} is empty"
+    exit 2
+fi
+declare -- tz_necessary_precision=""
+
+declare -i now=-1
+now=$(${date_prog_bin} +'%s')
+
+declare -a gnu_date_call=(
+    "getdate"
+    "+${format}"
+    ${gnu_date_argv[@]}
+)
+declare -r timezone_regexp="^([+-])?(0?([0-9]{1,2}))((:)([0-9]{2}))?((:)([0-9]{2}))?\$"
+
+getdate() {
+    ${date_prog_bin} --date="@${now}" ${@}
+}
+
+showtime() {
+    local -- tz_necessary_precision="$(getdate +'%:::z' --date="@${now}")"
+    ${gnu_date_call[@]} | sed -E "s/[\$][{]TZ[}]//g"
+}
+if [ -t 1 ]; then
+    showtime
+else
+    showtime | tr -d '[:space:]'
+fi
+
+exit $?
+
+# regexp groups
+
+# 1: offset meridian sign                  .i.e.: `+`
+# 2: offset hours (w/ leading zero) .i.e.: `00`
+# 3: offset hours (no leading zero) .i.e.: `0`
+# 4: offset minutes (w/ leading colon) .i.e.: `:00`
+# 5: offset minutes colon .i.e.: `:`
+# 6: offset minutes .i.e.: `00`
+# 7: offset seconds (w/ leading colon) .i.e.: `:00`
+# 8: offset seconds colon .i.e.: `:`
+# 9: offset seconds .i.e.: `00`
+
+date +'%::z' | sed -n -E "s/${timezone_regexp}/
+1=$(-)
+2=$(03)
+3=$(3)
+4=$(:00)
+5=$(:)
+6=$(00)
+7=$(:00)
+8=$(:)
+9=$(00)
+/
+18
+/g"

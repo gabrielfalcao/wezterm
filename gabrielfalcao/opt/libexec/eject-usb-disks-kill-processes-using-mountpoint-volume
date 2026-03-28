@@ -1,0 +1,3 @@
+
+
+sudo diskutil list -plist external | plistutil -f json | jq '.AllDisksAndPartitions[].Partitions[] | select(.VolumeName | test("nothing"))

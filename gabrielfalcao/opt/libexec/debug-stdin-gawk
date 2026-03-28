@@ -1,0 +1,3 @@
+gawk                    'BEGIN { printf("\x1b[2J\x1b[3J\x1b[H") > "/dev/stderr" }    $0 ~ /^[A-Z]/ { tagname = sprintf("NR:%s:NF:%s", NR, NF);                    printf("<%s>\n%s\n</%s>\n\n", tagname, sprintf("\$0=%s\n$NF=%s\n", $0, $NF), tagname); }
+
+'

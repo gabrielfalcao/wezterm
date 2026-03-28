@@ -1,0 +1,35 @@
+# export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+
+declare -a stdin_lines=()
+declare -i stdin_line_count=${#stdin_lines[@]}
+
+if [ ! -t 0 ]; then
+    1>&2 echo -e "[info]" "stdin is not a tty"
+    export IFS=$'\n'
+    while read line; do
+        if ! stdin_lines+=("$line"); then
+            continue
+        fi
+    done </dev/stdin
+fi
+stdin_line_count=${#stdin_lines[@]}
+
+declare -- unix_ts=$(date --utc +%s)
+declare -- workbench_path="${HOME}/workbench/"
+
+declare -- log_id=${script_name};
+declare -- log_ts=$(date --utc +'%Y-%m-%d.%H-%M-%S.%s' --date=@${unix_ts})
+declare -- log_prefix="${log_id}.${log_ts}";
+
+declare -- stderr="${log_prefix}.stderr.log";
+declare -- stdout="${log_prefix}.stdout.log"

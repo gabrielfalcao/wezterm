@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -ueTE
+set +f
+set -o pipefail
+
+open "/System/Applications/Utilities/Disk Utility.app"
+

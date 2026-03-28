@@ -1,0 +1,35 @@
+# TODO: (defun debug-match-data ()) in ~/.emacs.d/c/functions.el
+# to debug regexp (syntax read) below:
+# <regexp syntax="read">
+# ^\\(\\s-*\\)\\(declare\\|local\\)\\(\\s-+[-]\\([-]\\|[a-z]+\\)\\s-+\\)\\([a-z_]+[a-z0-9_]*\\)\\(\\([\"']\\)\\([^\\9'\"\n]+\\)\\9\\|[$]?[(].*?[)]\\|[$][{].*?[}]\\)\\s-*$
+# </regexp>
+# <regexp syntax="read">
+#^\(\s-*\)\(declare\|local\)\(\s-+[-]\([-]\|[a-z]+\)\s-+\)\([a-z_]+[a-z0-9_]*\)\(\(["']\)\([^\9'"\n]+\)\9\|[$]?[(].*?[)]\|[$][{].*?[}]\)\s-*$
+# </regexp>
+#
+
+# ...TK
+
+declare -- input_regexp_example='^(\s*)((declare|local)\s+[-][a-zA-Z-]+\s+|(unset|export)\s+)?(([a-zA-Z_]+[a-zA-Z0-9_]*))((([^=]*)([=])(.*))|\s*)?$'
+declare -A emacs_regexp_escape_prefix_by_syntax=()
+emacs_regexp_escape_prefixes['string']='\\'
+emacs_regexp_escape_prefixes['read']='\\\\'
+declare -a emacs_regexp_syntax_list=(
+    'string'
+    'read'
+)
+declare -ra sed_commands=(
+        's,([^\\]|^)[\\]s(([+*]?)([^-]|$)),\1\\s-\2,g'
+         's,([^\\]|^)([(|)]),\1\\\2,g'
+)
+# ...TK
+echo "${input_regexp_example@Q}"; echo -n " | sed -E 's,([^\\]|^)[\\]s(([+*]?)([^-]|$)),\1\\s-\2,g' | sed -E 's,([^\\]|^)([(|)]),\1\\\2,g'";echo)  |  tee 
+
+
+for prefix in ${emacs_regexp_escape_prefixes[@]}; do
+done
+declare -- sed_sub_command_repl
+'s,([^\\]|^)[\\]s(([+*]?)([^-]|$)),\1\\s-\2,g' | sed -E 's,([^\\]|^)([(|)]),\1\\\2,g'";echo)  |  tee ~/opt/libexec/regex-convert-extended-to-emacs-string
+
+
+

@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -A unique_params=()
+declare -a emacs_params=(
+    '--debug-init'
+)
+declare -- latest_workbench_path=""
+declare -- emacs_output_prefix="$(pwd)/emacs-debug-init.$(nowdz).ppid.${$}"
+declare -- stderr="${emacs_output_prefix}.stderr.log"
+declare -- stdout="${emacs_output_prefix}.stdout.log"
+declare -- stdin="/dev/stdin"
+
+declare -i index=0;
+declare -- arg=''
+declare -i  has_next_index=0;
+declare -i  skip_next_index=0;
+declare -i  next_index=0;
+declare --  next_arg=''
+declare --  arg_value=''
+declare -- unique_params_key="${arg} ${arg_value}"
+
+for index in ${!argv[@]}; do
+    next_index=$(( index + 1 ))
+
+    if (( ${skip_next_index})); then
+        skip_next_index=0
+        continue
+    fi
+    arg="${argv[${index}]}"
+    arg_value=""
+    next_arg=""
+    if [ ${next_index} -le ${argc} ]; then
+        next_arg=${argv[${next_index}]}
+        if [[ "${arg}" =~ ^\s*[^-]+.*?\s*$ ]]; then
+            arg_value="${next_arg}"
+            skip_next_index=1
+        else
+            next_arg=""
+        fi
+    fi
+    case "${arg}" in
+        --debug-init)
+            ;;
+        *)
+            if [[ "${arg}" =~ ^\s*[-][a-zA-Z0-9_-]+(=(.*))?\s*$ ]]; then
+                if [ -n "${arg_value}" ]; then
+                    unique_params_key="${arg} ${arg_value}"
+                else
+                    unique_params_key="${arg}"
+                fi
+
+                if [[ ! -v unique_params["${unique_params_key}"] ]]; then
+                    emacs_params+=("${arg}")
+                    if [ -n "${arg_value}" ]; then
+                        emacs_params+=("${arg_value}")
+                    fi
+                    unique_params["${unique_params_key}"]="${#emacs_params[@]}"
+                else
+                    continue
+                fi
+            elif [[ "${arg}" =~ ^\s*[+][0-9]+([:][0-9]+)?\s*$ ]] || [ -e "${arg}" ] || [[ "${arg}" =~ [a-zA-Z0-9_./-]+ ]]; then
+                emacs_params+=("${arg}")
+                unique_params_key="${arg}"
+                unique_params["${unique_params_key}"]="${#emacs_params[@]}"
+            else
+                emacs_params+=("${arg}")
+                unique_params_key="${arg}"
+                unique_params["${unique_params_key}"]="${#emacs_params[@]}"
+
+            fi
+            ;;
+    esac
+done
+
+lsof -p $$ | grep tty
+
+2>${stderr} 1>${stdout} /Applications/Emacs.app/Contents/MacOS/Emacs-arm64-11 </dev/null

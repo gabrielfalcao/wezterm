@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -g script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -g script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -g this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+    1>/dev/null 2>/dev/null stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -gr chrome_macos_bin="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+declare -i code=0
+
+declare -gi now=$(date -u +%s)
+declare -g workdir_base_path="${HOME}/workbench/$(date --date=@${now} +'%Y-%m-%d')"
+declare -ga log_filename_prefix_parts=(
+    "google_chrome"
+    "pid_${$}"
+)
+if [[ -v WEZTERM_PANE ]]; then
+    log_filename_prefix_parts+=("wezterm_pane_id_${WEZTERM_PANE}")
+fi
+log_filename_prefix_parts+=("$(date --date=@${now} +'%Y-%m-%d.%H-%M-%S.%s')")
+declare -g log_filename_prefix="$(printf '%s.' ${log_filename_prefix_parts[@]} | sed -E 's/[.]+\s*$//g')"
+declare -g stderr="${workdir_base_path}/${log_filename_prefix}.stderr.log"
+declare -g stdout="${workdir_base_path}/${log_filename_prefix}.stdout.log"
+declare -g pidfile="${workdir_base_path}/${log_filename_prefix}.pid"
+
+declare -gi app_pid=-1
+1>${stdout} 2>${stderr} ${chrome_macos_bin} ${argv[@]} < /dev/null &
+app_pid=$!
+disown ${app_pid}
+echo  "${app_pid}" > ${pidfile}

@@ -1,0 +1,153 @@
+(let* (
+       (
+       (match-data-len (length (match-data)))
+       (expr-count (/ match-data-len 2))
+       (subexpr-count (- expr-count 1))
+
+       (full-input (match-string 0))
+       (full-len (length full-input))
+
+       (inner-input (match-string 1))
+       (inner-len (length inner-input))
+       (inner-groups (/ inner-length 2))
+       (beg-match (match-beginning 0)) (beg-inner (match-beginning 1))
+       (end-match (match-end 0)) (end-inner (match-end 1))
+       )
+  (format "%s" '(full-input full-len inner-input inner-len inner-groups beg-match beg-inner end-match end-inner))
+
+  )
+
+;; regexp: "\n\(\(^.*\)[)]\)\(\s-+\)\(([a-z-]+[a-z0-9-]*[^[:space:]]*\)"
+;; replacement: \,()
+
+(defun make-indent-spaces (level &optional whitespaces-per-level suppress-constraint-multiple-of-4)
+  (when (null level)
+    (setq level 0))
+
+  (when (null whitespaces-per-level)
+    (setq whitespaces-per-level 4))
+
+  (unless (integerp level)
+      (signal 'type-error
+              (format "make-indent-spaces argument `level' must be an integer but received: %S"
+                      whitespaces-per-level)
+              ))
+
+  (unless (integerp level)
+    (signal 'type-error
+            (format  "[make-indent-spaces] argument `level' must be integer but instead received `%s': %s"
+                     (type-of level) level)))
+
+  (unless (>= level 0)
+    (signal 'type-error
+            (format  "[make-indent-spaces] argument `level' must be zero or greater than zero but received : %s"
+                     level)))
+
+
+
+  (when (integerp whitespaces-per-level)
+    (unless (<= whitespaces-per-level 0)
+      (signal 'type-error
+              (format "make-indent-spaces argument `whitespaces-per-level' must be greater than zero but received: %S" whitespaces-per-level)
+              ))
+    (unless suppress-constraint-multiple-of-4
+      (unless  (and (>= whitespaces-per-level 4)
+                    (= (% whitespaces-per-level 4) 0))
+        (signal 'type-error
+                (format "make-indent-spaces argument `whitespaces-per-level' should be multiple of 4" whitespaces-per-level)
+                ))
+      (unless  (and (>= whitespaces-per-level 0)
+                    (< whitespaces-per-level 4))
+        (signal 'type-error
+                (format "make-indent-spaces argument `whitespaces-per-level' should be multiple of 4" whitespaces-per-level)
+                )))
+
+    (setq whitespaces-per-level 4)
+    )
+
+  )
+
+(defconst repr-tag-valid-types
+  (list :open :close :single)
+  )
+
+(defconst repr-tag-type-symbol-to-keyword-map-alist
+  (mapcar 
+   (cons 'open :open)
+   (cons 'close :close)
+   (cons 'single :single)
+   )
+  )
+
+(defconst repr-tag-type-string-to-keyword-map-alist
+  (list
+   (cons "open" :open)
+   (cons "close" :close)
+   (cons "single" :single)
+   )
+  )
+
+(defconst repr-tag-type-keyword-map-alist
+  (list
+   (cons 'open :open)
+   (cons 'close :close)
+   (cons 'single :single)
+
+   (cons :open :open)
+   (cons :close :close)
+   (cons :single :single)
+
+   (cons "open" :open)
+   (cons "close" :close)
+   (cons "single" :single)
+   )
+  )
+
+
+(defconst repr-tag-type-default-symbol
+  (car repr-tag-valid-types)
+  )
+
+(defun get-repr-tag-type-symbol (tag-type)
+  (unless
+
+
+(defun make-repr-tag (name tag-type &optional attributes children)
+  (when (null children)
+    (setq children (list)))
+  (when (null attributes)
+    (setq attributes (list)))
+
+  ;; (cond (
+
+  (format "<%s>%s</%s>" num (match-string num) num))
+
+(defun repr-regexp-subexp-lines (num)
+  (format "<%s>%s</%s>" num (match-string num) num))
+
+(defun repr-match-data ()
+  (save-match-data
+    (let* (
+           (match-data-len (length (match-data)))
+           (expr-count (/ match-data-len 2))
+           (subexpr-count (- expr-count 1))
+
+           (full-input-string (match-string 0))
+           (full-input-len (length full-input-string))
+           (outer-indent-string (string-join (make-list full-input-len " ") ""))
+
+           )
+
+  (string-join (let* (
+
+                      (mapcar
+                       #'repr-regexp-subexp
+                       (number-sequence 0 subexpr-count)
+                       )
+                      )
+                      "  "))))
+ )
+
+;;;; ~/workbench/2026-02-01/man-to-pandoc.2.2026-02-01.02-11-47.1769922707.el
+;;;; Ozs7OyAoZGVmdW4gaW5kZW50YXRpb24tc3RyaW5nIChsZXZlbCAmb3B0aW9uYWwgbGV2ZWwtc3RyaW5nKQo7Ozs7IAo7Ozs7ICAgKG1ha2UtbGlzdCBsZXZlbCBsZXZlbC1zdHJpbmcpCjs7OzsgCjs7OzsgCjs7OzsgKGxldCogKAo7Ozs7ICAgICAgICAocmF3LXN0cmluZyAoY2FyIGtpbGwtcmluZykpCjs7OzsgICAgICAgICh2YWx1ZSAoc3Vic3RyaW5nLW5vLXByb3BlcnRpZXMgcmF3LXN0cmluZykpCjs7OzsgICAgICAgIChyYXctdHkgKHR5cGUtb2YgcmF3LXN0cmluZykpCjs7OzsgICAgICAgIChyYXctbGVuIChsZW5ndGggcmF3LXN0cmluZykpCjs7OzsgICAgICAgICh2YWx1ZS1sZW4gKGxlbmd0aCB2YWx1ZSkpCjs7OzsgICAgICAgICkKOzs7OyAKOzs7OyAgIChsZXQqICgodmFyLXN5bXMgJyhyYXctc3RyaW5nIHJhdy10eSByYXctbGVuIHZhbHVlLWxlbiB2YWx1ZSkpCjs7OzsgCjs7OzsgCSAoZGJnLWxpc3QgKG1hcGNhcgo7Ozs7ICAgICAgICAgICAgICAgICAgICAgKGxhbWJkYSAoc3ltKQo7Ozs7ICAgICAgICAgICAgICAgICAgICAgICAobGV0KiAoCjs7OzsgCSAgICAgICAgICAgICAgICAgICAgIChyZXByIChmb3JtYXQgIiclcyIgc3ltKSkKOzs7OyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICkKOzs7OyAgICAgICAgICAgICAgICAgICAgICAgICAoZm9ybWF0ICIlcyVTOiAlcyIgc3ltIChzeW1ib2wtdmFsdWUgc3ltKSkpCjs7OzsgICAgICAgICAgICAgICAgICAgICB2YXItc3ltcykpCjs7OzsgCjs7OzsgCSAoZGJnIChzdHJpbmctam9pbiBkYmctbGlzdCAiXG4iICkpCjs7OzsgCSApCjs7OzsgICAgIChpbnNlcnQgKGZvcm1hdCAiJXNcblxuJXMiIHZhbHVlIGRiZykpKSApCjs7OzsgCjs7OzsgCjs7OzsgCjs7OzsgOzs7Ozs7Ozs7Ozs7Ozs7Ozs7OzsKOzs7OyA7Owo7Ozs7IDs7Cjs7OzsgOzsodW5sZXNzIChzdHJpbmdwIGxldmVsLXN0cmluZykgKHNpZ25hbCAndHlwZS1lcnJvciAoZm9ybWF0ICAiW21ha2UtaW5kZW50LXNwYWNlc10gYXJndW1lbnQgYGxldmVsLXN0cmluZycgbXVzdCBiZSBzdHJpbmcgYnV0IGluc3RlYWQgcmVjZWl2ZWQgYCVzJzogJXMiICh0eXBlLW9mIGxldmVsLXN0cmluZykgbGV2ZWwtc3RyaW5nKSkpCjs7OzsgOzsodW5sZXNzIChpbnRlZ2VycCBsZXZlbCkKOzs7OyA7OyAgKHNpZ25hbCAndHlwZS1lcnJvciAoZm9ybWF0ICJtYWtlLWluZGVudC1zcGFjZXMgYXJndW1lbnQgYGxldmVsJyBpcyBub3QgYW4gaW50ZWdlcjogJVMgKCVzKSIgbGV2ZWwgKHR5cGUtb2YgbGV2ZWwpKSkpCjs7OzsgOzsgICh1bmxlc3MgKD49IGxldmVsIDApIChzaWduYWwgJ3R5cGUtZXJyb3IgKGZvcm1hdCAibWFrZS1pbmRlbnQtc3BhY2VzIGFyZ3VtZW50IGBsZXZlbCcgaXMgYSBuZWdhdGl2ZSBudW1iZXI6ICVTIiBsZXZlbCkpKQo7Ozs7IDs7Cjs7OzsgOzsgICh1bmxlc3MgKGludGVnZXJwIGxldmVsKQo7Ozs7IDs7ICAgICgpKQo7Ozs7IDs7
+;;;;

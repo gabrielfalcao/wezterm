@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+# TODO:
+
+# - [ ] flag copy history item to clipboard
+# - [ ] print history grouped by date
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+
+declare -- arg=""
+declare -- argpos=""
+declare -- err_msg=""
+declare -- err_prefix=""
+declare -- filety=""
+declare -i code=0
+declare -i current=0
+declare -i err_idx=0;
+declare -i index=0
+
+declare -i prev_occur_index=0
+declare -i prev_occur_current=0
+declare -- prev_occur_arg=""
+declare -- prev_occur_argpos=""
+
+declare -- awk_script="${script_path}/bash-history.awkward"
+
+declare -A argv_index_by_history_text_file=()
+declare -a history_text_files=()
+declare -i history_text_file_count=0
+declare -A argv_errors_by_index=()
+declare -i argv_error_count=${#argv_errors_by_index[@]}
+
+display_argv_error_by_index() {
+    argv_error_count=${#argv_errors_by_index[@]}
+    local -a locfun_argv=($@)
+    local -i locfun_argc=${#locfun_argv[@]}
+    local -- arg=""
+    local -- argpos=""
+    local -- err_msg=""
+    local -- err_prefix=""
+    local -- filety=""
+    local -i current=0
+    local -i err_idx=0;
+    local -i index=0
+
+    case "${locfun_argc}" in
+        0)
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <ARGV ERROR INDEX>"
+            return 1
+            ;;
+        1)
+            err_idx=${locfun_argv[0]}
+            ;;
+        *)
+            local -a extra_args=(
+                ${locfun_argv[@]:1}
+            )
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "$(( locfun_argc - 1 )) too many arguments: ${extra_args[@]@Q}"
+            return 1
+            ;;
+    esac
+    if [ ${argv_error_count} -le ${err_idx} ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "invalid index argument (${err_idx}) is beyond the total of argv errors (${argv_error_count})"
+        return 1
+    fi
+
+    current=$(($err_idx + 1))
+    arg="${argv[$err_idx]}"
+    argpos="$(printf '%*s of %s' ${#argc} ${current} ${argc})"
+    err_prefix="[error in argument ${argpos}]"
+    err_msg="${argv_errors_by_index[${err_idx}]}"
+    1>&2 echo -e "${err_prefix}" "${err_msg}"
+}
+
+if [ ! -t 0 ]; then
+    set +e
+    awk -f "${awk_script}" < /dev/stdin
+    code=$?
+    exit ${code}
+elif [ ${argc} -gt 0 ]; then
+    for index in ${!argv[@]}; do
+        arg="${argv[$index]}"
+        prev_occur_index=0
+        prev_occur_current=0
+        prev_occur_arg=""
+        prev_occur_argpos=""
+
+
+        if [ -z "${arg}" ]; then
+            argv_errors_by_index["${index}"]="empty string"
+            continue
+        fi
+        if [[ -v argv_index_by_history_text_file["${arg}"] ]]; then
+            prev_occur_index=${argv_index_by_history_text_file["${arg}"]}
+            prev_occur_current=$(($prev_occur_index + 1))
+            prev_occur_arg="${argv[$prev_occur_index]}"
+            prev_occur_argpos="$(printf '%*s of %s' ${#argc} ${prev_occur_current} ${argc})"
+
+            argv_errors_by_index["${index}"]="duplicate value from argument ${prev_occur_argpos}"
+            continue
+        fi
+
+        if [ ! -e "${arg}" ]; then
+            argv_errors_by_index["${index}"]="file does not exist: ${arg@Q}"
+            continue
+        fi
+
+        if [ ! -r "${arg}" ]; then
+            argv_errors_by_index["${index}"]="cannot read ${arg@Q}"
+            continue
+        fi
+
+        filety=$(stat -c %F "${arg}")
+
+        if [ ! -s "${arg}" ]; then
+            argv_errors_by_index["${index}"]="cannot read bash history data from ${filety} ${arg@Q}"
+            continue
+        fi
+
+        # happy path (valid case), finally:
+        argv_index_by_history_text_file["${arg}"]="${index}"
+        history_text_files+=("${arg}")
+    done
+fi
+
+history_text_file_count=${#history_text_files[@]}
+
+if [ ${history_text_file_count} -eq 0 ]; then
+    export IFS=$'\n'
+    declare -- example_command="builtin history | ${script_name}"
+    declare -a error_input=()
+    declare -a error_lines=()
+    error_input=(
+        "stdin is a terminal and no input filenames were provided via command-line args"
+        "${script_name} works best when receiving a valid stream of bash history lines via stdin"
+        "the certain way to do so is via bash's native \"history\" (builtin command) which does not run in a subshell and does not incur syscalls such as fork and popen."
+        "in a nutshell, ${script_name} is meant to be executed exactly like the example below:\n\t${example_command}\n"
+    )
+    error_lines=(
+        $(echo -e "${error_input[*]}")
+    )
+    1>&2 printf "[error] %s\n" "${error_lines[@]}"
+    exit 1
+fi

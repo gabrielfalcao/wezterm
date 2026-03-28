@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+    1>/dev/null 2>/dev/null stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -a usual_paths=(
+    # # "${HOME}/projects/work"
+    # # "${HOME}/projects/personal"
+    # # "${HOME}/projects/third_party"
+    "${HOME}/godot"
+    "${HOME}/*scratch*"
+    "${HOME}/projects"
+    # "${HOME}/go"
+    # "${HOME}/var"
+    # "${HOME}/opt"
+    # "${HOME}/Splice"
+    # # "${HOME}/Documents/scientific-papers"
+    # "${HOME}/Documents"
+    # "${HOME}/Publications"
+    # "${HOME}/Downloads"
+    # "${HOME}/Blender"
+    # "${HOME}/Desktop"
+    # "${HOME}/freeze-reports"
+    # "${HOME}/SEC"
+    # "${HOME}/state"
+    # "${HOME}/todo"
+    # "${HOME}/backup"
+    # "${HOME}/backups"
+
+    # # # <MacOS>
+    # # "${HOME}/Applications"
+    # # "${HOME}/Library"
+    # # # <MacOS>
+
+    # <media>
+    #
+    #   <books>
+    "${HOME}/Büchen"
+    #   </books>
+    #   <art>
+    "${HOME}/Kunst"
+    #   </art>
+    #
+
+    # # <tmp-paths>
+    # "${HOME}/deleteme"
+    # "${HOME}/temp"
+    # "${HOME}/wat"
+    # "${HOME}/__sandbox__"
+    # "${HOME}/*sandbox*"
+    # "${HOME}/test-git"
+    # # </tmp-paths>
+
+    # <other-ephemeral>
+    "${HOME}/*nons*"
+    "${HOME}/mail"
+    "${HOME}/NOON"
+    "${HOME}/LOL"
+    # </other-ephemeral>
+
+    #
+    #   <pictures>
+    "${HOME}/Pictures"
+    "${HOME}/Bildern"
+    #   </pictures>
+
+   # # #   <video>
+    # "${HOME}/Movies"
+    "${HOME}/Kino"
+    "${HOME}/workbench"
+    "${HOME}/DaVinci"
+    #   </video>
+
+    "${HOME}/projects/work/poems.codes"
+
+    #  # <audio>
+    "${HOME}/Music"
+    "${HOME}/Sound"
+    "${HOME}/Unity"
+    "${HOME}/JUCE"
+    #   </audio>
+    # </media>
+    #
+    #
+    #
+    #
+)
+
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+echo "${usual_paths[*]}" | unique-lines
+
+#echo -en "%x1b[2J%x1b[3J%x1b[H"

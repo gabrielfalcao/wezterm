@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+
+
+
+
+import sys
+import click
+import re
+import shutil
+import os
+import json
+import math
+import subprocess
+import urllib
+import urllib.parse
+import dataclasses
+
+from pprint import pformat
+from decimal import Decimal
+from datetime import datetime, timedelta, UTC
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Union, Optional, Self
+from pathlib import Path
+from subprocess import Popen
+
+
+@dataclass
+class pane_size:
+    rows: int
+    cols: int
+    pixel_width: int
+    pixel_height: int
+    dpi: int
+
+
+@dataclass
+class pane:
+    window_id: int
+    tab_id: int
+    pane_id: int
+    workspace: str
+    size: pane_size
+    title: str
+    cwd: str
+    cursor_x: int
+    cursor_y: int
+    cursor_shape: str
+    cursor_visibility: str
+    left_col: int
+    top_row: int
+    tab_title: str
+    window_title: str
+    is_active: bool
+    is_zoomed: bool
+    tty_name: str
+
+    accessed_unix: Optional[int] = field(init=False)
+    changed_unix: Optional[int] = field(init=False)
+
+    working_dir: Optional[Path] = field(init=False)
+    output: Optional[str] = field(init=False, repr=False)
+
+    def __post_init__(self, **kw_init):
+        uri = urllib.parse.urlparse(self.cwd)
+        working_dir = Path(uri.path)
+        self.working_dir = working_dir
+
+        tty = Path(self.tty_name)
+        tty_stat = tty.stat()
+        self.accessed_unix = int(tty_stat.st_atime)
+        self.changed_unix = int(tty_stat.st_ctime)
+        wz = wezterm(pane_id=self.pane_id)
+        output = wz.get_text()
+        self.output = output
+
+    @property
+    def tty(self) -> Path:
+        return Path(self.tty_name)
+
+    def __lt__(self, other: Self):
+        return self.accessed_unix.__lt__(other.accessed_unix)
+
+    def __le__(self, other: Self):
+        return self.accessed_unix.__le__(other.accessed_unix)
+
+    def __gt__(self, other: Self):
+        return self.accessed_unix.__gt__(other.accessed_unix)
+
+    def __ge__(self, other: Self):
+        return self.accessed_unix.__ge__(other.accessed_unix)
+
+    # # def __post_init__(self, **kw_init):
+    # #     kwargs = kw_init
+    # #     import ipdb;ipdb.set_trace()
+
+    # def get_cwd_url(self) -> urllib.parse.ParseResult:
+    #     return urllib.parse.urlparse(self.cwd)
+
+    # def get_working_dir(self) -> Path:
+    #     return Path(self.get_cwd_url().path)
+
+
+@dataclass
+class wezterm:
+    pane_id: int
+    start_line: Optional[int] = None
+    end_line: Optional[int] = None
+    output: Optional[str] = None
+
+    def get_text(self, max_lines: Optional[int] = None) -> str:
+        if max_lines is None:
+            max_lines = 333101
+
+        start_line = ensure_negative(max_lines)
+        proc = self.subprocess_run_cli_get_text(
+            pane_id=self.pane_id,
+            start_line=0,
+        )
+        # import ipdb;ipdb.set_trace()
+        stdout = proc.stdout
+        linecount = stdout.count("\n")
+        iter_index = 0
+        prev_count = linecount
+
+        while linecount < max_lines:
+            # # sys.stderr.write(f'<stdout linecount="{linecount}">\n{stdout}\n</stdout>\n')
+            # sys.stderr.write(f'<in>iter_index: {iter_index}\n</in>\n')
+            # sys.stderr.write(f'<in>linecount: {linecount}\n</in>\n')
+            # sys.stderr.write(f'<in>prev_count: {prev_count}\n</in>\n')
+            # sys.stderr.write(f'<in>max_lines: {max_lines}\n</in>\n')
+            # sys.stderr.write(f'<in>prev_count == linecount: {prev_count == linecount}\n</in>\n')
+            # sys.stderr.write(f'\n')
+            if linecount >= linecount:
+                max_lines = ensure_negative(max_lines + linecount + 1000)
+
+            start_line = ensure_negative(max_lines)
+            proc = self.subprocess_run_cli_get_text(
+                pane_id=self.pane_id,
+                start_line=int(start_line),
+            )
+            stdout = proc.stdout
+            linecount = stdout.count("\n")
+            iter_index += 1
+
+            # # if prev_count == linecount:
+            # #     break
+            # sys.stderr.write(f'<out>iter_index: {iter_index}\n</out>\n')
+            # sys.stderr.write(f'<out>linecount: {linecount}\n</out>\n')
+            # sys.stderr.write(f'<out>prev_count: {prev_count}\n</out>\n')
+            # sys.stderr.write(f'<out>max_lines: {max_lines}\n</out>\n')
+            # sys.stderr.write(f'<>bool<prev_count == linecount>: {prev_count == linecount}\n</out>\n')
+            # # sys.stderr.write(f'<stdout linecount="{linecount}">\n{stdout}\n</stdout>\n')
+            # sys.stderr.write(f'\n')
+
+            # # sys.stderr.write(f"iteration {iter_index}\n")
+            # # sys.stderr.write(f"\t start_line: {start_line}\n")
+            # # sys.stderr.write(f"\t max_lines: {max_lines}\n")
+            # # sys.stderr.write(f"\t linecount: {linecount}\n")
+            # # sys.stderr.flush()
+
+        return stdout  # , linecount, proc, max_lines, start_line
+
+    @classmethod
+    def bin_path(cls) -> str:
+        bin_path = shutil.which("wezterm")
+        if not bin_path:
+            raise RuntimeError(f"could not find path to executable: \x27wezterm\x27")
+
+        return bin_path
+
+    @classmethod
+    def get_popen_args(cls, args: List[str]) -> str:
+        if not isinstance(args, list):
+            ty = type(args).__name__
+            raise RuntimeError(f"args is a {ty}, not a list: {repr(args)}")
+
+        result = [cls.bin_path()]
+        for index, arg in enumerate(args, start=1):
+            if not isinstance(arg, str):
+                ty = type(arg).__name__
+                raise RuntimeError(
+                    f"argument {index} of {len(args)} is a {ty}, not a string: {arg}"
+                )
+            result.append(arg)
+
+        return result
+
+    @classmethod
+    def subprocess_run_cli_get_text(
+        cls, pane_id: int, start_line: int, **extra_popen_kwargs
+    ) -> Popen:
+        if not isinstance(start_line, int):
+            raise TypeError(
+                f"start_line is not {int}: {repr(start_line)} ({type(start_line)})"
+            )
+        start_line = ensure_negative(start_line)
+        popen_prog_args = wezterm.get_popen_args(
+            [
+                "cli",
+                "get-text",
+                "--escapes",
+                f"--pane-id={pane_id}",
+                f"--start-line={start_line}",
+            ]
+        )
+        popen_initial_kwargs = dict(
+            # close_fds=True,
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
+            # stdin=subprocess.DEVNULL,
+            text=True,
+        )
+        popen_core_kwargs = dict(
+            args=popen_prog_args,
+        )
+        popen_base_kwargs = dict(
+            **popen_core_kwargs,
+            **popen_initial_kwargs,
+        )
+        popen_kwargs = dict(
+            **popen_base_kwargs,
+            **extra_popen_kwargs,
+        )
+        popen_kwargs.update(popen_core_kwargs)
+        popen_kwargs.update(dict(capture_output=True))
+        popen_kwargs.pop('stderr', None)
+        popen_kwargs.pop('stdout', None)
+        # sys.stderr.write('popen_kwargs: {}\n'.format(pformat(popen_kwargs)))
+        # sys.stderr.flush()
+        return subprocess.run(**popen_kwargs)
+
+    @classmethod
+    def subprocess_popen_cli_list_json(cls) -> Popen:
+        popen_prog_args = wezterm.get_popen_args(
+            [
+                "cli",
+                "list",
+                "--format=json",
+            ]
+        )
+        popen_kwargs = dict(
+            args=popen_prog_args,
+            # close_fds=True,
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
+            # stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+        )
+        return subprocess.run(**popen_kwargs)
+
+    @classmethod
+    def list_panes(cls, limit: Optional[int] = None) -> List[pane]:
+        proc = cls.subprocess_popen_cli_list_json()
+        stdout = proc.stdout
+        items = json.loads(stdout)
+        if isinstance(limit, int):
+            limit = ensure_positive(limit)
+            # import ipdb;ipdb.set_trace()
+            items = items[:limit]
+        return [pane(**kw) for kw in items]
+
+
+def dataclassy_json(obj) -> dict:
+    if isinstance(obj, (pane, pane_size)):
+        fields = dataclasses.fields(obj)
+        # import ipdb;ipdb.set_trace()
+        result = []
+        for f in fields:
+            # field = f
+            key = f.name
+            value = getattr(obj, key, None)
+            # import ipdb;ipdb.set_trace()
+            result.append((key, value))
+
+        # import ipdb;ipdb.set_trace()
+
+        return dict(result)
+    elif isinstance(obj, Path):
+        return str(obj.expanduser().absolute())
+    else:
+        ty = type(obj)
+        # import ipdb;ipdb.set_trace()
+        return obj
+
+
+def ensure_int(value: Union[int| Union[float, Decimal]]) -> int:
+    return int(math.copysign(value, 1))
+
+def ensure_negative(value: Union[int| Union[float, Decimal]]) -> int:
+    return int(ensure_int(value) * -1)
+
+
+@click.command()
+@click.option('-p', '--pane-id', type=int, default=int(os.getenv("WEZTERM_PANE") or 0))
+def main(get_text_of_pane_id):
+    """
+    retrieves json information about one wezterm pane at a time
+    """
+
+if __name__ == "__main__":
+    main()

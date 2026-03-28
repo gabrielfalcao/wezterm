@@ -1,0 +1,64 @@
+#!/usr/bin/env gawk -f
+
+function trace() {
+    printf "Called at: %s:%d\n", FILENAME, FNR
+}
+
+BEGIN {
+    delete device_map;
+    delete devices;
+    delete pid_map;
+    delete pids;
+    delete ctx;
+
+    device_index=0;
+    pid_index=0;
+}
+function add_device(tty, pid) {
+    trace();
+    ctx["add_device:index"]=0;
+    if (!device_map[tty]) {
+        devices[device_index++]=tty;
+        device_map[tty]=pid;
+    }
+    return device_index;
+}
+function print_device_by_index(device_index) {
+    printf "%*s: %s %*s: %s\n", device_max_width, "device", tty, pid_max_width, "pid", pid
+    device_index++
+
+}
+function add_pid(pid, tty) {
+    trace();
+    if (!pid_map[pid]) {
+        pids[pid_index++]=pid;
+        pid_map[pid]=tty;
+    }
+    return pid_index;
+}
+
+$NF ~ /\/dev\/tty/ {
+    tty = $NF;
+    pid = $2;
+    add_device(tty, pid);
+    add_pid(pid, tty);
+}
+
+END {
+	total_devices = length(devices)
+	total_pids = length(pids)
+	pid_index = 0
+	device_index = 0
+	if (total_devices != total_pids) {
+		printf("[warning] total pids (%s) != total devices\n", total_pids, total_devices) >> (/dev/) stderr
+		for (tty in devices) {
+			printf "%*s: %s %*s: %s\n", device_max_width, "device", tty, pid_max_width, "pid", pid
+			device_index++
+		}
+	} else {
+		for (tty in devices) {
+			printf "%*s: %s %*s: %s\n", device_max_width, "device", tty, pid_max_width, "pid", pid
+			device_index++
+		}
+	}
+}

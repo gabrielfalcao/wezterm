@@ -1,0 +1,505 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -i exit_code=0
+declare -- curdir="$PWD"
+
+declare -i find_no_execute=0
+declare -A find_config=()
+
+declare -a find_params=()
+declare -a find_paths=()
+declare -- find_executable=$(builtin type -t -P find)
+declare -a chosen_types=()
+declare -a path_dirnames_to_ignore=(
+    '.bzr'
+    '.direnv'
+    '.eggs'
+    '.git'
+    '.github'
+    '.hg'
+    '.mypy_cache'
+    '.nox'
+    '.pants.d'
+    '.svn'
+    '.tox'
+    '.venv'
+    '__pycache__'
+    '__pypackages__'
+    '__test_files__'
+    '_build'
+    '_vendor'
+    'buck-out'
+    'build'
+    'dist'
+    'node_modules'
+    'perf'
+    'site-packages'
+    'target'
+    'vendor'
+    'venv'
+)
+declare -a not_path_formats=(
+    '/%s/'
+    '**/%s/**'
+    '*/%s/*'
+)
+
+declare -- find_dash_type_letter=""
+
+# ;; <emacs:region>
+
+# ;; <emacs:region>
+# ;;<emacs:replace-regexp-in-region>
+# ^\s-*\([a-z]+\)\s-+\(\s-*[^(;(,.\n ]+\)\s-*\((\(\w+\))\s-*\)?\(\s-*\([a-z -]+\)[.,;]\)*\(.*\) → \n[1=\1]\n[2=\2]\n[3=\3]\n[4=\4]\n[5=\5]\n[6=\6]\n[7=\7]\n[8=\8]\nfind-\2)\n        find_dash_type_letter="\1"; # \3 \4 \5 \6 \7 \8 ### \&
+# ;;</emacs:replace-regexp-in-region>
+
+# # ;; <emacs>
+# Replace regexp in region (default ^\s-*\([a-z]+\)\s-+\(\s-*\([^;(,.\n]+\s-*\)+\s-+\)\s-*\((\(\w+\))\s-*\)?\(\s-*\([a-z -]+\)[.,;]\)*\(.*\) → \nfind-\3-\8)\n        find_dash_type_letter="\1"; # [2=\2] [3=\3] [4=\4] [5=\5] [6=\6] [7=\7] [8=\8] [9-\9] ### \&): ^\s-*\([a-z]+\)\s-+\(\s-*\([^;(,.\n]+\s-*\)+\s-+\)\s-*\((\(\w+\))\s-*\)?\(\s-*\([a-z -]+\)[.,;]\)*\(.*\) → \nfind-\3|find \3-\8)\n        find_dash_type_letter="\1"; # [2=\2] [3=\3] [4=\4] [5=\5] [6=\6] [7=\7] [8=\8] [9-\9] ### \&        \n
+# # ;; </emacs>
+
+case "${script_name}" in
+    find-dirs)
+        find_dash_type_letter="d"
+        ;;
+    find-folders)
+        find_dash_type_letter="d"
+        ;;
+    find-files)
+        find_dash_type_letter="f"
+        ;;
+    find-block)
+        find_dash_type_letter="b"
+        ;;
+    find-buffered-special)
+        find_dash_type_letter="b"
+        ;;
+    find-character)
+        find_dash_type_letter="c"
+        ;;
+    find-unbuffered-special)
+        find_dash_type_letter="c"
+        ;;
+    find-directory)
+        find_dash_type_letter="d"
+        ;;
+    find-named-pipe)
+        find_dash_type_letter="p"
+        ;;
+    find-fifo)
+        find_dash_type_letter="p"
+        ;;
+    find-symbolic-link)
+        find_dash_type_letter="l"
+        ;;
+    find-link)
+        find_dash_type_letter="l"
+        ;;
+    find-socket)
+        find_dash_type_letter="s"
+        ;;
+    find-buffered-special)
+        find_params+=("-type" "-b")
+        ;;
+    find-params-skip-paths)
+        find_params=()
+        skip_dev_paths=1
+        find_no_execute=1
+        ;;
+    find-typed)
+        warn_prefixed "[warning]" "${script_name} is meant to be called from symlinks named ${known_symlink_names[@]@Q}"
+        ;;
+    *)
+        if [ -L "${this_script_path}" ] || [ -L "${0}" ]; then
+            warn_prefixed "[unknown symlink ${script_name@Q}]" "check $(path canon "${this_script_path}")"
+        else
+            warn_prefixed "[not a symlink ${script_name@Q}]" "check $(path canon "${this_script_path}")"
+        fi
+        ;;
+esac
+
+declare -- error_prefix_color_rgb="239;41;41"
+declare -- error_color_rgb="204;0;0"
+
+declare -- achtung_prefix_color_rgb="245;121;0"
+declare -- achtung_color_rgb="206;92;0"
+
+declare -- warn_prefix_color_rgb="252;233;79"
+declare -- warn_color_rgb="237;212;00"
+
+declare -- info_prefix_color_rgb="52;101;164"
+declare -- info_color_rgb="114;159;207;"
+
+declare -- msg_prefix_color_rgb="186;189;182"
+declare -- msg_color_rgb="136;138;133"
+
+declare -- display_prefix_color_rgb="238;238;236"
+declare -- display_color_rgb="211;215;207"
+
+declare -- debug_prefix_color_rgb="138;226;52"
+declare -- debug_color_rgb="115;210;22"
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty "${stty_args[@]}"
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+
+achtung_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${achtung_prefix_color_rgb}m${prefix}\x1b[1;38;2;${achtung_color_rgb}m ${message}\x1b[0m"
+}
+achtung() {
+    local -- linenum="${BASH_LINENO[0]}"
+    achtung_prefixed "[achtung]  [${script_name}:${linenum}]" "${@}"
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+msg() {
+    local -- linenum="${BASH_LINENO[0]}"
+    msg_prefixed "[msg]  [${script_name}:${linenum}]" "${@}"
+}
+msg_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${msg_prefix_color_rgb}m${prefix}\x1b[1;38;2;${msg_color_rgb}m ${message}\x1b[0m"
+}
+display() {
+    local -- linenum="${BASH_LINENO[0]}"
+    display_prefixed "[display]  [${script_name}:${linenum}]" "${@}"
+}
+display_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${display_prefix_color_rgb}m${prefix}\x1b[1;38;2;${display_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ "$BASH_TRACE" = "" ] && [ "$BASH_LOGLEVEL" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+fmt() {
+    builtin printf -- "-not -path %s \n" ${not_path_formats[@]}
+    echo
+}
+fmt_params() {
+    local -a params=($@)
+    local -a arguments=()
+    for param in ${params[@]}; do
+        arguments=($(seq ${#not_path_formats[@]} | sed -E "s/[0-9]+/${param}/g"))
+        builtin printf -- "$(fmt)\n" "${arguments[@]}"
+    done
+}
+
+process_argv() {
+    repl no echo
+
+    local -i index=0
+    local -- arg=""
+    local -i next_index=0
+    local -- next_arg=""
+    local -i skip_next=0
+    local -i logical_op_not=0
+    local -i logical_op_and=0
+    local -i logical_op_or=0
+    local -i next_arg_takes_file=0
+    local -i next_arg_takes_type=0
+    local -i skip_dev_paths=0
+
+    for index in "${!argv[@]}"; do
+        if [ "${script_name}" == "find-params-skip-paths" ]; then
+            export IFS=$'\n'
+            find_argv+=($(fmt_params ${argv[@]}))
+            continue
+        else
+            unset IFS
+        fi
+
+        if (($skip_next)); then
+            skip_next=0
+            continue
+        fi
+
+        next_index=$((index + 1))
+        arg="${argv[${index}]}"
+        if [[ -v argv[$next_index] ]]; then
+            next_arg="${argv[${next_index}]}"
+        else
+            next_arg=""
+        fi
+
+        case "$arg" in
+            -not)
+                logical_op_not=$((logical_op_not ^ 1))
+                find_argv+=("${arg}")
+                ;;
+            -or)
+                logical_op_or=$((logical_op_or ^ 1))
+                continue
+                ;;
+            -name | -path)
+                next_arg_takes_file=1
+                if (($logical_op_or)); then
+                    find_argv+=("-or" "-type" "${find_dash_type_letter}" "-and" "${argv}")
+                else
+                    find_argv+=("-type" "${find_dash_type_letter}"" -and" "${arg}")
+                fi
+                ;;
+            -type)
+                next_arg_takes_type=1
+                continue
+                ;;
+
+            -mindepth)
+                find_config["mindepth"]="${next_arg}"
+                skip_next=1
+                continue
+                ;;
+            -maxdepth)
+                find_config["maxdepth"]="${next_arg}"
+                skip_next=1
+                continue
+                ;;
+            -skip-paths | --skip-paths | -skip-common-paths | --skip-common-paths | -skip-dev-paths | --skip-dev-paths | -skip-dev | --skip-dev)
+                skip_dev_paths=1
+                ;;
+            .. | ../*)
+                find_paths+=("${arg}")
+                ;;
+            . | ./*)
+                find_paths+=("${arg}")
+                ;;
+            *)
+                if (($next_arg_takes_type)); then
+                    if [[ "${arg}" =~ ^[bcdpfls]$ ]]; then
+                        chosen_types+=("${arg}")
+                        next_arg_takes_type=0
+                        continue
+                    fi
+                fi
+                set +f
+
+                if (($next_arg_takes_file)); then
+                    if (($logical_op_or)); then
+                        logical_op_or=0
+                    else
+                        logical_op_or=1
+                    fi
+                fi
+                if (($next_arg_takes_file)) || [ ! -e "${arg}" ]; then
+                    find_argv+=("${arg}")
+                    next_arg_takes_file=0
+                else
+                    find_paths+=("${arg}")
+                fi
+                set -f
+
+                ;;
+        esac
+        # if (($logical_op_not)); then
+        #     logical_op_not=0
+        # fi
+        # if (($logical_op_and)); then
+        #     logical_op_and=0
+        # fi
+        # if (($logical_op_or)); then
+        #     logical_op_or=0
+        # fi
+
+    done
+    repl sane
+    # export IFS=$'\n'
+    # warn_prefixed find_paths "\n${find_paths[*]@Q}"
+    # warn_prefixed find_params "\n${find_params[@]@Q}"
+    # warn_prefixed find_argv "\n${find_argv[@]@Q}"
+    # unset IFS
+
+    if [ ${#find_paths[@]} -gt 0 ]; then
+        find_params+=(${find_paths[@]})
+    fi
+    if [[ -v find_config["mindepth"] ]]; then
+        find_params+=("-mindepth" "${find_config['mindepth']}")
+    fi
+    if [[ -v find_config["maxdepth"] ]]; then
+        find_params+=("-maxdepth" "${find_config['maxdepth']}")
+    fi
+    local -a known_symlink_names=(
+        find-dirs
+        find-folders
+        find-files
+        find-params-skip-paths
+    )
+
+    case "${script_name}" in
+        find-dirs)
+            find_params+=("-type" "d")
+            ;;
+        find-folders)
+            find_params+=("-type" "d")
+            ;;
+        find-files)
+            find_params+=("-type" "f")
+            ;;
+        find-block)
+            find_params+=("-type" "b")
+            ;;
+        find-buffered-special)
+            find_params+=("-type" "b")
+            ;;
+        find-character)
+            find_params+=("-type" "c")
+            ;;
+        find-unbuffered-special)
+            find_params+=("-type" "c")
+            ;;
+        find-directory)
+            find_params+=("-type" "d")
+            ;;
+        find-named-pipe)
+            find_params+=("-type" "p")
+            ;;
+        find-fifo)
+            find_params+=("-type" "p")
+            ;;
+        find-symbolic-link)
+            find_params+=("-type" "l")
+            ;;
+        find-link)
+            find_params+=("-type" "l")
+            ;;
+        find-socket)
+            find_params+=("-type" "s")
+            ;;
+        find-buffered-special)
+            find_params+=("-type" "-b")
+            ;;
+        find-params-skip-paths)
+            find_params=()
+            skip_dev_paths=1
+            find_no_execute=1
+            ;;
+        find-typed)
+            warn_prefixed "[warning]" "${script_name} is meant to be called from symlinks named ${known_symlink_names[@]@Q}"
+            ;;
+        *)
+            warn_prefixed "[unknown symlink ${script_name@Q}]" "check $(path canon "${this_script_path}")"
+            ;;
+    esac
+
+    find_params+=(${find_argv[@]})
+
+    if (($skip_dev_paths)); then
+        export IFS=$'\n'
+        find_params+=($(fmt_params ${path_dirnames_to_ignore[@]}))
+        unset
+    fi
+}
+
+main() {
+
+    if (($find_no_execute)); then
+        export IFS=$'\n'
+        echo -e "${find_params[*]}"
+    else
+        unset IFS
+        local -a find_call=(
+            ${find_executable} ${find_params[@]}
+        )
+        local -a debug_args=()
+        for arg in ${find_params[@]}; do
+            if [[ "${arg}" =~ ^[a-zA-Z0-9_./-]+$ ]]; then
+                debug_args+=("${arg}")
+            else
+                debug_args+=("${arg@Q}")
+            fi
+        done
+        debug_prefixed "find" "${debug_args[@]}"
+        ${find_call[@]}
+    fi
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    if process_argv "${argv[@]}"; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

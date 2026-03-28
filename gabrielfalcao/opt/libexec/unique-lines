@@ -1,0 +1,368 @@
+#!/usr/bin/env gawk -f
+
+BEGIN {
+    # gnu awk sorting https://www.gnu.org/software/gawk/manual/html_node/Controlling-Scanning.html#Using-Predefined-Array-Scanning-Orders-with-gawk
+    PROCINFO["sorted_in"] = "@ind_str_asc";
+
+    # ~/.shell.d/.awk.d/unique_lines.gawk
+    argc_orig=ARGC;
+    widest_arg_length=0
+    if (argc_orig > 0) {
+        for (idx=0; idx<=argc_orig;idx++) {
+            arg=ARGV[idx];
+            arg_len = length(arg);
+            if (arg_len > widest_arg_length) {
+                widest_arg_length=arg_len + 2;
+            }
+        }
+    }
+    PROCINFO["widest_arg_length"]=widest_arg_length;
+    ARGC = 1;
+    delete cli_params
+
+    delete trimmed_lines;
+    delete trimmed_lines_by_index;
+    delete tmp_params
+    delete trimmed_lines_by_row;
+    delete orig_lines_by_index;
+    delete trim_lines_by_index;
+    line_count=0;
+    widest_line_length=0;
+    widest_rown_length=0;
+    widest_orig_length=0;
+    padding_left="    "
+    cli_default_args_start_index=3
+    parse_cli_args(cli_params);
+
+    # cls();
+}
+function cls() {
+    printf("\x1b[2J\x1b[3J\x1b[H") > "/dev/stderr"
+}
+
+function get_arg_value(argv_index) {
+    delete tmp_arg_value
+
+    arg_value=PROCINFO["argv"][argv_index];
+    value_pos = match(arg_value, /^(\s*([^-]+.*)\s*)$/, tmp_arg_value);
+    return tmp_arg_value[1]
+}
+function format_value(value, name, depth) {
+    if (!depth) {
+        depth=0
+    }
+    depth_ty = typeof(depth)
+    if (depth_ty !=  "number") {
+        printf("[format_value error] invalid `depth' parameter: %s is not a number\n", depth_ty) > "/dev/stderr";
+        exit 1
+    }
+
+    value_ty = typeof(value)
+
+    name_ty = typeof(name)
+    if (name_ty !=  "string") {
+        printf("[format_value error] invalid `name' parameter: %s is not string\n", name_ty) > "/dev/stderr";
+        exit 1
+    }
+
+    if (value_ty ==  "array") {
+        return format_array(value, name, depth)
+    } else if (value_ty == "string") {
+        return sprintf("\"%s\"", value)
+    } else {
+        return sprintf("%s", value)
+    }
+}
+
+function format_array(array, name, depth) {
+    if (!depth) {
+        depth=0
+    }
+    array_ty = typeof(array)
+    if (array_ty !=  "array") {
+        printf("[format_key error] invalid `array' parameter : %s (%s) is not an array\n", array, array_ty) > "/dev/stderr";
+        exit 1
+    }
+    name_ty = typeof(name)
+    if (name_ty !=  "string") {
+        printf("[format_key error] invalid `name' parameter: %s is not string\n", name_ty) > "/dev/stderr";
+        exit 1
+    }
+    orig_name=name;
+    name=trim(name);
+    if (length(name) == 0) {
+        printf("[format_key error] invalid `name' parameter: empty string\n") > "/dev/stderr";
+        exit 1
+    }
+    delete format_array_items
+    format_array_index=0;
+    element=""
+    element_ty=""
+
+    array_len=length(array)
+    is_first_item=0;
+    is_last_item=0;
+    item_prefix=""
+    item_suffix=""
+    padding_left="    "
+
+    format_array_items[format_array_index++]="["
+    for (key in array) {
+        element=array[key]
+        if (length(name) > 0) {
+            item_prefix=sprintf("%s%s[%s]", padding_left, name, key);
+        } else {
+            item_prefix=sprintf("%s[%s]", padding_left, key);
+        }
+
+        item_suffix=""
+        if (format_array_index == 0) {
+            is_first_item=1;
+        } else {
+            is_first_item=0;
+        }
+        if ((format_array_index+1) == array_len) {
+            is_last_item=1;
+        }else {
+            is_last_item=0;
+        }
+
+        element_ty=typeof(array[key]);
+        if (!is_last_item) {
+            item_suffix=",\n"
+
+        } else {
+            item_suffix="\n"
+        }
+
+        if (element_ty == "array") {
+            item=sprintf("%s%s=%s%s", item_prefix, format_array(element, sprintf("%s[%s]", name, key), depth + 1), item_suffix);
+
+        } else {
+            item=sprintf("%s=%s%s\n", item_prefix, format_value(element), item_suffix);
+        }
+
+
+        # printf("item=%s\n", item)
+        format_array_items[format_array_index++]=item;
+    }
+    format_array_items[format_array_index++]="]"
+    return join_string(format_array_items);
+}
+function join_string(array) {
+    array_ty = typeof(array)
+    if (array_ty !=  "array") {
+        printf("[join_string error] invalid `array' parameter : %s (%s) is not an array\n", array, array_ty) > "/dev/stderr";
+        exit 1
+    }
+    result=""
+    for (i=0;i<length(array);i++) {
+        result=sprintf("%s%s", result, array[o])
+    }
+    result
+}
+
+function match_dash_arg(arg_string, arg_match) {
+    if (typeof(arg_string) !=  "string") {
+        printf("[match_dash_arg error] invalid parameter arg_string: %s (%s) is not an array\n", arg_string, typeof(arg_string)) > "/dev/stderr";
+        exit 1
+    }
+    if (typeof(arg_match) !=  "array") {
+        printf("[match_dash_arg error] invalid parameter arg_match: %s (%s) is not an array\n", arg_match, typeof(arg_match)) > "/dev/stderr";
+        exit 1
+    }
+    match_pos = match(arg_string, /^\s*(([-])([a-zA-Z0-9-])?|([-][-])([a-zA-Z]{2,}[a-zA-Z0-9-]*)?)((=)(.*))?$/, arg_match);
+    return match_pos
+}
+function match_value_arg(arg_string, container) {
+    dash_match_pos = match(arg_string, /^\s*(([-])([a-zA-Z0-9-])?|([-][-])([a-zA-Z]{2,}[a-zA-Z0-9-]*)?)((=)(.*))?$/, arg_match);
+    return match_pos
+}
+
+function parse_arg(argv_index, container) {
+    total_args = length(PROCINFO["argv"]);
+
+    arg_orig=PROCINFO["argv"][argv_index];
+    arg=trim(arg_orig);
+
+    next_arg_orig=""
+    next_arg=""
+
+    delete arg_match;
+    # match_pos = match(arg, /^\s*(([-])([a-zA-Z0-9-])?|([-][-])([a-zA-Z]{2,}[a-zA-Z0-9-]*)?)((=)(.*))?$/, arg_match);
+    match_pos = match_dash_arg(arg, arg_match);
+    if (!match_pos) {
+        return 0
+    }
+    if (length(arg_match)<= 0) {
+        return
+    }
+    has_next_arg=0;
+    next_argv_index=argv_index+1;
+
+    if (next_argv_index <= total_args) {
+        has_next_arg=1;
+        next_arg_orig=PROCINFO["argv"][next_argv_index];
+        next_arg=trim(next_arg_orig);
+        # if (match(next_arg_orig, /^(\s*([^-]+.*)\s*)$/)
+    } else {
+        next_argv_index=-1
+    }
+
+
+    is_flag=0;
+    is_option=0;
+    assigns_value=0;
+    flag_char=""
+    option_name=""
+    orig_value=""
+    value=""
+
+    if (arg_match[2] == "-") {
+        is_flag=1;
+        flag_char=arg_match[3];
+    } else if (arg_match[4] == "--") {
+        is_option=1;
+        option_name=arg_match[5];
+    }
+    if (arg_match[7] == "=") {
+        assigns_value=1;
+        orig_value=arg_match[8];
+        value=trim(orig_value);
+    }
+    match_pos = match(arg, /^\s*(([-])([a-zA-Z0-9-])?|([-][-])([a-zA-Z]{2,}[a-zA-Z0-9-]*)?)((=)(.*))?$/, arg_match);
+
+    container[argv_index]["is_flag"]=is_flag;
+    container[argv_index]["is_option"]=is_option;
+    container[argv_index]["assigns_value"]=assigns_value;
+    container[argv_index]["flag_char"]=flag_char;
+    container[argv_index]["option_name"]=option_name;
+    container[argv_index]["value"]=value;
+    container[argv_index]["empty_value"]=empty_value;
+
+    if (length(container[argv_index]) > 0) {
+        # printf("arg_match for arg '%s'\n", arg) > "/dev/stderr";
+        # for (key in container[argv_index]) {
+        #     printf("%s%s => %s\n", padding_left, key, container[argv_index][key]) > "/dev/stderr";
+        # }
+        # extra line
+        # print("") > "/dev/stderr";
+    }
+}
+function has_arg(name, container) {
+    total_args = length(PROCINFO["argv"]);
+    name_regex = sprintf("^\\s*(([-]{0,2})(%s)(=(.*))?)\\s*$", name)
+# TANGO_PALETTE_LIGHT["scarletred"]="239;41;41"
+# TANGO_PALETTE_MEDIUM["scarletred"]="204;0;0"
+# TANGO_PALETTE_DARK["scarletred"]="164;0;0"
+    # printf("\x1b[1;38;2;252;373;62mname_regex=\x1b[1;38;2;245;121;0m%s\x1b[0m\n", name_regex) > "/dev/stderr";
+
+    # # scarlet red
+    # printf("\x1b[1;38;2;239;41;4mname=\x1b[1;38;2;204;0;0m%s\x1b[0m\n", name) > "/dev/stderr";
+    for (argv_index=0;argv_index<total_args; argv_index++) {
+        arg_orig=PROCINFO["argv"][argv_index];
+        arg=trim(arg_orig);
+        # # chameleon
+        # printf("\x1b[1;38;2;138;226;52marg=\x1b[1;38;2;115;210;22m%s\x1b[0m\n", arg) > "/dev/stderr";
+        if ( arg ~ name_regex ) {
+            return 1
+        }
+    }
+    # if (total_args > 0) {
+    #     print("")
+    # }
+
+}
+function parse_cli_args(cli_params, start_index) {
+    total_args = length(PROCINFO["argv"]);
+    if ((typeof(start_index) != "number") || start_index<0) {
+        start_index=cli_default_args_start_index
+    } else if (start_index >= total_args) {
+        printf("[parse_cli_args error] invalid `start_index' %s argument '%s': greater than argv length (%d)\n", typeof(start_index), start_index, total_args) > "/dev/stderr"
+    }
+    for (i=start_index;i<total_args; i++) {
+        pos=parse_arg(i, cli_params)
+    }
+}
+
+function trim_start(input_string) {
+    return gensub(/^[[:space:]]+/, "", "g", input_string);
+}
+function trim_ends(input_string) {
+    return gensub(/[[:space:]]+$/, "", "g", input_string);
+}
+function trim(input_string) {
+    return trim_start(trim_ends(input_string))
+}
+
+function add_line(line, row_number) {
+    orig_line=line;
+    line=trim(orig_line);
+
+    orig_line_len= length(orig_line_len);
+    line_len= length(line_len);
+    rown_len=length(sprintf("%s", NR));
+
+    widest_rown_length=0;
+
+
+    if (widest_rown_length < rown_len) {
+        widest_rown_length=rown_len;
+    }
+    if (widest_line_length < line_len) {
+        widest_line_length=line_len;
+    }
+    if (widest_orig_length < orig_line_len) {
+        widest_orig_length=orig_line_len;
+    }
+
+    orig_lines_by_index[line_count]=orig_line;
+    trim_lines_by_index[line_count]=line
+
+    if (length(line) == 0) {
+        return
+    }
+
+    if (trimmed_lines[line]) {
+        return
+    }
+    trimmed_lines[line]=row_number
+    trimmed_lines_by_index[line_count]=line;
+    trimmed_lines_by_row[row_number]=line
+
+
+    line_count++;
+
+}
+
+{
+    add_line($0, NR);
+}
+
+function print_lines() {
+    # print(format_array(cli_params, "cli_params"));
+    if (has_arg("flatten", cli_params) || has_arg("flat", cli_params)) {
+        suffix=" "
+    } else {
+        suffix="\n"
+    }
+    for (i=0; i<line_count; i++) {
+        if ((line=trimmed_lines_by_index[i]) && (row_number=trimmed_lines[line])) {
+            tline=gensub(/^\s*$/, "", "g", line);
+            tlen = length(tline);
+            if (tlen > 0) {
+                # if (cli_params["suffix"]=="index") {
+                #     printf("%s # %d\n", tline, tlen)
+                # }
+                printf("%s%s", tline, suffix)
+            }
+        }
+    }
+    if (suffix != "\n") {
+        print("");
+    }
+}
+
+END {
+    print_lines()
+}

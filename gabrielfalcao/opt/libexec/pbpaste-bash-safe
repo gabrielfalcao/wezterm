@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+
+declare -- clipboard=""
+declare -i exitcode=0
+declare -r script_name=$(basename "${0}")
+
+if ! clipboard="$(/usr/bin/pbpaste)"; then
+exitcode=$?;
+fi
+
+if [ "${exitcode}" -ne 0 ]; then
+1>&2 echo -e "[${script_name} error]" "pasting from clipboard failed with code ${exitcode}"
+exit ${exitcode}
+fi
+
+
+if [ -z "${clipboard}" ]; then
+1>&2 echo -e "[${script_name} error]" "clipboard is empty"
+exit 1
+fi

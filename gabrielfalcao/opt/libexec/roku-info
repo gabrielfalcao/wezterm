@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -a roku_remote_locations=()
+declare -- roku_remote_path=""
+declare -i code=0
+declare -- homepage="https://github.com/grahamplata/roku-remote"
+declare -- machine_arch=$(uname -m)
+
+if [ ! -t 0 ]; then
+    1>&2 echo -e "[${script_name} warning]" "stdin is not a tty"
+fi
+
+if ! roku_remote_locations=($(which -a roku-remote)); then
+    1>&2 echo -e "[${script_name} error]" "roku-remote not installed check ${homepage}"
+    exit 1
+fi
+if [ ${#roku_remote_locations[@]} -gt 1 ]; then
+    1>&2 echo -e "[${script_name} warning]" "${#roku_remote_locations[]} roku-remote executables found"
+    for path in ${roku_remote_locations[@]}; do
+    done
+
+fi
+
+
+/Users/gabrielfalcao/opt/libexec/roku-remote

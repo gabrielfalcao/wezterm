@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+
+declare -r ifs_lb=$'\n'
+declare -r ifs_old=${IFS:-${ifs_lb}}
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+export IFS="${ifs_old}"
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -a stdin_lines=()
+declare -i stdin_line_count=${#stdin_lines[@]}
+declare -- git_repo_path=""
+declare -i exit_code=0
+
+declare -i lineno=0
+declare -- line=""
+
+if [ ! -t 0 ]; then
+    export IFS=$'\n'
+    while read line; do
+        if ! stdin_lines+=("$line"); then
+            continue
+        fi
+    done </dev/stdin
+elif [ "${argc}" -eq 0 ]; then
+    1>&2 echo "${script_name} missing argument(s): <PATH> [PATH...]"
+    diplay_help
+    exit 1
+fi
+stdin_line_count=${#stdin_lines[@]}
+
+unicode_file_widest_line() {
+    local -i index=0
+    local -- arg=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: FILENAME"
+        return 1
+    # elif [ ${argc} -gt 1 ]; then
+    #     1>&2 echo -e "[${FUNCNAME[0]} error]" "too many arguments: ${argv[@]@Q}"
+    #     1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: FILENAME"
+    #     return 1
+    fi
+    local -- filename=''
+    local -- arg_pos=''
+    local -- error_prefix=''
+    local -- message_prefix=''
+    error_prefix="[${FUNCNAME[0]} error]"
+    local -- message=""
+    local -i error_is_set=0
+    local -i error_is_critical=0
+    local -a errors_displayed=()
+    local -- error_message=''
+    local -a valid_filenames_to_check=()
+    local -A length_by_filename=()
+
+    for index in ${argv[@]}; do
+        filename="${argv[$index]}"
+        arg_pos=$(printf '%*s of %s' ${#argc} $((index + 1)) ${argc})
+        message_prefix="invalid argument ${arg_pos}"
+        message=""
+        error_is_set=0
+        error_is_critical=0
+        error_message=''
+        if [ -z "${filename}" ]; then
+            message="empty argument: ${arg@Q}"
+        elif [ ! -e "${filename}" ]; then
+            message="file does not exist: ${arg@Q}"
+        elif [ ! -r "${filename}" ]; then
+            message="file not readable: ${arg@Q}"
+        else
+            message=""
+            error_message=""
+        fi
+        error_is_set=${#message}
+        if (($error_is_set)) && [ -n "${message}" ]; then
+            error_message="${message_prefix}: ${message}"
+            1>&2 echo -e "${error_prefix}" "${error_message}"
+            errors_displayed+=("${error_message}")
+            if (($error_is_critical)); then
+                return ${error_is_critical}
+            fi
+            error_is_set=0
+            error_is_critical=0
+        else
+            message_prefix=""
+            message=""
+            error_message=""
+        fi
+
+    done
+
+    local -i pos=0;
+    local -i max_line_len=0;
+    local -i per_filemax_line_len=0;
+    local -i total_lines=${#lines[@]}
+    local -i widest_filename=0;
+    local -i line_len=0;
+    local -i index=0
+
+    local -i per_filemax_line_len=0;
+    local -a lines=()
+
+    export IFS=$'\n'
+    for filename in ${valid_filenames_to_check[@]}; do
+        per_filemax_line_len=-1
+        lines=()
+        lines=($(cat "${filename}"))
+        for index in ${!lines[@]}; do
+            line_len=-1
+            line="${lines[$index]}"
+            line_len=$(echo -n "${line}" | wc -c)
+            if [ ${line_len} -gt ${max_line_len} ]; then
+                # ICAgICAgICAgICAgICAgIDE+JjIgZWNobyAtZSAiaWYgWyAke2xpbmVfbGVufSAtZ3QgJHttYXhfbGluZV9sZW59IF07dGhlbiIKICAgICAgICAgICAgICAgIDE+JjIgZWNobyAtZSAiXHRzZXR0aW5nIG1heCBsZW5ndGgiCiAgICAgICAgICAgICAgICAxPiYyIGVjaG8gLWUgIlx0JHttYXhfbGluZV9sZW5ndGhAQX1cdCR7bGluZV9sZW5AQX1cbiIK
+                max_line_len=${line_len}
+                # ICAgICAgICAgICAgICAgIHBvcz0kKHByaW50ZiAnJSpzJyAkeyN0b3RhbF9saW5lc30gJCgoaW5kZXggKyAxKSkpCiAgICAgICAgICAgICAgICBlY2hvIC1lICIke3Bvc30gbGVuZ3RoOiAke2xpbmVfbGVufVxuXG4iCg==
+            fi
+            if [ ${line_len} -gt ${per_filemax_line_len} ]; then
+                per_filemax_line_len=${line_len}
+            fi
+        done
+        if [ ${#lines[@]} -gt 0 ]; then
+            if [ ${#filename} -gt ${widest_filename} ]; then
+                widest_filename=${#filename}
+            fi
+        else
+            per_filemax_line_len=0
+        fi
+        length_by_filename["${filename}"]="${per_filemax_line_len}"
+    done
+
+}

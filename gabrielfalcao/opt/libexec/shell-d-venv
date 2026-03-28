@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+
+declare -a argv=($@)
+declare -- name=$(basename "$0")
+declare -- exec_path=""
+declare -- tmp=""
+declare -- actual_path=""
+
+actual_path=$(path canon "${0}")
+
+on_exit() {
+    true
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\r${name} (${actual_path}) Aborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -- shell_d_entrypoint_lib="$HOME/.shell.d/entrypoint.sh"
+if [ ! -e "${shell_d_entrypoint_lib}" ]; then
+    1>&2 echo -e  "\${shell_d_entrypoint_lib} does not exist"
+    exit 1
+elif [ ! -f "${shell_d_entrypoint_lib}" ]; then
+    1>&2 echo -e  "\${shell_d_entrypoint_lib} is not a file"
+    exit 1
+elif [ ! -s "${shell_d_entrypoint_lib}" ]; then
+    1>&2 echo -e  "\${shell_d_entrypoint_lib} is empty"
+    exit 1
+elif [ ! -r "${shell_d_entrypoint_lib}" ]; then
+    1>&2 echo -e  "\${shell_d_entrypoint_lib} is not readable"
+    exit 1
+fi
+builtin source  "${shell_d_entrypoint_lib}"
+
+if [[ ! -v shell_d_python_bin_path ]]; then
+    1>&2 echo -e  "\${shell_d_python_bin_path} is not defined"
+    exit 1
+fi
+declare -- bin_dir_ty=""
+if [ -z "${shell_d_python_bin_path}" ]; then
+    1>&2 echo -e  "\${shell_d_python_bin_path} is empty: ${shell_d_python_bin_path@Q}"
+    exit 1
+elif [ ! -e "${shell_d_python_bin_path}" ]; then
+    1>&2 echo -e  "\${shell_d_python_bin_path} does not exist: ${shell_d_python_bin_path@Q}"
+    exit 1
+elif [ ! -d "${shell_d_python_bin_path}" ]; then
+    stderr=$(mktemp)
+    if ! bin_dir_ty=$(2>${stderr} gstat -c %F "${shell_d_python_bin_path}"); then
+        bin_dir_ty="$(sed -E 's/^.*:\s*//g' "${stderr}")"
+    fi
+    1>&2 echo -e  "\${shell_d_python_bin_path} should be a directory but is ${bin_dir_ty@Q}: ${shell_d_python_bin_path[@]}"
+    exit 1
+fi
+
+
+if [ "${name}" == "shell-d-venv" ]; then
+    for arg in ${argv[@]}; do
+        case "${arg}" in
+            --relink|relink|--link|link)
+                declare -a target_names=($(find "${shell_d_python_bin_path}" -not -type d -exec basename {} \;))
+                for target in ${target_names[@]}; do
+                    if ! (cd "${script_path}" && ln -s "${script_name}" "${target}"); then
+                        ln -s "${actual_path}" "${script_path}/${target}"
+                    fi
+                done
+                exit 0
+            ;;
+        esac
+    done
+    1>&2 echo -e "${script_name} is designed to be executed from symlinks named as python, python3, pip, pip3 etc - the only exception is to invoke '${script_name} --relink', which then recreates such symlinks"
+    exit 1
+fi
+
+
+if [[ -v shell_d_python_bin_path ]]; then
+    tmp="${shell_d_python_bin_path}/${name}"
+    if [ -x "${tmp}" ]; then
+        exec_path="${tmp}"
+    fi
+fi
+
+if [ -z "${exec_path}" ]; then
+    builtin hash -r
+    export IFS=:
+    declare -a other_paths=(
+        $(printf '%s\n' ${PATH} | grep -E -v "${script_path}")
+    )
+    unset IFS
+    export PATH=$(printf '%s:' ${other_paths[@]})
+    if ! exec_path=$(builtin type -t -P "${name}"); then
+        1>&2 echo -e "could not find executable for ${name@Q}"
+        exit 1
+    fi
+fi
+
+if [ -z "${exec_path}" ]; then
+    1>&2 echo -e "could not find executable for ${name@Q}"
+    exit 1
+fi
+
+if [ ! -x "${exec_path}" ]; then
+    1>&2 echo -e "not executable: ${exec_path}"
+    exit 1
+fi
+
+${exec_path} ${argv[@]}

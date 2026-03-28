@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -- git_repo_path=""
+declare -i exit_code=0
+declare -A keywords=()
+# keywords+=(["pid"]="process ID") # redundant
+keywords+=(["pcpu"]="percentage CPU usage (alias pcpu)")
+keywords+=(["pmem"]="percentage memory usage (alias pmem)")
+keywords+=(["acflag"]="accounting flag (alias acflg)")
+keywords+=(["args"]="command and arguments")
+keywords+=(["comm"]="command")
+keywords+=(["command"]="command and arguments")
+keywords+=(["cpu"]="short-term CPU usage factor (for scheduling)")
+keywords+=(["etime"]="elapsed running time")
+keywords+=(["flags"]="the process flags, in hexadecimal (alias f)")
+keywords+=(["gid"]="processes group id (alias group)")
+keywords+=(["inblk"]="total blocks read (alias inblock)")
+keywords+=(["jobc"]="job control count")
+keywords+=(["ktrace"]="tracing flags")
+keywords+=(["ktracep"]="tracing vnode")
+keywords+=(["lim"]="memoryuse limit")
+keywords+=(["logname"]="login name of user who started the session")
+keywords+=(["lstart"]="time started")
+keywords+=(["majflt"]="total page faults")
+keywords+=(["minflt"]="total page reclaims")
+keywords+=(["msgrcv"]="total messages received (reads from pipes/sockets)")
+keywords+=(["msgsnd"]="total messages sent (writes on pipes/sockets)")
+keywords+=(["nice"]="nice value (alias ni)")
+keywords+=(["nivcsw"]="total involuntary context switches")
+keywords+=(["nsigs"]="total signals taken (alias nsignals)")
+keywords+=(["nswap"]="total swaps in/out")
+keywords+=(["nvcsw"]="total voluntary context switches")
+keywords+=(["nwchan"]="wait channel (as an address)")
+keywords+=(["oublk"]="total blocks written (alias oublock)")
+keywords+=(["p_ru"]="resource usage (valid only for zombie)")
+keywords+=(["paddr"]="swap address")
+keywords+=(["paddr"]="swap address")
+keywords+=(["pagein"]="pageins (same as majflt)")
+keywords+=(["pgid"]="process group number")
+keywords+=(["ppid"]="parent process ID")
+keywords+=(["pri"]="scheduling priority")
+keywords+=(["prsna"]="persona")
+keywords+=(["re"]="core residency time (in seconds; 127 = infinity)")
+keywords+=(["rgid"]="real group ID")
+keywords+=(["rss"]="resident set size")
+keywords+=(["ruid"]="real user ID")
+keywords+=(["ruser"]="user name (from ruid)")
+keywords+=(["sess"]="session ID")
+keywords+=(["sig"]="pending signals (alias pending)")
+keywords+=(["sigmask"]="blocked signals (alias blocked)")
+keywords+=(["sl"]="sleep time (in seconds; 127 = infinity)")
+keywords+=(["start"]="time started")
+keywords+=(["state"]="symbolic process state (alias stat)")
+keywords+=(["svgid"]="saved gid from a setgid executable")
+keywords+=(["svuid"]="saved UID from a setuid executable")
+keywords+=(["tdev"]="control terminal device number")
+keywords+=(["time"]="accumulated CPU time, user + system (alias cputime)")
+keywords+=(["tpgid"]="control terminal process group ID")
+keywords+=(["tsess"]="control terminal session ID")
+keywords+=(["tsiz"]="text size (in Kbytes)")
+keywords+=(["tt"]="control terminal name (two letter abbreviation)")
+keywords+=(["tty"]="full name of control terminal")
+keywords+=(["ucomm"]="name to be used for accounting")
+keywords+=(["uid"]="effective user ID")
+keywords+=(["upr"]="scheduling priority on return from system call (alias usrpri)")
+keywords+=(["user"]="user name (from UID)")
+keywords+=(["utime"]="user CPU time (alias putime)")
+keywords+=(["vsz"]="virtual size in Kbytes (alias vsize)")
+keywords+=(["wchan"]="wait channel (as a symbolic name)")
+keywords+=(["wq"]="total number of workqueue threads")
+keywords+=(["wqb"]="number of blocked workqueue threads")
+keywords+=(["wqr"]="number of running workqueue threads")
+keywords+=(["wql"]="workqueue limit status (C = constrained thread limit, T = total thread limit)")
+keywords+=(["xstat"]="exit or stop status (valid only for stopped or zombie process)")
+
+declare -- error_prefix_color_rgb="255;0;66"
+declare -- error_color_rgb="255;62;92"
+declare -- warn_prefix_color_rgb="255;106;50"
+declare -- warn_color_rgb="255;161;50"
+declare -- info_prefix_color_rgb="0;66;255"
+declare -- info_color_rgb="62;92;255"
+declare -- debug_prefix_color_rgb="50;255;106"
+declare -- debug_color_rgb="50;255;161"
+for kword in ${!keywords[@]}; do
+    declare -A "ps_${kword}_by_id"
+done
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+declare -A sess_by_pid=()
+sudo ps axo command,sess,state,time,tt,jobc,ppid,pgid,pid | grep -E '^\s*(wdutil diagnose|COMMAND)'
+
+
+gather_all_keywords() {
+    local -- lines=()
+    local -i pid=0
+    local -- value=""
+    local -- regexp='^\s*([0-9]+)\s+([^[:space:]]+.*)\s*$'
+    for kword in ${!keywords[@]}; do
+        local -I -n array="ps_${kword}_by_id"
+        export IFS=$'\n'
+        lines=( $(ps axo pid,${kword} | grep -E -v "^\s*PID") )
+        unset IFS
+        for line in ${lines[@]}; do
+            local -a pair=(
+                $(sed -E "/${regexp}/{s/${regexp}/\n\1\n\2\n/gp};t success q1;: success q0" <<< "${line}")
+            )
+            pid=${pair[@]:0:1}
+            value="${pair[@]:1}"
+            array+=(["${pid}"]="${value}")
+        done
+    done
+}
+process_argv() {
+    repl no echo
+    local -i current=0
+    local -i index=0
+    local -- arg=""
+
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+    done
+    repl sane
+}
+
+main() {
+    gather_all_keywords
+    for kword in ${!keywords[@]}; do
+        local -I -n array="ps_${kword}_by_id"
+        echo "${array[@]@A}"
+    done
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    if process_argv ${argv[@]}; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

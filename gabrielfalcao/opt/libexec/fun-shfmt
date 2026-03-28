@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -- shell_script_path=""
+declare -- code_to_prettify=""
+
+if [ ${#} -eq 1 ]; then
+    shell_script_path="${1}"
+elif [ ${#} -eq 0 ]; then
+    1>&2 echo -e "[${script_name} error]" "missing argument: <SHELL_SCRIPT_PATH>"
+    exit 1
+elif [ ${#} -gt 1 ]; then
+    1>&2 echo -e "[${script_name} error]" "takes exactly 1 argument, received ${#}: ${argv[@]@Q}"
+    exit 1
+fi
+
+if [[ "${shell_script_path}" =~  ^[-]$ ]]; then
+    if [ ! -t 0 ]; then
+        code_to_prettify=$(cat < /dev/stdin)
+    else
+        1>&2 echo -e "[${script_name} error]" "SHELL_SCRIPT_PATH argument is '-' but stdin is a tty"
+        exit 1
+    fi
+elif [ ! -f "${shell_script_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "path ${shell_script_path@Q} is not a regular file"
+    exit 1
+elif [ ! -s "${shell_script_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "empty file: ${shell_script_path@Q}"
+    exit 1
+else
+    code_to_prettify=$(cat "${shell_script_path}")
+fi
+
+declare -- tty_path=$(lsof -p $$ | gawk -f ~/.shell.d/.awk.d/lsof_get_tty_name.gawk)
+declare -- unique_fun_name="fun_shfmt_$$_$(printf '%016x\n' "${RANDOM}")

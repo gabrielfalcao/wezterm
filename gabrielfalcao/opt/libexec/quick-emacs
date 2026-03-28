@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+Emacs-arm64-11 -nw -Q -q ${@}

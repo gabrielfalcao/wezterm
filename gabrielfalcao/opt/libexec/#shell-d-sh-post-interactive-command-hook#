@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+
+shopt -s cmdhist
+
+export HISTCONTROL="ignorespace"
+export HISTFILE="/Users/gabrielfalcao/.bash_history"
+export HISTFILESIZE="211776"
+export HISTIGNORE="&:[ \\t]*:[bf]g:exit:clear:cls;history*:hist-*:hist_*"
+export HISTSIZE="211776"
+export HISTTIMEFORMAT="@%s:%Z     "
+
+history -n
+# set -x
+if [[ -v WEZTERM_PANE ]] && [[ -v WEZTERM_UNIX_SOCKET ]]; then
+        1>&2 echo -e "\x1b[1;38;5;220mSOCKET\x1b[0m"
+    if [ -S "${WEZTERM_UNIX_SOCKET}" ] && [[ "${WEZTERM_PANE}" =~ ^[0-9]+$ ]]; then
+        1>&2 echo -e "\x1b[1;38;5;154mON\x1b[0m"
+        1>&2 declare -p BASH_SOURCE
+        1>&2 declare -p BASH_LINENO HISTCMD
+        declare -- last_cmd=$(history 1 | sed -E 's/^\s*[0-9]+\s*@[0-9]{8,}:[^[:space:]]+\s*([^[:space:]]+.*)$/\1/g')
+        declare -- tab_title="${last_cmd}"
+        if [ ${#last_cmd} -gt 12 ]; then
+            tab_title="${last_cmd:0:9}..."
+        fi
+
+        1>&2 echo -e "\x1b[1;38;5;231mwezterm cli set-tab-title \"${tab_title}\"\x1b[0m"
+        wezterm cli set-tab-title "${tab_title}"
+    fi
+else
+    1>&2 declare -p ${!HIST*}
+    1>&2 declare -p ${!WEZTERM*}
+fi

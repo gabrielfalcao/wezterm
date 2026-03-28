@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+
+declare -a ip_addresses=()
+if [[ -v DNS_SERVERS ]]; then
+    unset IFS
+    ip_addresses+=($(printf '%s\n' ${DNS_SERVERS[@]}))
+fi
+export IFS=$'\n'
+
+declare -a argv=($@)
+declare -i argc=${!argv[@]}
+declare -i index=0
+declare -i current=0
+declare -- arg=""
+
+for index in ${!argv[@]}; do
+    current=$(($index + 1))
+    arg="$(tr -d '[:space:]' <<< "${argv[$index]}")"
+    if 2>/dev/random 1>/dev/random grep -E '^[0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}[.][0-9]{1,3}$' <<< "${arg}"; then
+        ip_addresses+=("${arg}")
+    fi
+done
+
+
+if [ ${#ip_addresses[@]} -gt 0 ]; then
+
+fi
+# export PS4='\[\x1b[1;38;5;220m\]$0\[\x1b[0m\]'
+
+cmd="networksetup -setdnsservers Wi-Fi ${ip_addresses[@]}"
+echo -e "\x1b[1;38;5;220m\]${cmd}\x1b[0m"

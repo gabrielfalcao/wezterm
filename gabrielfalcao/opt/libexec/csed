@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+. ~/.shell.d/0000101-functions.sh
+set -e
+set -o pipefail
+set -E
+set -T
+set -u
+
+declare -a argv=($@)
+declare -i argc=${!argv[@]}
+# declare -- stderr=$(mktemp)
+declare -- stderr=$(workbench -p)/csed-$(today).stderr
+declare -- final_sed_input=$(workbench -p)/csed-$(today).final_sed_input
+declare -i exit_code=0
+
+declare -a sed_command=(sed ${argv[@]})
+declare -a sed_command=(sed -E '\|^(https?://)?([^/]+)([/].*)?$\|t success q1;:success q0')
+
+declare fake_stdin='https://goadopt.io/porque-aviso/?utm_content=main&utm_medium=cookie_banner_web&utm_source=cookie_banner_c71eac7b-b7d0-4d44-a9b4-a7c2588e4149'
+
+# if [ -t 0 ]; then
+#     exec<<<"${fake_stdin}"
+# fi
+#
+# # success() {
+# #     if ! 2>${final_sed_input} ; then
+# #         exit_code=$?
+# #         return ${exit_code}
+# #     else
+# #         return 0
+# #     fi
+# # }
+# set -x
+# if ! 2>${final_sed_input} ${sed_command[@]}; then
+#     exit_code=$?
+# else
+#     exit ${exit_code}
+# fi
+#
+
+log() {
+
+    1>&2 echo -e "\x1b[1;38;5;220m${@}\x1b[0m"
+}
+declare -a expression_errors=()
+# declare -- regexp='^sed:\s+([-e]\s+)?(\s*(expression\s+)?[#]([0-9]+),\s+(char|[^[:space:]]+)\s+([0-9]+):\s*(.+))+'
+declare -- regexp='\s*sed:\s*([-e]\s*)?(\s*(expression\s*)?\s*[#]([0-9]+).*)?'
+declare -- replacement="$(printf '\\\\%s = \\%s\n' {1..4})"
+log replacement
+# if ! result=$(sed -n -E "/${regexp}/{s/${regexp}/\2/gp};t success q1; :success q0" "${final_sed_input}"); then
+if ! result=$(sed -n -E "s/${regexp}/${replacement}/gp" "${final_sed_input}") || [ -z "${result}" ]; then
+    1>&2 echo -e "\x1b[1;38;5;202m"
+    1>&2 echo -e "regexp failed: \x1b[1;38;5;231m${regexp@Q}"
+    1>&2 echo -e "\x1b[1;38;5;202m"
+    # 1>&2 echo -en "\x1b[1;48;5;202m\x1b[1;38;5;233m"
+    1>&2 echo -e "against input: \x1b[1;48;5;231m\x1b[1;38;5;233m$(cat ${final_sed_input})\x1b[0m"
+    1>&2 echo -e "\x1b[0m"
+    echo -en "\x1b[0m"
+    exit $?
+fi
+1>&2 echo -e "\x1b[1;38;5;154m${result}\x1b[0m"
+
+# sed: -e expression #1, char 57: unterminated address regex

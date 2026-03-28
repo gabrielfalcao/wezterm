@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+if [ ! -t 0 ]; then
+    1>&2 echo "[${script_name} error] stdin is not a TTY"
+    exit 1
+fi
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+declare -- arg=''
+declare -- value=''
+declare -- var=''
+declare -- varname=''
+
+declare -a varnames=(${!PS*})
+
+# set -x
+for var in ${varnames[@]}; do
+    if [[ ! -v "${var}" ]]; then
+        continue
+    fi
+    unset "${var}"
+    # 1>&2 echo "${var}"
+    # 1>&2 declare -p "${var}"
+    # 1>&2 echo ""
+done
+
+ps4_backtrace() {
+    declare -- frame=''
+    local -i idx=0
+    local -- lineno=''
+    local -- srcfilename=''
+    local -i val=-1
+    while [[ -v BASH_SOURCE[$idx] ]]; do
+        lineno=''
+        srcfilename=''
+        val=-1
+        if [[ -v BASH_LINENO[$((idx - 1))] ]]; then
+            val="${BASH_LINENO[$((idx - 1))]}"
+            if [ ${val} -le 0 ]; then
+                idx=$((idx + 1))
+
+                continue
+            fi
+            lineno="\x1b[1;38;5;231m:\x1b[1;38;5;220m${val}"
+        fi
+        export IFS=$'\n'
+
+        srcfilename=$(basename "${BASH_SOURCE[${idx}]}")
+        echo -e "\x1b[1;38;5;42m${srcfilename}${lineno}\x1b[0m "
+        idx=$((idx + 1))
+    done
+    # 1>&2 echo -e "\x1b[1;38;5;220m$(declare -p idx)\x1b[0m"
+}
+
+export PS3='$(ps4_backtrace)+'
+export PS4='$(ps4_backtrace)+'
+set -x
+
+# exit 11
+
+declare -- symbol_name="${argv[@]}"
+declare -- symbol_name_quoted="${symbol_name@Q}"
+
+declare -a emacs_eval_string_parts=(
+    $'(describe-symbol \x22' ${symbol_name} $'\x22 )'
+)
+declare -- emacs_eval_string=""
+declare -- emacs_eval_string="$(printf "${emacs_eval_string}%s" "${emacs_eval_string}" "${emacs_eval_string_parts[@]}")"
+declare -a emacs_nw_args=()
+
+declare -a varnames=(${!emacs*})
+declare -i index=0
+declare -i current=0
+
+for var in ${varnames[@]}; do
+    1>&2 echo "${var}"
+    1>&2 declare -p "${var}"
+    1>&2 echo ""
+done
+# echo -e '\n\n'
+emacs_nw_args=('Emacs-arm64-11' '-nw' '-Q' '--eval' "${emacs_eval_string@Q}")
+# echo -e '\n\n'
+# emacs_nw_args=( "Emacs-arm64-11" "-nw" "-Q" "--eval" "${emacs_eval_string}" )
+# echo
+
+echo "${emacs_nw_args@Q}"

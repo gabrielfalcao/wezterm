@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -- arg=''
+declare -- value=''
+declare -- field=''
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -i code=0
+
+declare -i now=$(date -u +%s)
+declare -- curdir="$(pwd)"
+
+declare -- target_output_dir="${curdir}"
+declare -- output_filename=""
+
+declare -- metainfo_output_filename=""
+declare -- metainfo_output_path=""
+declare -- history_output_filename=""
+declare -- history_output_path=""
+declare -- tmp_history_output_filename=""
+declare -- tmp_history_output_path=""
+
+declare -- script_output_filename=""
+declare -- script_output_path=""
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+case ${argc} in
+    0)
+        output_filename="bash-interactive-$(gdate -u +'%Y-%m-%d_%H-%M-%S_%Z' --date=@${now})"
+        ;;
+    1)
+        arg="${argv[@]:0:1}"
+        if [[ "${arg}" =~ ^(.*)[/]([^/]+[a-zA-Z0-9_.-]+)$ ]]; then
+            target_output_dir=${BASH_REMATCH[1]}
+            output_filename=${BASH_REMATCH[2]}
+            declare -p BASH_REMATCH
+            if [[ ! "${target_output_dir}" =~ ^/ ]]; then
+                target_output_dir="$(pwd)/${target_output_dir}"
+            fi
+        elif [[ "${arg}" =~ ^([a-zA-Z0-9_.-]+)$ ]]; then
+            declare -p BASH_REMATCH
+            output_filename=${BASH_REMATCH[1]}
+        else
+            output_filename=$(slugify-string "${arg}")
+        fi
+        ;;
+    *)
+        1>&2 echo -e "[${BASH_SOURCE[0]} error]" "takes at most 1 argument, received ${argc}: ${argv[@]@Q}"
+        ;;
+esac
+
+mkdir -p "${target_output_dir}"
+
+metainfo_output_filename="${output_filename}.info"
+tmp_history_output_filename="${output_filename}.tmp"
+history_output_filename="${output_filename}.history"
+script_output_filename="${output_filename}.sh"
+
+metainfo_output_path="${target_output_dir}/${metainfo_output_filename}"
+history_output_path="${target_output_dir}/${history_output_filename}"
+script_output_path="${target_output_dir}/${script_output_filename}"
+
+main() {
+    1>${metainfo_output_path} echo -e "
+    cwd: $(pwd)
+    argv: ${argv[@]@Q}
+    argc: ${argc}
+    now: ${now}
+"
+    unset HISTCONTROL
+    unset HISTIGNORE
+    export TZ="UTC"
+    export HISTFILE="${tmp_history_output_path}"
+    export HISTFILESIZE="211776"
+    export HISTSIZE="211776"
+    export HISTTIMEFORMAT="@%s:%Z     "
+    unset ${!PROMPT*}
+
+    local -- tmp_init_file=$(mktemp)
+
+    1>${tmp_init_file} echo -e "
+unset  HISTCONTROL
+unset  HISTIGNORE
+export TZ=UTC
+export HISTFILE=${tmp_history_output_path@Q}
+export HISTFILESIZE=211776
+export HISTSIZE=211776
+export HISTTIMEFORMAT='@%s:%Z     '
+export PS1='\[\033[1;38;5;202m\]\u\[\033[1;38;5;242m\]@\[\033[1;38;5;249m\]bashint:${SHLVL}\[\033[1;38;5;222m\]:\[\033[1;38;5;242m\]\W\[\033[1;38;5;222m\]%\[\033[0m\] '
+export PS2='';
+export PS3='';
+export PS4='';
+
+on_exit() {
+          history > ${history_output_path}
+}
+trap on_exit exit
+"
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+    if ! /opt/homebrew/bin/bash --init-file "${tmp_init_file}"; then
+        code=$?
+        1>&2 echo "bash exited with code ${code}"
+    fi
+
+    1>&2 echo "saved to ${history_output_path@Q}"
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

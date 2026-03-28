@@ -1,0 +1,1 @@
+find . -mindepth 1 -maxdepth 4 -regextype egrep -type f -regex '.*[.][jt][s][x]?$' -not -regex '.*/(target|node_modules|[.](v(irtual)?)env)|site-packages|build|dist)/.*'

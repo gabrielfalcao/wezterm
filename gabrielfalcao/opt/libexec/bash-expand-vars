@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+# TODO / EXAMPLE / TERA / TEMPLATE / JINJA2
+# README.org
+# README.md
+# README.rst
+# README.txt
+
+echo \"\$\{tmp_patch{0..2}\}\" | xargs-tera echo "echo -e {% for item in items %}{{item}} {% endfor %}" | head -1

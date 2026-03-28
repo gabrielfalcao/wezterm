@@ -1,0 +1,196 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+script_name="$(basename "${BASH_SOURCE[0]}")"
+script_path="$(2>/dev/random 1>/dev/random cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+this_script_path="${script_path}/${script_name}"
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -i exit_code=0
+declare -- workbench_path="$HOME/workbench/$(today)/${script_name}"
+declare -- pip_freeze_path="${workbench_path}/pip.freeze"
+declare -- pip_freeze_upgraded_path="${workbench_path}/pip.upgrade"
+declare -- pip="$HOME/.shell.d/.venv/bin/pip3"
+declare -a current_python_packages=()
+declare -A current_package_versions=()
+declare -A latest_package_versions=()
+declare -a upgraded_freeze_lines=()
+declare -- error_prefix_color_rgb="239;41;41"
+declare -- error_color_rgb="204;0;0"
+
+declare -- warn_prefix_color_rgb="252;373;62"
+declare -- warn_color_rgb="245;121;20"
+
+declare -- info_prefix_color_rgb="114;159;207"
+declare -- info_color_rgb="52;101;164"
+
+declare -- debug_prefix_color_rgb="138;226;52"
+declare -- debug_color_rgb="115;210;22"
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty ${stty_args[@]}
+}
+usage() {
+    repl no echo
+    1>&2 echo -e "$(basename $0) <ARGUMENT>"
+    repl sane
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ -z "${BASH_TRACE}" ] && [ "${BASH_LOGLEVEL}" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+
+process_argv() {
+    repl no echo
+    # local -i current=0
+    # local -i index=0
+    # local -- arg=""
+
+    # for index in ${!argv[@]}; do
+    #     current=$(($index + 1))
+    #     arg="${argv[$index]}"
+    # done
+    info_prefixed "[using pip]" "${pip}"
+    export IFS=$'\n'
+    local -a info=()
+    local -- package_name=""
+    local -- package_version=""
+    local -- regexp='^([^=]+)[=]+(([0-9]+[.])+[a-z0-9]+)'
+    local -- quirky_regexp='^([^@[:space:]=]+)[=[:space:]@]+([^=[:space:]@]+)'
+
+    ${pip} freeze > ${pip_freeze_path}
+    for line in $(grep -E "(${regexp}|${quirky_regexp})" "${pip_freeze_path}"); do
+        info=($(sed -n -E "s/${regexp}/\n\1\n\2\n/gp" <<< "${line}"))
+
+        if [ ${#info[@]} -ne 2 ]; then
+            # warn_prefixed "[${script_name} warning]" "skipping pip freeze line: \x1b[1;38;5;231m${line@Q}\x1b[0m"
+            warn_prefixed "[${script_name} warning]" "could not parse version with primary method, trying quirky method"
+            continue
+        fi
+        info=($(sed -n -E "s/${quirky_regexp}/\n\1\n\2\n/gp" <<< "${line}"))
+
+        if [ ${#info[@]} -ne 2 ]; then
+            warn_prefixed "[${script_name} warning]" "skipping pip freeze line: \x1b[1;38;5;231m${line@Q}\x1b[0m"
+            continue
+        fi
+
+        package_name=${info[0]}
+        package_version=${info[1]}
+
+        current_python_packages+=("${package_name}")
+        current_package_versions=(["${package_name}"]="${package_version}")
+    done
+    unset IFS
+    repl sane
+}
+
+main() {
+    mkdir -p "${workbench_path}"
+    local -- package_name=""
+    local -- current_version=""
+    local -- latest_version=""
+    local -- package_current_json_metadata_path=""
+    local -- package_latest_json_metadata_path=""
+    for package_name in ${!current_package_versions[@]}; do
+        current_version=${current_package_versions["${package_name}"]}
+        package_current_json_metadata_path="${workbench_path}/${package_name}.current.json"
+        package_latest_json_metadata_path="${workbench_path}/${package_name}.latest.json"
+        pip install --dry-run --ignore-installed --report ${package_current_json_metadata_path} ${package_name}==${current_package_versions}
+        pip install --dry-run --upgrade --report ${package_latest_json_metadata_path} ${package_name}
+        latest_version=$(jq -r ".install[].metadata | select(.name == \"${package_name}\") | .version" "${package_latest_json_metadata_path}")
+        if [ -z "${latest_version}" ]; then
+            warn_prefixed "[${script_name}]" "could not gather information about latest version of package ${package_name@Q}"
+            continue
+        elif [ "${latest_version}" == "${current_version}" ]; then
+            warn_prefixed "[${package_name}]" "already in latest version"
+            continue
+        fi
+        latest_package_versions+=(["${package_name}"]="${latest_version}")
+        debug_prefixed "[${package_name}]" "latest version: ${latest_version} (current is ${current_version})"
+        upgraded_freeze_lines+=("${package_name}==${latest_version}")
+    done
+
+    printf '%s\n' "${upgraded_freeze_lines[@]}" > ${pip_freeze_upgraded_path}
+    info_prefixed "[${script_name}]" "wrote latest package requirements to ${pip_freeze_upgraded_path@Q}"
+    debug_prefixed "[${script_name}]" "run pip install -r ${pip_freeze_upgraded_path@Q} to upgrade"
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    if process_argv ${argv[@]}; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi
+repl sane

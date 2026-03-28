@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -- input_gawk_script_path=""
+declare -- gawk_source_code_to_prettify=""
+
+if [ ${argc} -eq 0 ]; then
+    if  [ ! -t 0 ]; then
+        gawk_source_code_to_prettify=$(cat < /dev/stdin )
+    else
+        1>&2 echo "[${script_name} error] missing command-line argument: <GAWK_FILENAME_TO_PRETTIFY>"
+        exit 1
+    fi
+elif [ ${argc} -gt 1 ]; then
+        1>&2 echo "[${script_name} error] too many arguments: ${script_name} takes exactly 1 argument, received ${argc} instead: ${argv[@]@Q}"
+        exit ${argc}
+
+elif [ ${argc} -eq 1 ]; then
+    if [[ "${argv[0]}" =~ ^[-]$ ]]; then
+        if [ -t 0 ]; then
+            1>&2 echo "[${script_name} error] filename argument set to ${argv[0]@Q} but stdin is a tty"
+            exit 1
+        else
+            gawk_source_code_to_prettify="$(cat < /dev/stdin)"
+        fi
+    elif [ -n "${argv[0]}" ] && [ -f "${argv[0]}" ] && [ -s "${argv[0]}" ]; then
+        input_gawk_script_path="${argv[0]}"
+        gawk_source_code_to_prettify=$(cat "${input_gawk_script_path}")
+    fi
+fi
+
+
+# ~/.shell.d/.awk.d/history-entry-ids.gawk
+
+gawk -f - -o- <<< "${gawk_source_code_to_prettify}"

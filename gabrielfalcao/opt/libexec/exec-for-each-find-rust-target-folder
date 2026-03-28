@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -- total_space_line=""
+declare -- space_usage_unit=""
+declare -- space_usage_value=""
+
+declare -- dua_output_raw=""
+declare -- dua_output_stripped=""
+declare -- dua_total_usage_line=""
+declare -- dua_total_usage_raw=""
+declare -- dua_total_usage=""
+declare -- total_usage=""
+declare -- space_usage=""
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "[${script_name} error]" "missing argument: <PATH_TO_RUST_TARGET_DIR>"
+    exit 1
+elif [ ${argc} -ge 2 ]; then
+    1>&2 echo -e "[${script_name} error]" "tool takes exactly 1 argument <PATH_TO_RUST_TARGET_DIR>, received ${argc} arguments instead: ${argv[@]@Q}"
+    exit 1
+fi
+
+declare -- target_path="${argv[0]}"
+
+if [ -z "${target_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "\${target_path} is empty: ${target_path@Q}"
+    exit 1
+elif [ ! -e "${target_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "\${target_path} does not exist: ${target_path@Q}"
+    exit 1
+elif [ ! -r "${target_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "\${target_path} is not readable: ${target_path@Q}"
+    exit 1
+elif [ ! -s "${target_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "\${target_path} is not empty: ${target_path@Q}"
+    exit 1
+elif [ -d "${target_path}" ]; then
+    1>&2 echo -e "[${script_name} error]" "cannot read ${target_path@Q} because that is a directory"
+    exit 1
+fi
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+
+dua_output_raw=$(dua "${target_path}")
+dua_output_stripped=$(ansistrip <<<"${dua_output_raw}")
+dua_total_usage_line=$(tail -1 <<<"${dua_output_stripped}")
+
+declare -- regexp='^[[:space:]]*(([0-9]+([.][0-9]+)?)[[:space:]]+([KMGT]B|b))\s+(.*)\s*$'
+# declare -- sed_command="s/${regexp}/\n\1\n/gp"
+declare -a sed_args=('-n' '-E')
+declare -- sed_command="s/${regexp}/$(sed-genrep-debug-groups 5)/gp"
+
+space_usage=$(sed ${sed_args[@]} "${sed_command}" <<<"${dua_total_usage_line}")
+declare -r declaration="$(declare -p space_usage)"
+
+# echo -e "\x1b[0m\x1b[1;38;5;220m$(declare -p target_path)\x1b[0m"
+
+echo -e "\x1b[0m\x1b[1;38;5;242m# $(declare -p target_path)\x1b[0m"
+echo -e "\x1b[0m\x1b[1;38;5;220m${declaration}\x1b[0m"

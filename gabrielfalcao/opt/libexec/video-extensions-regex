@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+declare -r group='(3g2|3gp|M2TS|MTS|TS|amv|asf|avi|drc|f4a|f4b|f4p|f4v|flv|gifv|m2v|m4p|m4v|mkv|mng|mov|mp2|mp4|mpe|mpeg|mpg|mpv|mxf|nsv|ogg|ogv|qt|rm|rmvb|roq|svi|viv|vob|webm|wmv)'
+echo "[.]${group}"

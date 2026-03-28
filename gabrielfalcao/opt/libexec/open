@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+
+unset IFS
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -- argv_string="${argv[@]}"
+declare -gar application_folders=(
+    /Applications
+    /System/Applications
+)
+declare -- app_name=""
+declare -- app_name_candidate=""
+
+if [ -n "${argv_string}" ]; then
+    app_name_candidate="$(heck-string --to=title "${argv_string}")"
+    if []
+
+
+open_command() {
+    local -a oc_argv=(${@})
+    local -i oc_argc=${#oc_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+
+    if [ ${oc_argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments"
+        return 1
+    fi
+
+    /usr/bin/open ${oc_argv[@]}
+}

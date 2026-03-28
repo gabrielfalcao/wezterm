@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+
+
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+
+declare -a argv=($@)
+declare -- name="ls"
+declare -- exec_path=""
+declare -- tmp=""
+declare -- actual_path=""
+declare -i is_gnu=0
+declare -- gnu_name="g${name}"
+
+on_exit() {
+    true
+}
+on_ctrlc() {
+    1>&2 echo -e "\rAborted with Ctrl-C"
+    exit 1
+}
+trap on_exit exit;
+trap on_ctrlc hup;
+trap on_ctrlc int;
+trap on_ctrlc bus;
+trap on_ctrlc segv;
+trap on_ctrlc sys;
+
+if [ -z "${exec_path}" ]; then
+    if exec_path=$(which "${gnu_name}"); then
+        is_gnu=1
+    fi
+fi
+if [ -z "${exec_path}" ]; then
+    if exec_path=$(builtin type -t -P "${name}"); then
+        if [[ ${exec_path} =~ ^.*/gnubin/*$ ]]; then
+            is_gnu=1
+        else
+            is_gnu=0
+        fi
+    fi
+fi
+
+if [ -z "${exec_path}" ]; then
+    1>&2 echo -e "could not find executable for ${name@Q}"
+    exit 1
+fi
+
+if [ ! -x "${exec_path}" ]; then
+    1>&2 echo -e "not executable: ${exec_path}"
+    exit 1
+fi
+
+${exec_path} ${argv[@]}

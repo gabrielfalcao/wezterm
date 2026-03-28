@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+# export IFS=$'\x7c' # pipe
+declare -- jq_pipeline=""
+
+
+jq_pipeline_from_argv() {
+    if [ ${argc} -gt 0 ]; then
+        printf '%s | ' "${argv[@]}" | sed -E 's/\s*[|]\s*$//g'
+    else
+        printf '.'
+    fi
+}
+
+
+wezterm cli list --format="json" </dev/stdin | jq -r "${jq_pipeline:-$(jq_pipeline_from_argv)}"

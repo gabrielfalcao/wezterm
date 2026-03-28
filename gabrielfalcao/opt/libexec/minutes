@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -ueTE
+set +f
+set -o pipefail
+unset IFS
+
+date +"%Y-%m-%d-%H-%M"

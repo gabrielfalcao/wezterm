@@ -1,0 +1,318 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -g script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -g script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -g this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -i code=0
+
+declare -i current=0
+declare -g rg=""
+declare -g pos=""
+
+declare -i index=0
+declare -g rg=""
+declare -g param=""
+
+declare -i next_index=0
+declare -g next_arg=""
+declare -g next_param=""
+
+declare -i skip_next=0
+
+declare -i lineno=0
+declare -i line_number=0
+declare -g line=""
+
+declare -g rgument=""
+declare -g field=""
+declare -g key=""
+declare -g name=""
+declare -g path=""
+declare -g value=""
+
+declare -ga stat_4_result_tuple=()
+
+declare -gA paths_index_map=()
+declare -gA paths_ctime_map=()
+declare -gA paths_mtime_map=()
+declare -gA paths_size_map=()
+declare -gA paths_ty_map=()
+declare -gA paths_folded_map=()
+declare -gA paths_folded_var_map=()
+declare -gA paths_filename_map=()
+declare -gA paths_parent_map=()
+declare -gA paths_base_map=()
+declare -gA paths_extension_map=()
+declare -gA paths_original_map=()
+declare -gA paths_canonical_map=()
+
+declare -ga paths_ordered_canonical=()
+declare -ga paths_ordered_original=()
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -i index=0
+declare -i current=0
+declare -g rg=""
+declare -g pos=""
+declare -g item_ty=""
+declare -gi item_size=-1
+declare -gi item_ctime=-1
+declare -gi item_mtime=-1
+declare -gi widest_path=0
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "missing arguments: <PATH_TO_RENAME> [...PATH_TO_RENAME]"
+    exit 1
+fi
+
+declare -ga gstat_call_argv=(
+    '-c'
+    $'%W\n\n%Y\n\n%s\n\n%F\n\n'
+)
+declare -gi stat_result_length=${#stat_4_result_tuple[@]}
+declare -g item_path=""
+declare -g item_canonical_path=""
+declare -g item_filename=""
+declare -g item_base=""
+declare -g item_extension=""
+
+display_key_value_var() {
+    # echo -e "$(indent 1)$(display_key_value_var "${item_canonical_path}" 'item_path')"
+    # echo -e "$(indent 1)$(display_key_value_var "${item_canonical_path}" 'item_canonical_path')"
+
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- pos=""
+    local -- mapping_key=""
+    local -- mapping_varname=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments: <KEY> <ARRAY_VARNAME>"
+    fi
+    if [ ${argc} -gt 2 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "too many arguments, takes exactly 2 but received ${argc}: ${argv[@]@Q}"
+        exit 1
+    fi
+
+    mapping_key="${argv[@]:0:1}"
+    mapping_varname="${argv[@]:1:1}"
+
+    local -- key=""
+    local -- value=""
+    local -- concat_value=""
+
+    local -I -n mapping="${mapping_varname}"
+    local -- mapping_ty="${mapping@a}"
+    if [[ "${mapping_ty}" =~ [a] ]]; then
+        local -- item_key=""
+        local -- item_value=""
+        echo "$(indent 1)${mapping_key}:"
+        for item_key in ${!mapping[@]}; do
+            item_value="${mapping[${item_key}]}"
+            echo "$(indent 2)${item_key@Q}: ${item_value@Q}"
+        done
+    elif [[ "${mapping_ty}" =~ [A] ]]; then
+        local -- item_key=""
+        local -- item_value=""
+        echo "$(indent 1)${mapping_key}:"
+        for item_key in ${!mapping[@]}; do
+            item_value="${mapping[${item_key}]}"
+            echo "$(indent 2)${item_key@Q}: ${item_value@Q}"
+        done
+    elif [[ "${mapping_ty}" =~ [i] ]]; then
+        item_key="${mapping_key}"
+        item_value="${mapping}" # not a mapping, but integer instead
+        echo "$(indent 1)${item_key}: ${item_value}"
+    elif [[ "${mapping_ty}" =~ [x] ]]; then
+        item_key="${mapping_key}"
+        item_value="${mapping}" # not a mapping, but integer instead
+        echo "$(indent 1)${item_key}: ${item_value} # export ${item_key}=${item_value@Q}"
+    elif [[ "${mapping_ty}" =~ ^[[:space:]]?$ ]]; then
+        item_key="${mapping_key}"
+        item_value="${mapping}" # not a mapping, but integer instead
+        echo "$(indent 1)${item_key}: ${item_value}"
+    else
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "unexpected type ${mapping_ty@Q} for mapping_key=${mapping_key@Q} and mapping_varname=${mapping_varname@Q} => ${mapping@A} => $(declare -p "${mapping_varname}")"
+        return 1
+    fi
+}
+indent() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- pos=""
+    local -i indentation_level=-1
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <INDENTATION_LEVEL>"
+        return 1
+    fi
+
+    for index in ${!argv[@]}; do
+        current=$(($index + 1))
+        arg="${argv[$index]}"
+        pos="$(printf '%*s of %s' ${#argc} ${current} ${argc})"
+        if [ ${indentation_level} -lt 0 ]; then
+            if [[ "${arg}" =~ ^([0]|[1-9][0-9]*)$ ]]; then
+                indentation_level="${arg}"
+            else
+                1>&2 echo -e "[${FUNCNAME[0]} error]" "invalid INDENTATION_LEVEL argument ${pos}, not a natural number: ${arg@Q}"
+                return 1
+            fi
+        else
+            1>&2 echo -e "[${FUNCNAME[0]} warning]" "ignoring argument ${pos} ${arg@Q}: indentation_level already set to ${indentation_level@Q}"
+            return 1
+        fi
+    done
+
+    if [ ${indentation_level} -lt 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "<INDENTATION_LEVEL> not set"
+        return 1
+    fi
+    local -i whitespace_count=$((indentation_level * 4))
+    printf '%*s' ${whitespace_count} ''
+}
+
+for index in ${!argv[@]}; do
+    current=$(($index + 1))
+    arg="${argv[$index]}"
+    pos="$(printf '%*s %s of %s' ${#argc} '' ${current} ${argc})"
+
+    if [ ! -e "${arg}" ]; then
+        1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "invalid path argument ${pos} file does not exist: ${arg@Q}"
+        exit 1
+    fi
+
+    export IFS=$'\n'
+    gstat_call_argv=(
+        "/opt/homebrew/Cellar/coreutils/9.5/bin/gstat"
+        '-c'
+        '%W\n%Y\n%s\n%F\n'
+        "${arg}"
+    )
+
+    if [ ${#arg} -gt ${widest_path} ]; then
+        widest_path=${#arg}
+    fi
+
+    if stat_4_result_tuple=($(echo -e "$(${gstat_call_argv[@]})")); then
+        code=0
+    else
+        code=$?
+        1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "gstat ${arg@Q} failed with code ${code}"
+        exit 1
+    fi
+    stat_result_length=${#stat_4_result_tuple[@]}
+
+    if [ ${stat_result_length} -lt 4 ]; then
+        1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "expected at least 4 items in result from gstat but got ${stat_result_length} instead: ${stat_4_result_tuple[@]@Q}"
+        exit 1
+    fi
+
+    if [ ! -f "${arg}" ] && [ ! -d "${arg}" ]; then
+        1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "invalid path argument ${pos} file does not exist: ${arg@Q}"
+        exit 1
+    fi
+    # $'%W\n\n%Y\n\n%s\n\n%F\n\n'
+    item_path="${arg}"
+    item_canonical_path="$(path canon "${item_path}")"
+    if [[ -v paths_ctime_map["${item_canonical_path}"] ]]; then
+        1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") warning]" "ignore already mapped path ${item_path@Q} => ${item_canonical_path@Q}"
+        continue
+    fi
+    item_folded_path="$(path canon -f "${item_canonical_path}")"
+    item_folded_var_path="$(path canon -fu "${item_canonical_path}")"
+    item_filename="$(path name "${item_canonical_path}")"
+    item_base="$(path base "${item_filename}")"
+    item_parent="$(path parent "${item_filename}")"
+    item_extension="$(path extension "${item_filename}" | sed -n -E 's/^[.]([a-zA-Z0-9]+)$/\1/gp')"
+
+    item_ctime="${stat_4_result_tuple[@]:0:1}"
+    item_mtime="${stat_4_result_tuple[@]:1:1}"
+    item_size="${stat_4_result_tuple[@]:2:1}"
+    item_ty="${stat_4_result_tuple[@]:3}"
+
+    paths_index_map["${item_canonical_path}"]="${index}"
+    paths_ctime_map["${item_canonical_path}"]="${item_ctime}"
+    paths_mtime_map["${item_canonical_path}"]="${item_mtime}"
+    paths_size_map["${item_canonical_path}"]="${item_size}"
+    paths_ty_map["${item_canonical_path}"]="${item_ty}"
+
+    paths_folded_map["${item_canonical_path}"]="${item_folded_path}"
+    paths_folded_var_map["${item_canonical_path}"]="${item_folded_var_path}"
+    paths_filename_map["${item_canonical_path}"]="${item_filename}"
+    paths_base_map["${item_canonical_path}"]="${item_base}"
+    paths_parent_map["${item_canonical_path}"]="${item_parent}"
+    paths_extension_map["${item_canonical_path}"]="${item_extension}"
+    paths_base_map["${item_canonical_path}"]="${item_base}"
+    paths_canonical_map["${item_path}"]="${item_canonical_path}"
+
+    paths_ordered_original+=("${item_path}")
+    paths_ordered_canonical+=("${item_canonical_path}")
+done
+
+declare -gi total_paths=${#paths_ordered_canonical[@]}
+
+export IFS=$'\n'
+
+for index in ${!paths_ordered_canonical[@]}; do
+    current=$((index + 1))
+
+    item_canonical_path=${paths_ordered_canonical["${index}"]}
+
+    index=${paths_index_map["${item_canonical_path}"]}
+    item_ctime=${paths_ctime_map["${item_canonical_path}"]}
+    item_mtime=${paths_mtime_map["${item_canonical_path}"]}
+    item_size=${paths_size_map["${item_canonical_path}"]}
+    item_ty=${paths_ty_map["${item_canonical_path}"]}
+
+    item_folded_path=${paths_folded_map["${item_canonical_path}"]}
+    item_folded_var_path=${paths_folded_var_map["${item_canonical_path}"]}
+    item_filename=${paths_filename_map["${item_canonical_path}"]}
+    item_parent=${paths_parent_map["${item_canonical_path}"]}
+    item_base=${paths_base_map["${item_canonical_path}"]}
+    item_extension=${paths_extension_map["${item_canonical_path}"]}
+    item_base=${paths_base_map["${item_canonical_path}"]}
+
+    if [ -d "${item_canonical_path}" ] && [[ "${item_filename}" = ^[.]git$ ]]; then
+        mv -fv "${item_canonical_path}" "${item_target_path}"
+        continue
+    else
+        # declare -- item_target_path="${item_canonical_path}_created_${item_ctime}_modified_${item_ctime}"
+        echo
+        declare -p item_canonical_path index item_ctime item_mtime item_size item_ty item_folded_path item_folded_var_path item_filename item_parent item_base item_extension item_base
+        echo
+
+    fi
+
+done

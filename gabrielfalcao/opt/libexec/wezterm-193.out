@@ -1,0 +1,34 @@
+[#1217][$?=0][$!=] [$$=29036] gabrielfalcao:libexec[git:osx-main]$cls;gawk 'BEGIN {ARGC=1;                                        
+}'^C                                                                                                                              
+[#1217][$?=130][$!=] [$$=29036] gabrielfalcao:libexec[git:osx-main]$unset IFS^C                                                   
+[#1217][$?=130][$!=] [$$=29036] gabrielfalcao:libexec[git:osx-main]$wezterm cli get-text --start-line=-1000 > wezterm-${WEZTERM_PA
+NE}.out                                                                                                                           
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+                                                                                                                                  
+

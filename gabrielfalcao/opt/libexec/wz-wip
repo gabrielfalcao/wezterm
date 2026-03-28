@@ -1,0 +1,524 @@
+#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
+
+import sys
+import click
+import re
+import shutil
+import os
+import json
+import math
+import subprocess
+import urllib
+import urllib.parse
+import dataclasses
+
+from pprint import pprint, pformat
+from datetime import datetime, timedelta, UTC
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Union, Optional, Self
+from pathlib import Path
+from subprocess import Popen, CompletedProcess, PIPE, DEVNULL
+
+wezterm_bin_path  = shutil.which('wezterm')
+
+def get_output(args: List[str], **kw) -> CompletedProcess:
+    return subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        close_fds=True,
+        shell=False,
+        encoding="utf-8",
+        stdin=DEVNULL,
+        check=True,
+        timeout=1,
+        capture_output=None,
+        **kw,
+    )
+
+
+@dataclass
+class pane_size:
+    rows: int
+    cols: int
+    pixel_width: int
+    pixel_height: int
+    dpi: int
+
+
+@dataclass
+class pane:
+    window_id: int
+    tab_id: int
+    pane_id: int
+    workspace: str
+    size: pane_size
+    title: str
+    cwd: str
+    cursor_x: int
+    cursor_y: int
+    cursor_shape: str
+    cursor_visibility: str
+    left_col: int
+    top_row: int
+    tab_title: str
+    window_title: str
+    is_active: bool
+    is_zoomed: bool
+    tty_name: str
+
+    accessed_unix: Optional[int] = field(init=False)
+    changed_unix: Optional[int] = field(init=False)
+
+    working_dir: Optional[Path] = field(init=False)
+    output: Optional[str] = field(init=False, repr=False)
+
+    def __post_init__(self, **kw_init):
+        uri = urllib.parse.urlparse(self.cwd)
+        working_dir = Path(uri.path)
+        self.working_dir = working_dir
+
+        tty = Path(self.tty_name)
+        tty_stat = tty.stat()
+        self.accessed_unix = int(tty_stat.st_atime)
+        self.changed_unix = int(tty_stat.st_ctime)
+        self.output = None
+
+    def has_dunder_output(self) -> bool:
+        return hasattr(self, "__output__")
+
+    def get_dunder_output(self) -> Optional[str]:
+        return getattr(self, "__output__", None)
+
+    def set_dunder_output(self, output: str) -> str:
+        if not isinstance(output, str):
+            ty = type(output).__name__
+            raise TypeError(
+                f"output argument is a {ty} instead of string: {repr(output)}"
+            )
+
+        self.__output__ = output
+        return output
+
+    def get_output(self, progress_callback: Optional[callable] = None) -> str:
+        output = self.get_dunder_output()
+        if output is None or not isinstance(output, str):
+            output = wezterm_cli_get_text_pane_id(
+                pane_id=self.pane_id, progress_callback=progress_callback
+            )
+            if isinstance(output, str) and len(output) > 0:
+                output = self.set_dunder_output(output)
+            elif isinstance(output, str):
+                logger.warning(f"output of pane {pane_id} is empty", pane_id=pane_id)
+                output = self.set_dunder_output(output)
+
+        self.__output__
+
+    @property
+    def tty(self) -> Path:
+        return Path(self.tty_name)
+
+    def __lt__(self, other: Self):
+        return self.accessed_unix.__lt__(other.accessed_unix)
+
+    def __le__(self, other: Self):
+        return self.accessed_unix.__le__(other.accessed_unix)
+
+    def __gt__(self, other: Self):
+        return self.accessed_unix.__gt__(other.accessed_unix)
+
+    def __ge__(self, other: Self):
+        return self.accessed_unix.__ge__(other.accessed_unix)
+
+    # # def __post_init__(self, **kw_init):
+    # #     kwargs = kw_init
+    # #     import ipdb;ipdb.set_trace()
+
+    # def get_cwd_url(self) -> urllib.parse.ParseResult:
+    #     return urllib.parse.urlparse(self.cwd)
+
+    # def get_working_dir(self) -> Path:
+    #     return Path(self.get_cwd_url().path)
+
+
+@dataclass
+class wezterm_cli:
+    executable_dir: Path
+    executable: Path
+    config_dir: Path
+    config_file: Path
+    unix_socket: Path
+
+    @classmethod
+    def fields_from_env(cls):
+        attr_env_mapping = [
+            ("executable_dir", "WEZTERM_EXECUTABLE_DIR"),
+            ("executable", "WEZTERM_EXECUTABLE"),
+            ("config_dir", "WEZTERM_CONFIG_DIR"),
+            ("config_file", "WEZTERM_CONFIG_FILE"),
+            ("unix_socket", "WEZTERM_UNIX_SOCKET"),
+        ]
+        result = dict()
+        for attr, envvar in attr_env_mapping:
+            value = os.getenv(envvar)
+            if value is None:
+                raise RuntimeError(f"environment var {repr(envvar)} is not set")
+            value = value.strip()
+            length = len(value)
+            if length == 0:
+                raise RuntimeError(f"environment var {repr(envvar)} is set but empty")
+
+            path = Path(value)
+
+            if not path.exists():
+                raise RuntimeError(
+                    f"environment var {repr(envvar)} points to non-existing path: {path}"
+                )
+
+            result[attr] = path
+        return result
+
+    @classmethod
+    def from_env(cls):
+        return cls(**cls.fields_from_env())
+
+    def run(self, command: str, extra_args: List[str]) -> CompletedProcess:
+        args = [wezterm_bin_path, command]
+        args.extend(extra_args)
+        return subprocess.run(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True,
+            shell=False,
+            encoding="utf-8",
+            stdin=DEVNULL,
+            check=True,
+            timeout=1,
+            capture_output=None,
+            **kw,
+        )
+
+    def command(self, command_name: str, params: Dict[str, Union[str, Union[int, bool]]] = None):
+        cli_args = []
+        for key, value in params.items():
+            if isinstance(value, bool) and value is True:
+                cli_args.append(f'--{key}')
+            elif isinstance(value, (str, int)):
+                cli_args.append(f'--{key}={value}')
+            else:
+                ty = type(value).__name__
+                raise RuntimeError(
+                    f"unexpected type {ty} for parameter {key}: {repr(value)}"
+                )
+
+        return
+
+    def list(self) -> List[pane]:
+        com = self.command('list', {'format': 'json'})
+        data = json.loads(com.stdout)
+        return list(map(pane, data))
+
+    def get_text(self, pane_id: int) -> str:
+        com = self.command('get-text', {'pane_id': pane_id})
+        data = json.loads(com.stdout)
+        return list(map(pane, data))
+
+    def __init__(
+        self,
+        executable_dir: Path,
+        executable: Path,
+        config_dir: Path,
+        config_file: Path,
+        unix_socket: Path,
+    ):
+        self.executable_dir = Path(executable_dir).expanduser().absolute()
+        if not self.executable_dir.exists():
+            raise RuntimeError(f"path does not exist: {executable_dir}")
+
+        self.executable = Path(executable).expanduser().absolute()
+        if not self.executable.exists():
+            raise RuntimeError(f"path does not exist: {executable}")
+
+        self.config_dir = Path(config_dir).expanduser().absolute()
+        if not self.config_dir.exists():
+            raise RuntimeError(f"path does not exist: {config_dir}")
+
+        self.config_file = Path(config_file).expanduser().absolute()
+        if not self.config_file.exists():
+            raise RuntimeError(f"path does not exist: {config_file}")
+
+        self.unix_socket = Path(unix_socket).expanduser().absolute()
+        if not self.unix_socket.exists():
+            raise RuntimeError(f"path does not exist: {unix_socket}")
+
+
+
+@dataclass
+class wezterm:
+    cli: wezterm_cli
+
+    def get_text(self, pane_id: int, max_lines: Optional[int] = None) -> str:
+        if max_lines is None:
+            max_lines = 1000
+
+        start_line = max_lines * -1
+
+        proc = self.subprocess_popen_cli_get_text(
+            pane_id=self.pane_id,
+            start_line=start_line,
+        )
+        stdout = proc.stdout.read()
+        linecount = stdout.count("\n")
+        iter_index = 0
+        prev_count = linecount
+        while linecount < max_lines:
+            max_lines = max_lines + linecount + 1000
+            start_line = max_lines * -1
+            proc = self.subprocess_popen_cli_get_text(
+                pane_id=self.pane_id,
+                start_line=start_line,
+            )
+            stdout = proc.stdout.read()
+            linecount = stdout.count("\n")
+            iter_index += 1
+            if prev_count == linecount:
+                break
+            # sys.stderr.write(f"iteration {iter_index}\n")
+            # sys.stderr.write(f"\t start_line: {start_line}\n")
+            # sys.stderr.write(f"\t max_lines: {max_lines}\n")
+            # sys.stderr.write(f"\t linecount: {linecount}\n")
+            # sys.stderr.flush()
+
+        return stdout  # , linecount, proc, max_lines, start_line
+
+    @classmethod
+    def bin_path(cls) -> str:
+        bin_path = shutil.which("wezterm")
+        if not bin_path:
+            raise RuntimeError(f"could not find path to executable: \x27wezterm\x27")
+
+        return bin_path
+
+    @classmethod
+    def get_popen_args(cls, args: List[str]) -> str:
+        if not isinstance(args, list):
+            ty = type(args).__name__
+            raise RuntimeError(f"args is a {ty}, not a list: {repr(args)}")
+
+        result = [cls.bin_path()]
+        for index, arg in enumerate(args, start=1):
+            if not isinstance(arg, str):
+                ty = type(arg).__name__
+                raise RuntimeError(
+                    f"argument {index} of {len(args)} is a {ty}, not a string: {arg}"
+                )
+            result.append(arg)
+
+        return result
+
+    @classmethod
+    def subprocess_popen_cli_get_text(
+        cls, pane_id: int, start_line: int, **extra_popen_kwargs
+    ) -> Popen:
+        popen_prog_args = wezterm.get_popen_args(
+            [
+                "cli",
+                "get-text",
+                "--escapes",
+                f"--pane-id={pane_id}",
+                f"--start-line={start_line}",
+            ]
+        )
+        popen_initial_kwargs = dict(
+            close_fds=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            text=True,
+        )
+        popen_core_kwargs = dict(
+            args=popen_prog_args,
+        )
+        popen_base_kwargs = dict(
+            **popen_core_kwargs,
+            **popen_initial_kwargs,
+        )
+        popen_kwargs = dict(
+            **popen_base_kwargs,
+            **extra_popen_kwargs,
+        )
+        popen_kwargs.update(popen_core_kwargs)
+
+        return Popen(**popen_kwargs)
+
+    @classmethod
+    def subprocess_popen_cli_list_json(cls) -> Popen:
+        popen_prog_args = wezterm.get_popen_args(
+            [
+                "cli",
+                "list",
+                "--format=json",
+            ]
+        )
+        popen_kwargs = dict(
+            args=popen_prog_args,
+            close_fds=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            text=True,
+        )
+        return Popen(**popen_kwargs)
+
+    @classmethod
+    def list_panes(
+        cls,
+        limit: Optional[int] = None,
+        lsof_output: Optional[str] = None,
+        ps_aux_output: Optional[str] = None,
+    ) -> List[pane]:
+        proc = cls.subprocess_popen_cli_list_json()
+        stdout = proc.stdout.read()
+        items = json.loads(stdout)
+        if isinstance(limit, int):
+            limit = int(math.copysign(limit, 1))
+            # import ipdb;ipdb.set_trace()
+            items = items[:limit]
+        return [pane(**kw) for kw in items]
+
+
+def default_popen_kwargs(args: List[str]):
+    return dict(
+        args=args,
+        close_fds=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        text=True,
+    )
+
+
+def lsof() -> str:
+    proc = Popen(default_popen_kwargs([shutil.which("lsof")]))
+    stdout, stderr = proc.communicate()
+    return stdout
+
+
+def ps_aux() -> str:
+    proc = Popen(default_popen_kwargs([shutil.which("ps"), "aux"]))
+    stdout, stderr = proc.communicate()
+    return stdout
+
+
+def vmmap(pid: int) -> str:
+    proc = Popen(default_popen_kwargs([shutil.which("ps"), "aux"]))
+    stdout, stderr = proc.communicate()
+    return stdout
+
+
+def dataclassy_json(obj) -> dict:
+    if isinstance(obj, (pane, pane_size)):
+        fields = dataclasses.fields(obj)
+        # import ipdb;ipdb.set_trace()
+        result = []
+        for f in fields:
+            # field = f
+            key = f.name
+            value = getattr(obj, key, None)
+            # import ipdb;ipdb.set_trace()
+            result.append((key, value))
+
+        # import ipdb;ipdb.set_trace()
+
+        return dict(result)
+    elif isinstance(obj, Path):
+        return str(obj.expanduser().absolute())
+    else:
+        ty = type(obj)
+        # import ipdb;ipdb.set_trace()
+        return obj
+
+
+def validate_pane_id(context, option, values):
+    result = []
+    for v in values:
+        if v < 0:
+            raise click.exceptions.BadOptionUsage(
+                option.name, message=f"pane id must not be a negative integer: {v}"
+            )
+        if v not in result:
+            result.append(v)
+
+    return list(result)
+
+
+def validate_output_path(context, option, values):
+    result = []
+    for v in values:
+        if v not in result:
+            result.append(v)
+
+    return list(map(Path, result))
+
+
+@click.option("--wezterm-executable-dir", type=Path, envvar="WEZTERM_EXECUTABLE_DIR")
+@click.option("--wezterm-executable", type=Path, envvar="WEZTERM_EXECUTABLE")
+@click.option("--wezterm-config-dir", type=Path, envvar="WEZTERM_CONFIG_DIR")
+@click.option("--wezterm-config-file", type=Path, envvar="WEZTERM_CONFIG_FILE")
+@click.option("-s", "--wezterm-unix-socket", type=Path, envvar="WEZTERM_UNIX_SOCKET")
+def wezterm_context(
+    wezterm_executable_dir,
+    wezterm_executable,
+    wezterm_config_dir,
+    wezterm_config_file,
+    wezterm_unix_socket,
+):
+    return dict(
+        wezterm_executable_dir,
+        wezterm_executable,
+        wezterm_config_dir,
+        wezterm_config_file,
+        wezterm_unix_socket,
+    )
+
+
+@click.command()
+@click.option("-p", "--pane-id", multiple=True, type=int, callback=validate_pane_id)
+@click.option(
+    "-o", "--output-path", multiple=True, type=Path, callback=validate_output_path
+)
+def main(pane_id, output_path):
+    """
+    retrieves all output from any number of wezterm panes. Defaults to all live panes unless `-p' / `--pane-id' is given
+    """
+    pprint(locals())
+
+
+def gather_all_panes():
+    sys.stderr.write("gathering output of wezterm panes...\n")
+    sys.stderr.flush()
+    panes = sorted(wezterm.list_panes())
+    now = datetime.now(UTC)
+    workbench_path = (
+        Path("~/workbench").joinpath(now.strftime("%Y-%m-%d")).expanduser().absolute()
+    )
+    workbench_path.mkdir(parents=True, exist_ok=True)
+    json_output_path = workbench_path.joinpath(
+        "wezterm-panes_{ts}.json".format(ts=now.strftime("%s"))
+    )
+    with json_output_path.open("w") as fd:
+        fd.write(json.dumps(panes, indent=4, default=dataclassy_json))
+
+    print(f"wezterm panes's data written to {json_output_path}")
+
+    # declare -- inner=$(jq -r '.[].tty_name' wezterm-panes_1771841884.json | sed -E 's,/dev/ttys,,g' | sort -nur | xargs printf '%s|' | sed -E 's/[|]$//g'); declare -- tty_regex="/dev/ttys(${inner})"; declare -- pids_regex="^\s*[^[:space:]]+\s*($(lsof | grep -E "${tty_regex}\$" | awk '{ print $2 }'  | sort -run | xargs printf '%s|' | sed -E 's/[|]$//g'))"; ps aux | grep -E "${pids_regex}"
+
+
+if __name__ == "__main__":
+    main()
+
+
+panes = sorted(wezterm.list_panes(lsof_output=lsof(), ps_aux_output=ps_aux()))
+first_pane = panes[0]
+last_pane = panes[-1]

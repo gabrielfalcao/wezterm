@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -i index=0
+declare -i current=0
+declare -- arg=""
+declare -- pos=""
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "missing arguments: <TARGET_PATH>"
+fi
+
+if [ ${argc} -ne 1 ]; then
+    1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "takes exactly one argument \x60target_path\x22 but received ${argc} arguments instead: ${argv[@]@Q}"
+    exit 1
+fi
+
+declare -gr target_path="${argv[@]:0:1}"
+
+# if [ ! -e "${target_path}" ]; then
+#     1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "file does not exist: ${target_path@Q}"
+#     exit 1
+# fi
+
+declare -gr target_type_description="$(gstat -c '%F' "${target_path}")"
+[[ "${target_type_description}" =~ ((regular[[:space:]])?(sym|file|fifo)(bolic[[:space:]]+link)?) ]]
+declare -gr target_type="$(gstat -c '%F' "${target_path}")"
+declare -gri target_ctime="$(gstat -c '%W' "${target_path}")"
+declare -gri target_mtime="$(gstat -c '%Y' "${target_path}")"
+declare -gr target_canonical_path=$(path canon "${target_path}")
+
+1>&2 echo -e '\n'
+1>&2 declare -p ${!target_*}
+1>&2 echo -e '\n'

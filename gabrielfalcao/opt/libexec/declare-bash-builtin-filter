@@ -1,0 +1,73 @@
+declare -- var_name=""
+declare -- var_value=""
+declare -- workbench_path="/Users/gabrielfalcao/workbench/2026-02-12"
+declare -A shell_d_pandoc_output_format_to_extension_map=([tei]="tei.xml" [jats]=".jats.xml" [jats_archiving]=".jats_archiving.xml" [opendocument]=".opendocument.xml" [opml]=".opml.xml" [odt]=".odt.xml" [odf]=".odf.xml" [jats_articleauthoring]=".jats_articleauthoring.xml" [docbook4]="docbook4.xml" [docbook5]="docbook5.xml" [chunkedhtml]=".chunked.html" [jats_publishing]=".jats_publishing.xml" [html]=".html" )
+declare -A shell_d_sh_uptime_map=()
+declare -A tool_name_to_manpage_path_map=()
+declare -a BASH_ARGC=([0]="0")
+declare -a BASH_ARGV=()
+declare -a BASH_LINENO=()
+declare -a BASH_REMATCH=([0]="/Users/gabrielfalcao/")
+declare -a BASH_SOURCE=()
+declare -a DIRSTACK=()
+declare -a GROUPS=()
+declare -a PIPESTATUS=([0]="130")
+declare -a current_caller_frame=()
+declare -a deferred_prog_commands=()
+declare -a global_set_ifs_callers=()
+declare -a global_set_ifs_values=()
+declare -a shell_d_git_branch_format_fields=([0]="refname" [1]="objectname" [2]="upstream")
+declare -a shell_d_load_source_queue=([0]="/Users/gabrielfalcao/.shell.d/x.d/locale.sh" [1]="/Users/gabrielfalcao/.shell.d/x.d/homebrew.sh" [2]="/Users/gabrielfalcao/.shell.d/x.d/path.sh" [3]="/Users/gabrielfalcao/.shell.d/x.d/cdpath.sh" [4]="/Users/gabrielfalcao/.shell.d/0000000.sh" [5]="/Users/gabrielfalcao/.shell.d/0000010-editors.sh" [6]="/Users/gabrielfalcao/.shell.d/0000101-functions.sh" [7]="/Users/gabrielfalcao/.shell.d/0000110-aliases.sh" [8]="/Users/gabrielfalcao/.shell.d/0000110-env.sh" [9]="/Users/gabrielfalcao/.shell.d/0001010-cryptoccur.sh" [10]="/Users/gabrielfalcao/.shell.d/0010000-stercet.sh" [11]="/Users/gabrielfalcao/.shell.d/1100011.sh" [12]="/Users/gabrielfalcao/.shell.d/x.d/cdpath.sh" [13]="/Users/gabrielfalcao/.shell.d/x.d/path.sh" [14]="/Users/gabrielfalcao/.shell.d/x.d/homebrew.sh" [15]="/Users/gabrielfalcao/.shell.d/x.d/sec.sh" [16]="/Users/gabrielfalcao/.shell.d/x.d/io.sh" [17]="/Users/gabrielfalcao/.shell.d/x.d/workbench.sh" [18]="/Users/gabrielfalcao/.shell.d/fn.staging.d/workbench_move_untracked_git_files_from_external_path_to_workbench_subdir.sh" [19]="/Users/gabrielfalcao/.shell.d/x.d/ansi.sh" [20]="/Users/gabrielfalcao/.shell.d/x.d/completions.sh" [21]="/opt/homebrew/Cellar/bash-completion/1.3_3/etc/bash_completion" [22]="/opt/homebrew/Cellar/bash-completion/1.3_3/etc/bash_completion.d/ssh" [23]="/Users/gabrielfalcao/.shell.d/x.d/bash-completions.d/git-colorlog" [24]="/Users/gabrielfalcao/opt/lib/completions.sh" [25]="/Users/gabrielfalcao/.shell.d/x.d/hooks.sh" [26]="/Users/gabrielfalcao/.shell.d/x.d/string.sh" [27]="/Users/gabrielfalcao/.shell.d/x.d/pandoc.sh" [28]="/Users/gabrielfalcao/.shell.d/x.d/git.sh" [29]="/Users/gabrielfalcao/.shell.d/x.d/emacs.sh" [30]="/Users/gabrielfalcao/.shell.d/fn.staging.d/export_shell_env_vars.sh" [31]="/Users/gabrielfalcao/.shell.d/x.d/coreutils.sh")
+declare -a shell_d_load_source_stack=([0]="/Users/gabrielfalcao/.shell.d/x.d/locale.sh" [1]="/Users/gabrielfalcao/.shell.d/x.d/homebrew.sh" [2]="/Users/gabrielfalcao/.shell.d/x.d/path.sh" [3]="/Users/gabrielfalcao/.shell.d/x.d/cdpath.sh" [4]="/Users/gabrielfalcao/.shell.d/0000000.sh" [5]="/Users/gabrielfalcao/.shell.d/0000010-editors.sh" [6]="/Users/gabrielfalcao/.shell.d/0000101-functions.sh" [7]="/Users/gabrielfalcao/.shell.d/0000110-aliases.sh" [8]="/Users/gabrielfalcao/.shell.d/0000110-env.sh" [9]="/Users/gabrielfalcao/.shell.d/0001010-cryptoccur.sh" [10]="/Users/gabrielfalcao/.shell.d/0010000-stercet.sh" [11]="/Users/gabrielfalcao/.shell.d/1100011.sh" [12]="/Users/gabrielfalcao/.shell.d/x.d/sec.sh" [13]="/Users/gabrielfalcao/.shell.d/x.d/io.sh" [14]="/Users/gabrielfalcao/.shell.d/fn.staging.d/workbench_move_untracked_git_files_from_external_path_to_workbench_subdir.sh" [15]="/Users/gabrielfalcao/.shell.d/x.d/workbench.sh" [16]="/Users/gabrielfalcao/.shell.d/x.d/ansi.sh" [17]="/opt/homebrew/Cellar/bash-completion/1.3_3/etc/bash_completion" [18]="/opt/homebrew/Cellar/bash-completion/1.3_3/etc/bash_completion.d/ssh" [19]="/Users/gabrielfalcao/.shell.d/x.d/bash-completions.d/git-colorlog" [20]="/Users/gabrielfalcao/opt/lib/completions.sh" [21]="/Users/gabrielfalcao/.shell.d/x.d/completions.sh" [22]="/Users/gabrielfalcao/.shell.d/x.d/hooks.sh" [23]="/Users/gabrielfalcao/.shell.d/x.d/string.sh" [24]="/Users/gabrielfalcao/.shell.d/x.d/pandoc.sh" [25]="/Users/gabrielfalcao/.shell.d/x.d/git.sh" [26]="/Users/gabrielfalcao/.shell.d/x.d/emacs.sh" [27]="/Users/gabrielfalcao/.shell.d/fn.staging.d/export_shell_env_vars.sh" [28]="/Users/gabrielfalcao/.shell.d/x.d/coreutils.sh")
+declare -a shell_d_pandoc_tool_names=([0]="bash")
+declare -a shfmt_args=([0]="-bn" [1]="-ci" [2]="-i" [3]="4" [4]="-ln=bash")
+declare -i HISTCMD="15977"
+declare -i MAILCHECK="60"
+declare -i OPTIND="1"
+declare -i now="1773401180"
+declare -i shell_d_entrypoint_dry_run="0"
+declare -i shell_d_entrypoint_verbose="0"
+declare -i shell_d_pid="36901"
+declare -x ALTERNATE_EDITOR="/opt/homebrew/bin/vim"
+declare -x CDPATH="/Users/gabrielfalcao/projects/work/poems.codes/tools/noon-cli/packages:/Users/gabrielfalcao/projects/work/poems.codes/tools:/Users/gabrielfalcao/projects/work/poems.codes:/Users/gabrielfalcao/projects/work/poems.codes/paas:/Users/gabrielfalcao/projects/work/poems.codes/pro-bono:/Users/gabrielfalcao/projects/work/poems.codes/sandbox:/Users/gabrielfalcao/projects/work/poems.codes/poc:/Users/gabrielfalcao/projects/personal:/Users/gabrielfalcao/projects/personal/chrome-extensions:/Users/gabrielfalcao/projects/work:/Users/gabrielfalcao/projects/third_party:/Users/gabrielfalcao/projects:/Users/gabrielfalcao/projects/опенсорси:/Users/gabrielfalcao/.shell.d/CDPATH:/Users/gabrielfalcao"
+declare -x CHILD_MAX="8192"
+declare -x COLORTERM="truecolor"
+declare -x COMMAND_MODE="unix2003"
+declare -x EDITOR="/opt/homebrew/bin/emacsclient"
+declare -x EMACS_SOCKET_NAME="/Users/gabrielfalcao/.emacs.d/socket/server"
+declare -x ENCODING="utf-8"
+declare -x FCEDIT="vim"
+declare -x HISTCONTROL="ignorespace"
+declare -x HISTFILE="/Users/gabrielfalcao/.bash_history"
+declare -x HISTFILESIZE="211776"
+declare -x HISTIGNORE="[bf]g:exit:clear:cls:history*:hist-*:hist_*:[ \\t]*"
+declare -x HISTSIZE="211776"
+declare -x HISTTIMEFORMAT="@%s:%Z     "
+declare -x HOME="/Users/gabrielfalcao"
+declare -x HOMEBREW_CELLAR="/opt/homebrew/Cellar"
+declare -x HOMEBREW_FORCE_BREWED_CURL="1"
+declare -x HOMEBREW_FORCE_BREWED_GIT="1"
+declare -x HOMEBREW_GIT_EMAIL="gabrielteratos@gmail.com"
+declare -x HOMEBREW_GIT_NAME="Gabriel Falcão"
+declare -x HOMEBREW_INSTALL_BADGE=""
+declare -x HOMEBREW_LOGS="/Users/gabrielfalcao/Library/Logs/Homebrew"
+declare -x HOMEBREW_NO_ANALYTICS="set"
+declare -x HOMEBREW_NO_AUTO_UPDATE="1"
+declare -x HOMEBREW_NO_INSTALL_CLEANUP="set"
+declare -x HOMEBREW_NO_INSTALL_FROM_API="1"
+declare -x HOMEBREW_PIP_INDEX_URL="https://pypi.org/simple"
+declare -x HOMEBREW_PREFIX="/opt/homebrew"
+declare -x HOMEBREW_REPOSITORY="/opt/homebrew"
+declare -x IFS=$'\n'
+declare -x INFOPATH="/opt/homebrew/share/info:/opt/homebrew/share/info:/opt/homebrew/share/info:/opt/homebrew/share/info:/opt/homebrew/share/info:/opt/homebrew/share/info:"
+declare -x LANG="en_US.UTF-8"
+declare -x LOGNAME="gabrielfalcao"
+declare -x MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man:/opt/homebrew/share/man:/opt/homebrew/share/man:/opt/homebrew/share/man:/opt/homebrew/share/man::::::"
+declare -x NODE_OPTIONS="--tls-min-v1.2"
+declare -x NVM_DIR="/Users/gabrielfalcao/.nvm"
+declare -x PATH="/Users/gabrielfalcao/opt/libexec:/Users/gabrielfalcao/.shell.d/.venv/bin:/Applications/Emacs.app/Contents/MacOS:/Applications/Emacs.app/Contents/MacOS/bin-arm64-11:/Applications/Emacs.app/Contents/MacOS/libexec-arm64-11:/Users/gabrielfalcao/.cargo/bin:/Users/gabrielfalcao/.elixir-install/installs/elixir/1.18.2-otp-27/bin:/Users/gabrielfalcao/.elixir-install/installs/otp/27.1.2/bin:/Users/gabrielfalcao/.local/bin:/Users/gabrielfalcao/.nvm/versions/node/v22.18.0/bin:/Users/gabrielfalcao/.bun/bin:/Users/gabrielfalcao/.deno/bin:/Users/gabrielfalcao/go/install/1.25.0/go/bin:/Users/gabrielfalcao/go/bin:/Users/gabrielfalcao/.zig:/Users/gabrielfalcao/.shell.d/scripts:/opt/homebrew/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:/opt/homebrew/Cellar/openssl@3/3.6.1/bin:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Wireshark.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
+declare -x PS1="\\[\\r\\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(shell_d_internal_bash_uptime)][level \${SHLVL}] [\\\$\\\$=\$\$] \\[\\033[1;38;5;220m\\]\\u\\[\\033[1;38;5;231m\\]:\\[\\033[1;38;5;220m\\]\$(ps1 --resolve cwd:name)\\[\\033[1;38;5;37m\\]\$(ps1 --resolve git:branch)\\[\\033[1;38;5;220m\\]\\\$\\[\\033[0m\\]"
+declare -x PWD="/Users/gabrielfalcao/.shell.d"
+declare -x PYTHONDONTWRITEBYTECODE="x"
+declare -x SHELL="/opt/homebrew/Cellar/bash/5.2.26/bin/bash"
+declare -x SHELLCHECK_OPTS="-a --color=always"

@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+declare -i code=-1
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -- varname=""
+declare -- refvar=""
+declare -a current_yt_dlp_args=()
+declare -- url=""
+declare -i code=0
+declare -- log_prefix=''
+declare -- stdout=''
+declare -- stderr=''
+
+on_exit() {
+    # 1>&2 echo -e "\x1b[1;38;2;138;226;52m${current_yt_dlp_args[@]}\x1b[0m"
+    1>&2 echo -e "\x1b[1;38;2;239;41;41m${stderr}\x1b[0m"
+    1>&2 echo -e "\x1b[1;38;2;245;121;0m${stdout}\x1b[0m"
+    # 1>/dev/null 2>/dev/null stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[1;38;2;239;41;41m${url}\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a url_list=()
+declare -A url_map=()
+declare -a cli_yt_dlp_args=()
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -i index=0
+declare -i current=0
+declare -- arg=""
+declare -- pos=""
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "[${BASH_SOURCE[0]} error]" "missing arguments"
+    exit 1
+fi
+
+for index in ${!argv[@]}; do
+    current=$(($index + 1))
+    arg="${argv[$index]}"
+    pos="$(printf 'arg %*s of %s' ${#argc} ${current} ${argc})"
+    if [[ "${arg}" =~ ^https?://((([a-zA-Z0-9_-]+)[.])+|[^/]+)([/][^/]*)*(.*)$ ]]; then
+        if [[ ! -v url_map["${arg}"] ]]; then
+            url_map["${arg}"]="${pos}"
+            url_list+=("${arg}")
+        else
+            1>&2 echo -e "[${BASH_SOURCE[0]} warning]" "[${pos}] ignoring duplicate url ${arg@Q} from ${url_map[${arg}]}"
+            continue
+        fi
+    else
+        cli_yt_dlp_args+=("${arg}")
+    fi
+done
+
+declare -- cache_path="$(pwd)/yt-dlp.cache"
+mkdir -p "${cache_path}"
+
+declare -a yt_dlp_youtube_cookie_args=(
+    '--cookies'
+    "${HOME}/.config/yt-dlp.youtube.cookies.txt"
+)
+# --merge-output-format
+declare -a yt_dlp_args_main=(
+    # '-t'
+    # 'mkv'
+    '--retries'
+    '37'
+    '--continue'
+    '--mtime'
+    '--write-info-json'
+    '--write-subs'
+    '--write-auto-subs'
+    '--write-playlist-metafiles'
+    '--write-thumbnail'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+    # '--console-title'
+    # '--write-pages'
+    '--sub-format'
+    'srt'
+    '--js-runtimes'
+    'deno:"${HOME}/.deno/bin/deno"'
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v25.8.1/bin/node"'
+
+    '--js-runtimes'
+    'bun:"${HOME}/.bun/bin/bun"'
+
+    # '--recode-video'
+    # 'mkv'
+
+    # '--force-keyframes-at-cuts'
+
+    # '-o'
+    # '"test'
+    # 'video.%(ext)s"'
+
+    '--embed-subs'
+    '--embed-thumbnail'
+    '--embed-chapters'
+    '--embed-info-json'
+
+    '--cache-dir'
+    '"${cache_path}"'
+
+)
+declare -a yt_dlp_args_simple=(
+    '--write-info-json'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v22.18.0/bin/node"'
+    '--cache-dir'
+    '"${cache_path}"'
+)
+
+declare -a yt_dlp_args_fallback1=(
+    '-t'
+    'mkv'
+    # '--retries'
+    # '37'
+    '--continue'
+    '--mtime'
+    '--write-info-json'
+    '--write-subs'
+    '--write-auto-subs'
+    '--write-playlist-metafiles'
+    '--write-thumbnail'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v22.18.0/bin/node"'
+
+    '--cache-dir'
+    '"${cache_path}"'
+
+)
+
+declare -a yt_dlp_args_fallback2=(
+    # '--retries'
+    # '37'
+    '--continue'
+    '--mtime'
+    '--write-info-json'
+    '--write-subs'
+    '--write-auto-subs'
+    '--write-playlist-metafiles'
+    '--write-thumbnail'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v22.18.0/bin/node"'
+
+    '--cache-dir'
+    '"${cache_path}"'
+
+)
+
+declare -a yt_dlp_args_fallback3=(
+    # '--retries'
+    # '37'
+    '--continue'
+    '--mtime'
+    '--write-info-json'
+    '--write-subs'
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v22.18.0/bin/node"'
+
+    '--cache-dir'
+    '"${cache_path}"'
+
+)
+declare -a yt_dlp_args_fallback4=(
+    '--progress'
+    '-o' "$(pwd)/%(webpage_url_domain)s/%(channel)s/%(media_type)s.%(id)s/%(title)s%(ext)s"
+
+    '--js-runtimes'
+    'node:"${HOME}/.nvm/versions/node/v22.18.0/bin/node"'
+
+    '--cache-dir'
+    '"${cache_path}"'
+
+)
+declare -a args_varnames_sorted=(
+    "yt_dlp_args_simple"
+    "yt_dlp_args_main"
+    "yt_dlp_args_fallback1"
+    "yt_dlp_args_fallback2"
+    "yt_dlp_args_fallback3"
+    "yt_dlp_args_fallback4"
+)
+main() {
+    for url in ${url_list[@]}; do
+        log_prefix=$(slugify-string "${url}")
+        code=0
+        for varname in ${args_varnames_sorted[@]}; do
+            stdout="${log_prefix}.${varname}.stdout.log"
+            stderr="${log_prefix}.${varname}.stderr.log"
+
+            current_yt_dlp_args=("${HOME}/.shell.d/.venv/bin/yt-dlp")
+            if [[ -v "${varname}" ]]; then
+                unset -n refvar
+            fi
+            local -I -n refvar="${varname}"
+            current_yt_dlp_args+=(${refvar[@]})
+            current_yt_dlp_args+=(${yt_dlp_youtube_cookie_args[@]})
+            current_yt_dlp_args+=(${cli_yt_dlp_args[@]})
+            current_yt_dlp_args+=("${url}")
+            1>&2 echo -e "\x1b[1;38;2;138;226;52m${current_yt_dlp_args[@]}\x1b[0m"
+            # if ! 1>${stdout} 2>${stderr} ${current_yt_dlp_args[@]}; then
+            #     code=$?
+            # fi
+            ${current_yt_dlp_args[@]}
+
+            # if [ ${code} -ne 0 ]; then
+            #     1>&2 echo -e "\x1b[1;38;2;239;41;41m${url} failed with ${code}\x1b[0m"
+            #     # 1>&2 echo -e "\x1b[1;38;2;239;41;41m${stderr}\x1b[0m"
+            #     # 1>&2 echo -e "\x1b[1;38;2;245;121;0m${stdout}\x1b[0m"
+            #     exit ${code}
+            # fi
+        done
+    done
+
+}
+
+main

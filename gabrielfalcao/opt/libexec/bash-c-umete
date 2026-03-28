@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -umeTE
+set +f
+set -o pipefail
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+declare -i no_stdin=1
+declare -- stdin_script=""
+declare -a set_opts_catch_errors=(
+    'set -umeTE;'
+    'set +f;'
+    'set -o pipefail;'
+)
+
+if [ ! -t 0 ]; then
+    no_stdin=0
+    stdin_script="$(cat </dev/stdin)"
+fi
+
+spaced_comments() {
+    local -a parts=(
+        ""
+        "#"
+        ${@}
+        "#"
+        ""
+    )
+    if [[ ${#} -eq 0 ]]; then
+        return
+    fi
+    printf '%s\n' ${parts[@]}
+}
+
+set_opts_catch_errors_to_string() {
+    spaced_comments "require variable declaration, explicit catching of possible non-zero exit codes from commands and functions, and enable pipefail"
+    printf '%s\n' ${set_opts_catch_errors[@]}
+}
+argv_to_string() {
+    spaced_comments "command-line arguments passed to ${script_name}, one per line:"
+    printf '%s\n' ${argv[@]}
+}
+stdin_lines_to_string() {
+    if (($no_stdin)); then
+        return
+    fi
+    spaced_comments "the remaining code came from the ${script_name}'s standard input"
+    echo "${stdin_script}"
+}
+
+full_script_to_string() {
+    echo "#!${SHELL}
+
+$(set_opts_catch_errors_to_string)
+$(argv_to_string)
+$(stdin_lines_to_string)
+"
+}
+
+main() {
+    1>&2 full_script_to_string
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    main
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

@@ -1,0 +1,381 @@
+#!/usr/bin/env bash
+
+unset WEZTERM_PANE
+
+export IFS=$'\n'
+set -umeTE
+set +f
+set -o pipefail
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -- usefulness="frontend for wezterm cli"
+
+declare -- this_script_path="${script_path}/${script_name}"
+
+declare -a argv=("$@")
+declare -i argc=${#argv[@]}
+declare -i code=0
+declare -- curdir="$PWD"
+
+declare -i pane_id=-1
+
+declare -- wezterm_cli_list_json_output=""
+declare -a all_pane_ids=()
+declare -a pane_process_ids=()
+declare -A ps_aux_output_by_pane_pid=()
+
+declare -gA stat_format_by_label=()
+stat_format_by_label["created"]='W'
+stat_format_by_label["modified"]='Y'
+stat_format_by_label["accessed"]='X'
+declare -gAr stat_format_by_label
+declare -gar pane_file_prefix_json_fields=(
+    "pane_id"
+    "tab_id"
+    "window_id"
+)
+declare -gar pane_file_prefix_fields=(
+    "pane_id"
+    "tab_id"
+    "window_id"
+    "modified"
+    "accessed"
+)
+
+declare -a all_lsof_lines=()
+
+declare -- pane_tty_name=""
+
+declare -- jq_select_pane_id=""
+declare -i pane_pid=""
+declare -i index=0
+
+declare -- field=''
+declare -- fmt_char=''
+declare -- key=''
+declare -- label=''
+declare -- value=''
+
+declare -i current=0
+declare -i pane_pid=
+declare -- wat=''
+declare -- prefix=''
+declare -- output_file=""
+
+export IFS=$'\n'
+declare -- wat=""
+
+declare -i timestamp=$(date --utc +%s)
+declare -- fs_ts=$(date +'%Y-%m-%d.%H-%M-%S.%s' --date=@${timestamp})
+
+declare -- pane_json=""
+declare -- pane_pid=""
+declare -- pane_lsof=""
+declare -- pane_file_prefix=""
+declare -- pane_pid_file_prefix=''
+declare -- pane_process_lsof_output=""
+
+declare -- pane_json_filename=""
+declare -- pane_text_filename=""
+declare -- pane_pid_filename=""
+declare -- pane_lsof_filename=""
+declare -- pane_text_content=''
+
+declare -gri text_content_start_line_decrease_by_delta=100000
+
+declare -i timestamp=0
+declare -- fs_ts=""
+
+declare -- error_prefix_color_rgb="239;41;41"
+declare -- error_color_rgb="204;0;0"
+
+declare -- achtung_prefix_color_rgb="245;121;0"
+declare -- achtung_color_rgb="206;92;0"
+
+declare -- warn_prefix_color_rgb="252;233;79"
+declare -- warn_color_rgb="237;212;00"
+
+declare -- info_prefix_color_rgb="52;101;164"
+declare -- info_color_rgb="114;159;207;"
+
+declare -- msg_prefix_color_rgb="186;189;182"
+declare -- msg_color_rgb="136;138;133"
+
+declare -- display_prefix_color_rgb="238;238;236"
+declare -- display_color_rgb="211;215;207"
+
+declare -- debug_prefix_color_rgb="138;226;52"
+declare -- debug_color_rgb="115;210;22"
+
+on_exit() {
+    2>/dev/random 1>/dev/random stty sane
+}
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;${error_color_rgb}m\rAborted with Ctrl-C\x1b[0m"
+    exit 1
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+repl() {
+    local -a stty_args=()
+    case "$1" in -*no*stdin | no*stdin | -*no*echo | no*echo | capture) args+=('-echo') ;; *) args+=('sane') ;; esac
+    2>/dev/random 1>/dev/random stty "${stty_args[@]}"
+}
+usage() {
+    1>&2 echo -e "$(basename "$0") <PANE_ID>"
+}
+exit_error() {
+    error "${@}"
+    exit 1
+}
+
+achtung_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${achtung_prefix_color_rgb}m${prefix}\x1b[1;38;2;${achtung_color_rgb}m ${message}\x1b[0m"
+}
+achtung() {
+    local -- linenum="${BASH_LINENO[0]}"
+    achtung_prefixed "[achtung]  [${script_name}:${linenum}]" "${@}"
+}
+warn_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${warn_prefix_color_rgb}m${prefix}\x1b[1;38;2;${warn_color_rgb}m ${message}\x1b[0m"
+}
+warn() {
+    local -- linenum="${BASH_LINENO[0]}"
+    warn_prefixed "[warn]  [${script_name}:${linenum}]" "${@}"
+}
+error() {
+    local -- linenum="${BASH_LINENO[0]}"
+    error_prefixed "[error] [${script_name}:${linenum}]" "${@}"
+}
+error_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${error_prefix_color_rgb}m${prefix}\x1b[1;38;2;${error_color_rgb}m ${message}\x1b[0m"
+}
+info() {
+    local -- linenum="${BASH_LINENO[0]}"
+    info_prefixed "[info]  [${script_name}:${linenum}]" "${@}"
+}
+info_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${info_prefix_color_rgb}m${prefix}\x1b[1;38;2;${info_color_rgb}m ${message}\x1b[0m"
+}
+msg() {
+    local -- linenum="${BASH_LINENO[0]}"
+    msg_prefixed "[msg]  [${script_name}:${linenum}]" "${@}"
+}
+msg_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${msg_prefix_color_rgb}m${prefix}\x1b[1;38;2;${msg_color_rgb}m ${message}\x1b[0m"
+}
+display() {
+    local -- linenum="${BASH_LINENO[0]}"
+    display_prefixed "[display]  [${script_name}:${linenum}]" "${@}"
+}
+display_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${display_prefix_color_rgb}m${prefix}\x1b[1;38;2;${display_color_rgb}m ${message}\x1b[0m"
+}
+debug_prefixed() {
+    local -- prefix="$1"
+    shift
+    local -- message="$@"
+    1>&2 echo -e "\x1b[1;38;2;${debug_prefix_color_rgb}m${prefix}\x1b[1;38;2;${debug_color_rgb}m ${message}\x1b[0m"
+}
+debug() {
+    local -- linenum="${BASH_LINENO[0]}"
+    debug_prefixed "[debug] [${script_name}:${linenum}]" "${@}"
+}
+trace() {
+    if [ "$BASH_TRACE" = "" ] && [ "$BASH_LOGLEVEL" != "trace" ]; then
+        return 0
+    fi
+
+    local -- linenum="${BASH_LINENO[0]}"
+    local -- funcname="${FUNCNAME[1]}"
+    debug_prefixed "[${FUNCNAME[0]} ${script_name}::${funcname}:${linenum}]" "${@}"
+}
+
+process_argv() {
+    unset WEZTERM_PANE
+    if [ "$argc" -eq 0 ]; then
+        return 1
+    fi
+    repl no echo
+
+    local -i current=0
+    local -i index=0
+    local -- arg=""
+    for index in "${!argv[@]}"; do
+        current=$((index + 1))
+        arg="${argv[$index]}"
+        if [[ "${arg}" =~ ^[0-9]+$ ]]; then
+            if [ ${pane_id} -lt 0 ]; then
+                pane_id="${arg}"
+                continue
+            else
+                warn_prefixed "[argument ${current} of ${argc} warning]" "pane_id already set to ${pane_id}. ignoring argument ${arg}"
+                exit 1x
+            fi
+        elif [ ${pane_id} -lt 0 ]; then
+            warn_prefixed "[argument ${current} of ${argc} warning]" "invalid argument: ${arg@Q}"
+            exit 1
+        fi
+    done
+
+    if [ ${pane_id} -lt 0 ]; then
+        error_prefixed "[${script_name} error]" "missing argument: <PANE_ID> (${argv@A})"
+        exit 1
+    fi
+    export WEZTERM_PANE="${pane_id}"
+
+    repl sane
+}
+
+main() {
+    ps_aux_output_by_pane_pid=()
+
+    timestamp=$(date --utc +%s)
+    fs_ts=$(date +'%Y-%m-%d.%H-%M-%S.%s' --date=@${timestamp})
+
+    jq_select_pane_id=".[] | select(.pane_id == ${pane_id})"
+
+    wezterm_cli_list_json_output="$(wezterm cli list --format=json)"
+
+    all_pane_ids=($(jq -r '.[].pane_id' <<<"${wezterm_cli_list_json_output}" | sort -nr))
+
+    prefix_end="pane id ${pane_id}"
+    prefix_start="pane id ${pane_id}"
+
+    local -A pane_field_keymap=()
+    local -- tty_name=""
+    pane_tty_name=""
+
+    key=""
+    for key in ${pane_file_prefix_json_fields[@]}; do
+        value=$(jq -r "${jq_select_pane_id} | .${key}" <<<"${wezterm_cli_list_json_output}")
+        if [ -n "${value}" ]; then
+            pane_field_keymap["${key}"]="${value}"
+            if [ "${key}" == "tty_name" ]; then
+                pane_tty_name="${value}"
+            fi
+        else
+            1>&2 echo -e "[error in key ${key@Q}]" "not present in json"
+            continue
+        fi
+    done
+    if [ -z "${pane_tty_name}" ]; then
+        pane_tty_name=$(jq -r "${jq_select_pane_id} | .tty_name" <<<"${wezterm_cli_list_json_output}")
+    fi
+    tty_name="${pane_tty_name}"
+
+    if [ -n "${tty_name}" ] && [ -c ${tty_name} ]; then
+        local -i unix_ts=0
+        local -- fmt=''
+        for label in ${!stat_format_by_label[@]}; do
+            unix_ts=0
+            fmt=''
+            fmt_char=${stat_format_by_label[${label}]}
+            fmt="%${fmt_char}"
+            unix_ts=$(2>/dev/null gstat -c "${fmt}" "${tty_name}")
+            if [ ${#unix_ts} -ge 9 ]; then
+                pane_field_keymap["${label}"]=${unix_ts}
+            fi
+        done
+    fi
+    local -- pane_file_prefix_base="wezterm-pane"
+    local -a pane_file_prefix_parts=(
+        "${pane_file_prefix_base}"
+    )
+    for key in ${pane_file_prefix_fields[@]}; do
+        if [[ -v pane_field_keymap[${key}] ]]; then
+            value="${pane_field_keymap[${key}]}"
+            pane_file_prefix_parts+=(
+                $(printf '.%s.%s' "${key}" "${value}")
+            )
+        else
+            1>&2 echo -e "[error in key ${key@Q}]" "not present in pane_field_keymap: ${pane_field_keymap[@]@A}"
+            continue
+        fi
+    done
+    pane_file_prefix="$(printf '%s' ${pane_file_prefix_parts[@]})"
+
+    lsof_tty_name=$(lsof "${pane_tty_name}")
+
+    all_lsof_lines=()
+    pane_process_ids=($(sed -E '1d' <<<"${lsof_tty_name}" | awk '{ print $2 }' | sort -u))
+    if [ ${#pane_process_ids[@]} -eq 0 ]; then
+        prefix="[${prefix_start} error]"
+        error_prefixed "${prefix}" "no process ids found for pane id ${pane_id}"
+        continue
+    fi
+
+    pane_id_json_info=$(jq -r "${jq_select_pane_id}" <<<"${wezterm_cli_list_json_output}")
+    local -i max_text_line_count=0
+    local -i text_content_start_line=-100000
+    local -i text_content_line_count=0
+
+    while [ ${max_text_line_count} -lt ${text_content_line_count} ]; do
+        set -x
+        text_content_start_line=$((text_content_start_line - text_content_start_line_decrease_by_delta))
+        pane_text_content=$(wezterm cli get-text --escapes --pane-id=${pane_id} --start-line=${text_content_start_line})
+        text_content_line_count=$(wc -l <<<"${pane_text_content}")
+        max_text_line_count=$((text_content_line_count + 1))
+        set +x
+    done
+
+    for pane_pid in ${pane_process_ids[@]}; do
+        pane_pid_file_prefix="${pane_file_prefix}.pane_pid.${pane_pid}"
+
+        pane_json_filename="${pane_pid_file_prefix}.json"
+        pane_pid_filename="${pane_pid_file_prefix}.pid"
+        pane_lsof_filename="${pane_pid_file_prefix}.lsof"
+        pane_text_filename="${pane_pid_file_prefix}.output"
+
+        echo "${pane_id_json_info}" >${pane_json_filename}
+        echo "${pane_json_filename}"
+        echo "${pane_text_content}" >${pane_text_filename}
+        echo "${pane_text_filename}"
+        echo "${pane_pid}" >${pane_pid_filename}
+        echo "${pane_pid_filename}"
+
+        local -i lsof_exit_code=0
+        if ! pane_process_lsof_output=$(lsof -p ${pane_pid} | sed -E '1d'); then
+            lsof_exit_code=$?
+        fi
+        if [ -n "${pane_process_lsof_output}" ] || ! (($lsof_exit_code)); then
+            echo -e "${pane_process_lsof_output}" >${pane_lsof_filename}
+            echo -e "${pane_lsof_filename}"
+        fi
+        echo
+    done
+    echo
+}
+
+if [ "${0}" == "${BASH_SOURCE[0]}" ]; then
+    if process_argv "${argv[@]}"; then
+        main
+    fi
+else
+    1>&2 echo -e "${BASH_SOURCE[0]} appears to being used as a library by ${0@Q}"
+fi

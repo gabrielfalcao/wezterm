@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+
+echo
+declare -- script_path="${BASH_SOURCE[0]}"
+declare -- elisp_file_list_buffers_as_json_array="${script_path%%.sh}.el"
+declare -- elisp_code_list_buffers_as_json_array="" # "(let ((json-items (string-join  (mapcar  #'(lambda (buf)  \"\"  nil  (let* ((info  (with-current-buffer buf  (list :name (buffer-file-name buf)  :mode (downcase (substring-no-properties (format \"%s\" mode-name)))  :file (buffer-file-name buf))))  (name (plist-get info :name))  (mode (plist-get info :mode))  (file (plist-get info :file))  (parts (list)))  (push \"{\" parts)  (push (format \"\\"name\\": \\"%s\\"\" name) parts)  (push (format \"\\"mode\\": \\"%s\\"\" mode) parts)  (push (format \"\\"filename\\": %s\" (if (not file) \"null\" (format \"%s\" file))) parts)  (push \"}\" parts)  (string-join parts \", \")  ))  (buffer-list))  \", \")))  (format \"[%s]\" json-items))"
+declare -i exit_code=0
+declare -- emacs_output=""
+declare -- emacs_info_json=""
+if [ -f "${elisp_file_list_buffers_as_json_array}" ] && [ -r "${elisp_file_list_buffers_as_json_array}" ]; then
+    elisp_code_list_buffers_as_json_array=$(cat "${elisp_file_list_buffers_as_json_array}")
+else
+    1>&2 echo -e "could not find elisp code"
+    exit 1
+fi
+
+export IFS=$'\n'
+
+declare -- commit_subject="extract-todo-rst-heading-paths.sh"
+
+declare -a commit_body_keys=()
+declare -A commit_body_lines=()
+declare -- stderr=""
+declare -i code=0
+declare -- pane_id=0
+declare -i indent_level=0
+declare -i indent_factor=4
+
+commit_body_keys+=("history")
+commit_body_lines["history"]="$(history)"
+
+commit_body_keys+=("wezterm cli list --format=json")
+commit_body_lines["wezterm cli list --format=json"]="$(wezterm cli list --format=json)"
+
+declare -- key=""
+
+
+indentation() {
+    local -a ind_argv=($@)
+    local -i ind_argc=${#ind_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -i level=0
+
+    if [ ${ind_argc} -gt 0 ]; then
+        arg=${ind_argv[0]}
+    fi
+    case ${ind_argc} in
+        0)
+            level=${indent_level}
+            ;;
+        1)
+            if [[ "${arg}" =~ ^[0-9]+$ ]]; then
+                level=${arg}
+            else
+                1>&2 echo -e "[${FUNCNAME[0]} error]" "argument is not a number: ${arg}"
+                return 1
+            fi
+            ;;
+        *)
+            1>&2 echo -e "[${FUNCNAME[0]} error]" "$((ind_argc - 1)) arguments too many: ${ind_argv[@]@Q}"
+            return 1
+            ;;
+    esac
+    printf '%*s' ${level} ''
+}
+
+indent() {
+    sed -E "s/^/$(indentation)/g" <<< "$@"
+}
+increase_indentation() {
+    indent_level=$((indent_level + indent_factor))
+}
+decrease_indentation() {
+    if [ ${indent_level} -gt 3 ]; then
+        indent_level=$((indent_level - indent_factor))
+    else
+        1>&2 echo -e "[warning] \$indent_level (${indent_level}) not greater than \$indent_factor (${indent_factor})"
+    fi
+}
+indent_push() {
+    sed -E "s/^/$(indentation $(( indent_level + indent_factor )))/g" <<< "$@"
+}
+declare -a wezterm_panels_outputs=()
+declare -a tmp_lines=()
+increase_indentation
+
+commit_body_keys+=("wezterm")
+commit_body_lines["wezterm"]=$(printf "$(indentation)%s\n" "${wezterm_panels_outputs[@]}")
+declare -a tag_lines=()
+declare -- string_content=""
+declare -- tag_content=""
+declare -a iter_outputs=()
+
+
+echo -e "<ps aux>\n$(ps aux)\n</ps aux>"
+echo -e "<history>\n$(history)\n</history>"
+echo -e "<wezterm cli list --format=json>\n$(wezterm cli list --format=json)\n</wezterm cli list --format=json>"
+stderr=$(mktemp)
+if ! emacs_output=$(2>${stderr} /Applications/Emacs.app/Contents/MacOS/bin/emacsclient \
+     --socket-name \
+     ~/.emacs.d/socket/server \
+     --eval \
+     "${elisp_code_list_buffers_as_json_array}"); then
+    exit_code=$?
+fi
+declare -- stderr_jqr="$(mktemp)"
+declare -- stderr_jq="$(mktemp)"
+if [ ${exit_code} -ne 0 ]; then
+    emacs_info_json=$(echo -e '{ "emacs_error": { "exit_code": ' ${exit_code} ', "message": "' "$(cat "${stderr}")" '"} }' | jq .)
+elif ! emacs_info_json=$(2>${stderr_jqr} jq -r <<< "${emacs_output}" | 2>${stderr_jq} jq .); then
+    exit_code=$?
+fi
+if [ ${exit_code} -ne 0 ]; then
+    emacs_info_json=$(echo -e '{ "jq_error": { "exit_code": ' ${exit_code} ', "jq_message": "' "$(cat "${stderr_jq}")" ', "jq_r_message": "' "$(cat "${stderr_jqr}")" '"} }' | jq .)
+fi
+echo -e "<emacs-buffers>\n${emacs_info_json}\n</emacs-buffers>"
+
+
+
+
+for pane_id in $(wezterm cli list --format=json | jq -r '.[] | .pane_id'); do
+    tag="wezterm:pane:${pane_id}"
+    echo -e "<${tag}>"
+    indent "<${tag}:output>"
+    code=0
+    stderr=$(mktemp)
+    if ! 2>${stderr} wezterm cli get-text --escapes --pane-id="${pane_id}" | sed -E "s/^/$(indentation $((indent_level + indent_factor)))/g"; then
+        code=$?
+    fi
+    indent "</${tag}:output>"
+    indent "<${tag}:exit-code>"
+    indent "$(indentation)${code}"
+    indent "</${tag}:exit-code>"
+    if [ -s "${stderr}" ] && [ ${code} -ne 0 ]; then
+        indent "<${tag}:stderr>"
+        indent "$(indentation)$(cat "${stderr}")"
+        indent "</${tag}:stderr>"
+    fi
+
+    echo -e "</${tag}>"
+done
+
+
+# export EMACS_BUFFER_INFO_PLIST_INCLUDE_BUFFER_CONTENT="true"
+
+# stderr=$(mktemp)
+# if ! emacs_output=$(2>${stderr} /Applications/Emacs.app/Contents/MacOS/bin/emacsclient \
+#      --socket-name \
+#      ~/.emacs.d/socket/server \
+#      --eval \
+#      "(progn (setenv \"EMACS_BUFFER_INFO_PLIST_INCLUDE_BUFFER_CONTENT\" \"true\") ${elisp_code_list_buffers_as_json_array})"); then
+#     exit_code=$?
+# fi
+# declare -- stderr_jqr="$(mktemp)"
+# declare -- stderr_jq="$(mktemp)"
+# if [ ${exit_code} -ne 0 ]; then
+#     emacs_info_json=$(echo -e '{ "emacs_error": { "exit_code": ' ${exit_code} ', "message": "' "$(cat "${stderr}")" '"} }' | jq .)
+# elif ! emacs_info_json=$(2>${stderr_jqr} jq -r <<< "${emacs_output}" | 2>${stderr_jq} jq .); then
+#     exit_code=$?
+# fi
+# if [ ${exit_code} -ne 0 ]; then
+#     emacs_info_json=$(echo -e '{ "jq_error": { "exit_code": ' ${exit_code} ', "jq_message": "' "$(cat "${stderr_jq}")" ', "jq_r_message": "' "$(cat "${stderr_jqr}")" '"} }' | jq .)
+# fi
+# echo -e "<emacs-buffers-with-content>\n${emacs_info_json}\n</emacs-buffers-with-content>"
