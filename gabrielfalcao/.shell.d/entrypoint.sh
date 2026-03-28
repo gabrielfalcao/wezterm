@@ -13,6 +13,10 @@ declare -g default_x_d_path="${default_shell_d_path}/x.d"
 
 declare -gr shell_d_internal_log_dir="${default_shell_d_path}/logs/$(date -u +'%Y-%m-%d')"
 mkdir -p "${shell_d_internal_log_dir}"
+declare -gA shell_d_internal_benchmark_load_source_started_at_map=()
+declare -gA shell_d_internal_benchmark_load_source_finished_at_map=()
+declare -gA shell_d_internal_benchmark_xd_started_at_map=()
+declare -gA shell_d_internal_benchmark_xd_finished_at_map=()
 
 # (replace-regexp
 #    regexp: "\\(trap\\(\\s-+\\)\\|^\\(function\\s-+\\)\\)\\s-*\\(\\([_]+shell_d_sh_\\)\\(ps4\\|trap\\)\\([_]\\)\\(function\\)[_]?\\([a-z0-9]+[a-zA-Z0-9_]*\\|[a-z0-9_]+?\\)\\([_]+\\)\\)\\s-*\\([]\\)"
@@ -27,9 +31,9 @@ mkdir -p "${shell_d_internal_log_dir}"
 declare -gr shell_d_internal_default_artifact_suffix="pid_${$}.ppid_${PPID}.$(builtin printf '%010x' ${shell_d_started_at})"
 
 if [[ -v WEZTERM_PANE ]]; then
-    declare -gr shell_d_internal_log_path="wezterm_pane.${WEZTERM_PANE}.${shell_d_internal_default_artifact_suffix}.log"
+    declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/wezterm_pane.${WEZTERM_PANE}.${shell_d_internal_default_artifact_suffix}.log"
 else
-    declare -gr shell_d_internal_log_path="${shell_d_internal_default_artifact_suffix}.log"
+    declare -gr shell_d_internal_log_path="${shell_d_internal_log_dir}/${shell_d_internal_default_artifact_suffix}.log"
 fi
 declare -gar shell_d_sh_env_vars_to_observe=(
     'XPC_FLAGS'
@@ -289,7 +293,6 @@ __shell_d_sh_ps4_function__() {
 
 }
 export PS4='$(__shell_d_sh_ps4_function__)'
-# Now trace output will show file, line, and function name
 
 __shell_d_sh_trap_function_return__() {
     # set +x
@@ -708,6 +711,7 @@ shell_d_internal_fn_log() {
     1>${shell_d_internal_log_path} builtin echo -e "${log_output}"
 }
 
+# <RUST>
 if [ -s "${HOME}/.cargo/env" ] && [ -x "${HOME}/.cargo/bin/cargo" ]; then
     declare -g shell_d_rust_root_path="${HOME}/.cargo"
     declare -g shell_d_rust_bin_path="${shell_d_rust_root_path}/bin"
@@ -719,7 +723,9 @@ else
     declare -g shell_d_rust_bin_path=""
     declare -g shell_d_rust_env_path=""
 fi
+# </RUST>
 
+# <PYTHON>
 if [ -s "${shell_d_root_path}/pyproject.toml" ]; then
     declare -g shell_d_python_manifest="${shell_d_root_path}/pyproject.toml"
 else
@@ -736,7 +742,6 @@ else
     declare -g shell_d_python_root_path=""
     declare -g shell_d_python_bin_path=""
 fi
-
 #
 # declare -g shell_d_python_script="$(cat ~/.shell.d/py3/shell_d.py)"
 #
@@ -745,6 +750,25 @@ fi
 #     exit 1
 # fi
 #
+# </PYTHON>
+
+# <NODE>
+declare -g shell_d_nvm_root_path="${HOME}/.nvm"
+
+if [ -d "${shell_d_nvm_root_path}" ]; then
+    declare -g shell_d_nvm_alias_default_path="${shell_d_nvm_root_path}/alias/default"
+    declare -g shell_d_nvm_versions_path="${shell_d_nvm_root_path}/versions"
+    if [ -s "${shell_d_nvm_alias_default_path}" ]; then
+        declare -g shell_d_nvm_default_version="$(grep -E '^v' "${shell_d_nvm_alias_default_path}" | head -1)"
+        declare -g shell_d_nvm_current_version_path="${HOME}/.nvm/versions/node/${shell_d_nvm_default_version}"
+    else
+        declare -ga shell_d_nvm_installed_versions=($(find "${HOME}/.nvm/versions/node" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort -rn))
+        declare -g shell_d_nvm_default_version="${shell_d_nvm_installed_versions[0]}"
+    fi
+    declare -g shell_d_nvm_current_version_path="${HOME}/.nvm/versions/node/${shell_d_nvm_default_version}"
+    declare -g shell_d_nvm_current_version_bin_path="${shell_d_nvm_current_version_path}/bin"
+fi
+# </NODE>
 
 # initialize_shell_d_core_global_vars() {
 #     if [[ ! -v shell_d_entrypoint_source_path_relative ]]; then
@@ -1038,6 +1062,8 @@ shell_d_sh_load_source() {
     local -- shell_script_path=""
     local -- shell_d_sh_load_source_verbose=${shell_d_entrypoint_verbose:-0}
     local -- shell_d_sh_load_source_dry_run=${shell_d_entrypoint_dry_run:-0}
+    local -i subscript_load_source_started_at=-1
+    local -i subscript_load_source_finished_at=-1
 
     if [ ${argc} -eq 0 ]; then
         shell_d_sh_log_error "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>"
@@ -1105,8 +1131,14 @@ shell_d_sh_load_source() {
                 # shell_d_sh_log_error ""
                 # shell_d_sh_log_error "\x1b[0m\x1b[1;38;2;245;121;0m\x1b[1;48;2;46;52;54m$(declare -p callers stack_size)\x1b[0m"
                 # shell_d_sh_log_error ""
+                subscript_load_source_started_at=$(date -u +'%s')
+                shell_d_internal_benchmark_load_source_started_at_map["${shell_script_path}"]="${subscript_load_source_started_at}"
+
                 eval "$(cat "${shell_script_path}")" # #ff4444
                 # 1>&2 echo -e "\x1b[1;38;2;115;210;22mloaded ${shell_script_path@Q}\x1b[0m"
+                subscript_load_source_finished_at=$(date -u +'%s')
+                shell_d_internal_benchmark_load_source_finished_at_map["${shell_script_path}"]="${subscript_load_source_finished_at}"
+
                 shell_d_load_source_stack+=("${shell_script_path}")
                 shell_d_load_source_stack_map["${shell_script_path}"]="${func}:${line}"
             else
@@ -1118,8 +1150,13 @@ shell_d_sh_load_source() {
                 local -- line="${BASH_LINENO[$((1 - 1))]}"
                 shell_d_sh_log_error "\x1b[0m\x1b[1;48;2;238;238;236m\x1b[1;38;2;239;41;41m${shell_script_path@Q} already loaded by ${called_by_ty} ${called_by_func} line ${called_by_line}\x1b[0m"
 
+                subscript_load_source_started_at=$(date -u +'%s')
+                shell_d_internal_benchmark_load_source_started_at_map["${shell_script_path}"]="${subscript_load_source_started_at}"
+
                 shell_d_sh_log_error "\x1b[0m\x1b[1;38;2;238;238;236m\x1b[1;48;2;239;41;41mcurrent caller is ${func} at line ${line}\x1b[0m"
                 eval "$(cat "${shell_script_path}")" # #ff4444
+                subscript_load_source_finished_at=$(date -u +'%s')
+                shell_d_internal_benchmark_load_source_finished_at_map["${shell_script_path}"]="${subscript_load_source_finished_at}"
                 # 1>&2 echo -e "\x1b[1;38;2;245;121;0mre-loaded ${shell_script_path@Q}\x1b[0m"
                 return 0
             fi
@@ -1261,6 +1298,13 @@ xD() {
     local SHELL_D_PATH="${HOME}/.shell.d"
     local X_D_PATH="${SHELL_D_PATH}/x.d"
     local -- sh=""
+
+    # declare -gA shell_d_internal_benchmark_xd_started_at_map=()
+    # declare -gA shell_d_internal_benchmark_xd_finished_at_map=()
+
+    local -i subscript_load_xd_started_at=-1
+    local -i subscript_load_xd_finished_at=-1
+
     if [ ${path_count} -eq 0 ]; then
         shell_d_sh_log_error "[error]" "xD missing argument(s): <PATH> [PATH...]"
         return 1
@@ -1272,11 +1316,22 @@ xD() {
         fi
         if [ -e "${SHELL_D_PATH}/${sh}" ] && [ -r "${SHELL_D_PATH}/${sh}" ] && [ -s "${SHELL_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${SHELL_D_PATH}/${sh}"
-            shell_d_sh_load_source "${SHELL_D_PATH}/${sh}"
+            local -- source_path_to_load="${SHELL_D_PATH}/${sh}"
+            subscript_load_xd_started_at=$(date -u +'%s')
+            shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
+            shell_d_sh_load_source "${source_path_to_load}"
+            subscript_load_xd_finished_at=$(date -u +'%s')
+            shell_d_internal_benchmark_xd_finished_at_map["${source_path_to_load}"]="${subscript_load_xd_finished_at}"
             # shell_d_sh_load_libs "${SHELL_D_PATH}/${sh}"
         elif [ -e "${X_D_PATH}/${sh}" ] && [ -r "${X_D_PATH}/${sh}" ] && [ -s "${X_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${X_D_PATH}/${sh}"
-            shell_d_sh_load_source "${X_D_PATH}/${sh}"
+            local -- source_path_to_load="${X_D_PATH}/${sh}"
+
+            subscript_load_xd_started_at=$(date -u +'%s')
+            shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
+            shell_d_sh_load_source "${source_path_to_load}"
+            subscript_load_xd_finished_at=$(date -u +'%s')
+            shell_d_internal_benchmark_xd_finished_at_map["${source_path_to_load}"]="${subscript_load_xd_finished_at}"
             # shell_d_sh_load_libs "${X_D_PATH}/${sh}"
         else
             shell_d_sh_log_error "[error]" "xD could not find readable non-empty file ${sh@Q}"
@@ -1360,3 +1415,5 @@ declare -gir shell_d_finished_at=$(date --utc +%s)
 #         1>&2 echo -e "command \x1b[1;38;2;F13976m${shell_d_internal_subshell_level_2_argv[@]}"
 #     fi
 # fi
+
+find ~/.emacs.d -regextype egrep -regex '.*[.]el[nc]$' -exec rm -f {} \; || true
