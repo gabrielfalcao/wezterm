@@ -10,10 +10,10 @@ declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
 declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 declare -- this_script_path="${script_path}/${script_name}"
 
-if [ "$(id -u)" != "0" ] && [ "$(id -un)" != "root" ]; then
-    sudo -E ${this_script_path}
-    exit 0
-fi
+# if [ "$(id -u)" != "0" ] && [ "$(id -un)" != "root" ]; then
+#     sudo -E ${this_script_path}
+#     exit 0
+# fi
 
 on_exit() {
     set +x
@@ -30,24 +30,24 @@ trap on_ctrlc segv
 trap on_ctrlc sys
 
 list_external_volumes() {
-    df | df-mountpoint.gawk
-}
-retry_force_eject_volume() {
-    name="${@}"
-    volume="/Volumes/${name}/"
-    if [ ! -e "$(basename "${volume}")" ]; then
-        return
-        # echo -e "\x1b[1;38;5;220m$(basename "${volume}") \x1b[1;38;5;33mdoes not appear to be present\x1b[0m"
-    elif 2>/dev/null diskutil unmount force "$(basename "${volume}")"; then
-        echo -e "\x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;220mwas ejected forcefully\x1b[0m"
-    else
-        echo -e "\x1b[1;38;5;220mfailed to eject \x1b[1;38;5;106m$(basename "${volume}") \x1b[1;38;5;145m(maybe in use or already ejected ?)\x1b[0m"
-    fi
+    df -h | gawk '{
+    if (NF >=6) {
+        mounted_on="";
+
+        for (i=6;i<=NF;i++) {
+            mounted_on=sprintf("%s%s%s", mounted_on, $i, FS)
+        }
+
+        if (mounted_on ~ /^\/Volumes/) {
+            print(mounted_on)
+        }
+    }
+}'
 }
 kill_processes_hogging_volume() {
     name="${@}"
     volume="/Volumes/${name}"
-    lsof | gawk "(\$0 ~ /${volumes//\/\\\/}/){
+    lsof | gawk "(\$0 ~ /${volumes//\/\\\//}/){
 	location = \"\"
 	for (i = 9; i <= NF; i++) {
 		len = length(\$i)
@@ -63,13 +63,22 @@ kill_processes_hogging_volume() {
 }"
 }
 
-eject_volume() {
-    name="${@}"
-    volume="/Volumes/${name}/"
-    if 2>/dev/null diskutil unmount "$(basename "${volume}")"; then
-        echo -e "\x1b[1;38;5;154m$(basename "${volume}") \x1b[1;38;5;220mwas ejected\x1b[0m"
+retry_force_eject_volume() {
+    volume="${@}"
+    1>&2 echo diskutil unmount force "${volume}"
+    if sudo diskutil unmount force "${volume}"; then
+        1>&2 echo -e "\x1b[1;38;5;106m${volume} \x1b[1;38;5;220mwas ejected forcefully\x1b[0m"
     else
-        retry_force_eject_volume "${name}"
+        1>&2 echo -e "\x1b[1;38;5;220mfailed to eject \x1b[1;38;5;106m${volume} \x1b[1;38;5;145m(maybe in use or already ejected ?)\x1b[0m"
+    fi
+}
+eject_volume() {
+    volume="${@}"
+    1>&2 echo diskutil unmount "${volume}"
+    if sudo diskutil unmount "${volume}"; then
+        1>&2 echo -e "\x1b[1;38;5;154m${volume} \x1b[1;38;5;220mwas ejected\x1b[0m"
+    else
+        retry_force_eject_volume "${volume}"
     fi
 }
 

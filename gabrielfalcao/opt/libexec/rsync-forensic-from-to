@@ -74,14 +74,16 @@ declare -g stdout="${log_folder}/${log_name}.stdout.${artifact_suffix}.log"
 declare -i code=0
 declare -a rsync_call_args=(
     rsync
-    --info=name
-    -gpuacvot
-    --stats
+    -rLUWv
+    --ignore-errors
     --fsync
     --mkpath
-    --ignore-errors
+
+    --stats
+    # --info=name
+    # --info=progress2,stats2,misc1,flist0
+    --info=name,progress2,stats2,misc1,flist0
     --progress
-    --info=progress2,stats2,misc1,flist0
     --log-file="${log_folder}/${log_name}.log"
     --log-file-format='%i %n%L'
 )

@@ -1,99 +1,57 @@
-#!/usr/bin/env bash
+#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
 
-set -umeTE
-set +f
-set -o pipefail
-unset IFS
-export IFS=$'\n'
+import sys
+import click
+import re
+import shutil
+import os
+import json
+import math
+import subprocess
+import urllib
+import urllib.parse
+import dataclasses
 
-declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
-declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-declare -- this_script_path="${script_path}/${script_name}"
-
-declare -a argv=(${@})
-declare -i argc=${#argv[@]}
-declare -i total_groups=-1
-declare -- arg_value=""
-declare -- value=""
-
-if [ ${argc} -eq 0 ]; then
-    1>&2 echo -e "[${script_name} error]"  "missing argument: <TOTAL_GROUPS>"
-    exit 1
-elif [ ${argc} -ge 2 ]; then
-    1>&2 echo -e "[${script_name} error]"  "tool takes exactly 1 argument <TOTAL_GROUPS>, received ${argc} arguments instead: ${argv[@]@Q}"
-    exit 1
-else
-    arg_value="${argv[@]}"
-fi
-declare -i seq_min=0
-declare -i seq_max=0
-
-####
-####
-####  ___ _____ ___  ___ _
-#### / __|_   _/ _ \| _ \ |
-#### \__ \ | || (_) |  _/_|
-#### |___/ |_| \___/|_| (_)
-####
-####
-####
-####
-#### __      _____ ___ _____ ___     _     ___ ___ ___ _____  __  ___  _   ___  ___ ___ ___     _   _  _ ___    ___ ___ ___ _  _ _____
-#### \ \    / / _ \_ _|_   _| __|   /_\   | _ \ __/ __| __\ \/ / | _ \/_\ | _ \/ __| __| _ \   /_\ | \| |   \  | _ \ _ \_ _| \| |_   _|
-####  \ \/\/ /|   /| |  | | | _|   / _ \  |   / _| (_ | _| >  <  |  _/ _ \|   /\__ \ _||   /  / _ \| .` | |) | |  _/   /| || .` | | |
-####   \_/\_/ |_|_\___| |_| |___| /_/ \_\ |_|_\___\___|___/_/\_\ |_|/_/ \_\_|_\|___/___|_|_\ /_/ \_\_|\_|___/  |_| |_|_\___|_|\_| |_|
-####
-####
-####  _  _ _   _ __  __ ___ ___ ___    ___  ___    ___ ___  ___  _   _ ___     _   ___ _____   _  _  ___  ___  ___ ___
-#### | \| | | | |  \/  | _ ) __| _ \  / _ \| __|  / __| _ \/ _ \| | | | _ \   /_\ / __|_   _| | \| |/ _ \|   \| __/ __|
-#### | .` | |_| | |\/| | _ \ _||   / | (_) | _|  | (_ |   / (_) | |_| |  _/  / _ \\__ \ | |   | .` | (_) | |) | _|\__ \
-#### |_|\_|\___/|_|  |_|___/___|_|_\  \___/|_|    \___|_|_\\___/ \___/|_|   /_/ \_\___/ |_|   |_|\_|\___/|___/|___|___/
-####
-####
-####  ___ _  _ ___ _____ ___   _   ___  _
-#### |_ _| \| / __|_   _| __| /_\ |   \| |
-####  | || .` \__ \ | | | _| / _ \| |) |_|
-#### |___|_|\_|___/ |_| |___/_/ \_\___/(_)
-####
-#### # declare -r no_group_chars_within_open_close_parens_syntax='([(]([^()|]*)[)])'
-#### # declare -r no_group_chars_fallback_syntax='([(](.*?)[)])'
-#### # declare -r no_group_syntax='[(]([^()|]*|[(][^()|]+[)]|[(](.*)[)])[)]'
-#### # declare -r no_group_syntax='^(.*?([^(|)]*[(]([^()|]*|[(][^()|]+[)]|[(](.*)[)])[)][^(|)]*).*?)+$'
-#### # declare -r detect_group_count_regexp='^(.*?([^(|)]*[(]([^()|]*|[(][^()|]+[)]|[(](.*)[)])[)][^(|)]*).*?)+$'
-#### # arg_value="${argv[0]}"
+from pprint import pformat
+from decimal import Decimal
+from datetime import datetime, timedelta, UTC
+from dataclasses import dataclass, field
+from typing import List, Dict, Tuple, Union, Optional, Self
+from pathlib import Path
+from subprocess import Popen
 
 
-if [[ ! "${arg_value}" =~ ^[1-9][0-9]*$ ]]; then
-    1>&2 echo -e "[${script_name} error]"  "invalid positive integer in command-line argument: ${arg_value@Q}"
-    exit 1
-fi
+@click.command()
+@click.argument("subexp-count", type=int, required=True)
+@click.option("-s", "--separator", type=str, default="/")
+def main(subexp_count, separator):
+    """
+    generates debug string for sed subst command
+    """
+    if subexp_count < 0:
+        raise TypeError(f"invalid natural number: {subexp_count}")
+    if subexp_count > 9:
+        raise TypeError(f"invalid sed subexpression number, greater than 9: {subexp_count}")
 
-seq_max=${arg_value}
-declare -i tty_in=0;
-declare -i tty_out=0;
-
-if [ -t 0 ]; then
-    tty_in=1
-fi
-if [ -t 1 ]; then
-    tty_out=1
-fi
-
-if (( $tty_out )); then
-    1>&2 echo -en "\n"
-fi
-# elisp: ;; (insert (string-join (mapcar (lambda (subexp) (format "\\n\\\\%d: \\%d" subexp subexp)) (number-sequence 0 4)) "\\n"))
-#        (insert (string-join (mapcar (lambda (subexp) (format "%ssubexp %d: \\\\%d" (if (= subexp 0) "" "    ") subexp subexp)) (number-sequence 0 7)) "\\\\n"))
-# 1>&2 echo -e "\n"
-# 1>&2 declare -p seq_min
-# 1>&2 declare -p seq_max
-# 1>&2 echo -e "\n"
+    subexp_range = list(range(0, subexp_count + 1))
+    indentation = " " * 4
+    result = r"\\\n".join(
+        [
+            "".join(
+                [
+                    f"\\n",
+                    f"<{num}>",
+                    rf"\n{indentation}\{num}",
+                    # rf"\n{indentation}\\\\{num}",
+                    f"\\n</{num}>",
+                    f"\\n",
+                ]
+            )
+            for num in subexp_range
+        ]
+    )
+    print(f'\b{result}\n')
 
 
-1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
-# set -x
-seq ${seq_min} ${seq_max} | sed -E 's/(([[:space:]\n]*?)([0-9]+)([[:space:]\n]+?)[\n]*?)+/subexp 0: \\0\\n    subexp 1: \\1\\n    subexp 2: \\2\\n    subexp 3: \\3\\n    subexp 4: \\4/g' # | sed -z  -E 's/[\n]/\\n/g'
-set +x
-if (( $tty_out )); then
-    1>&2 echo -e "\n"
-fi
+if __name__ == "__main__":
+    main()

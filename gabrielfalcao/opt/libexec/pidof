@@ -1,3 +1,27 @@
-#!/bin/sh
-ps axc|awk "{if (\$5==\"$1\") print \$1}";
+#!/usr/bin/env bash
 
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -a argv=($@)
+declare -i argc=${#argv[@]}
+declare -i index=0
+declare -i current=0
+declare -- arg=""
+declare -- pos=""
+declare -- pattern=""
+
+if [ ${argc} -eq 0 ]; then
+    1>&2 echo -e "[${script_name} error]" "missing argument: <PATTERN>"
+    exit 1
+fi
+
+sudo ps aux | gawk "{ if ((\$0 ~ /${pattern}/) || (\$0 == \"${pattern}\")) {
+cmdstring=\"\"; lst=\"\"; for (i=11;i<=NF;i++) { lst=\"\"; if (i < NF) {lst=FS;};cmdstring=sprintf(\"%s%s%s\", cmdstring, \$i, lst)}; print(cmdstring);
+} }"

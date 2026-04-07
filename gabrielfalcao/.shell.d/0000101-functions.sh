@@ -217,6 +217,16 @@ local_var_declarations() {
     local -p | sed -E "s/${shell_script_var_declaration_regexp}/\1/g"
 }
 
+cdn() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing arguments"
+        return 1
+    fi
+    1>/dev/null 2>/dev/null cd ${argv[@]}
+}
 git_clone_godot_oss_repos() {
     local -- input="$@"
     if [ -z "${input}" ]; then
@@ -808,96 +818,108 @@ r() {
     unset RUSTFLAGS
     cargo r $*
 }
-cbt() {
-    if [ -n "${IFS@A}" ]; then
-        local -- declare_IFS="${IFS@A}"
-    else
-        local -- declare_IFS=""
-    fi
-
-    # export IFS=$'\n'
-    unset IFS
-    local -a cargo_subcommands=(
-        "check"
-        "build"
-        "test"
-    )
-    local -A subcommand_fg_colors=(
-        ["check"]=231
-        ["build"]=220
-        ["test"]=154
-    )
-    if [ ! -f Cargo.toml ]; then
-        if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
-            eval "${declare_IFS}"
-        fi
-        return 1
-    fi
-    for cargo_subc in ${cargo_subcommands[@]}; do
-        local -a cargo_call=(cargo "${cargo_subc}" "--offline")
-        if ! ${cargo_call[@]}; then
-            exit_code=$?
-            fg_color="${subcommand_fg_colors[$cargo_subc]}"
-            1>&2 echo -e "command \x1b[1;38;5;${fg_color}m${cargo_subc}\x1b[0m failed with status ${exit_code}: \x1b[1;38;5;202m${cargo_call[@]}\x1b[0m"
-            if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
-                eval "${declare_IFS}"
-            fi
-            return $exit_code
-        fi
-    done
-
-    if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
-        eval "${declare_IFS}"
-    fi
-    return $?
-}
 q() {
-    if [ ! -f Cargo.toml ]; then
-        return 1
-    fi
-    k
-    cargo q $*
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    git q ${argv[@]}
 }
 x() {
     clsreset
     export PS1_VARIANT=x
-    cdmkd ~/*scratch*/.x/
+    mkpushd ~/*scratch*/.x/
 }
-l() {
-    local -- arg="${arg}"
-    if [ -z "${arg}" ]; then
-        l ~/.shell.d/0000101-functions.sh
-    elif [ ! -e "${arg}" ]; then
-        case "${arg}" in
-            "f" | "-f")
-                l ~/.shell.d/0000101-functions.sh
-                ;;
-            "e" | "-e")
-                l ~/.shell.d/0000110-env.sh
-                ;;
-            "h" | "-h")
-                l ~/.shell.d/x.d/history.sh
-                ;;
-            "ansi")
-                l ~/opt/lib/ansi.sh
-                ;;
-            "a" | "-a")
-                l ~/.shell.d/entrypoint.sh
-                ;;
-            "c" | "-c" | "--completions" | "--autocomplete" | "--auto-complete" | "--complete")
-                l ~/opt/lib/completions.sh
-                ;;
-            "t" | "-t" | "--tools" | "tools")
-                l ~/opt/lib/tools.sh
-                ;;
-            *)
-                1>&2 cat <<EOF
-USAGE: ${FUNCNAME[0]} [path] | [FLAG]
-EOF
-                ;;
-        esac
-    fi
-}
+
+####cbt() {
+####    if [ -n "${IFS@A}" ]; then
+####        local -- declare_IFS="${IFS@A}"
+####    else
+####        local -- declare_IFS=""
+####    fi
+####
+####    # export IFS=$'\n'
+####    unset IFS
+####    local -a cargo_subcommands=(
+####        "check"
+####        "build"
+####        "test"
+####    )
+####    local -A subcommand_fg_colors=(
+####        ["check"]=231
+####        ["build"]=220
+####        ["test"]=154
+####    )
+####    if [ ! -f Cargo.toml ]; then
+####        if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
+####            eval "${declare_IFS}"
+####        fi
+####        return 1
+####    fi
+####    for cargo_subc in ${cargo_subcommands[@]}; do
+####        local -a cargo_call=(cargo "${cargo_subc}" "--offline")
+####        if ! ${cargo_call[@]}; then
+####            exit_code=$?
+####            fg_color="${subcommand_fg_colors[$cargo_subc]}"
+####            1>&2 echo -e "command \x1b[1;38;5;${fg_color}m${cargo_subc}\x1b[0m failed with status ${exit_code}: \x1b[1;38;5;202m${cargo_call[@]}\x1b[0m"
+####            if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
+####                eval "${declare_IFS}"
+####            fi
+####            return $exit_code
+####        fi
+####    done
+####
+####    if [ -n "${declare_IFS}" ] && 1>/dev/random 2>/dev/random ack '^(declare(\s+|[-][a-z0-9-])+)([a-z0-9_-]+)[^=]*[=](.*)$' <<<"${declare_IFS}"; then
+####        eval "${declare_IFS}"
+####    fi
+####    return $?
+####}
+####q() {
+####    if [ ! -f Cargo.toml ]; then
+####        return 1
+####    fi
+####    k
+####    cargo q $*
+####}
+####x() {
+####    clsreset
+####    export PS1_VARIANT=x
+####    cdmkd ~/*scratch*/.x/
+####}
+####l() {
+####    local -- arg="${arg}"
+####    if [ -z "${arg}" ]; then
+####        l ~/.shell.d/0000101-functions.sh
+####    elif [ ! -e "${arg}" ]; then
+####        case "${arg}" in
+####            "f" | "-f")
+####                l ~/.shell.d/0000101-functions.sh
+####                ;;
+####            "e" | "-e")
+####                l ~/.shell.d/0000110-env.sh
+####                ;;
+####            "h" | "-h")
+####                l ~/.shell.d/x.d/history.sh
+####                ;;
+####            "ansi")
+####                l ~/opt/lib/ansi.sh
+####                ;;
+####            "a" | "-a")
+####                l ~/.shell.d/entrypoint.sh
+####                ;;
+####            "c" | "-c" | "--completions" | "--autocomplete" | "--auto-complete" | "--complete")
+####                l ~/opt/lib/completions.sh
+####                ;;
+####            "t" | "-t" | "--tools" | "tools")
+####                l ~/opt/lib/tools.sh
+####                ;;
+####            *)
+####                1>&2 cat <<EOF
+####USAGE: ${FUNCNAME[0]} [path] | [FLAG]
+####EOF
+####                ;;
+####        esac
+####    fi
+####}
+####
 
 tn() {
     unset RUSTFLAGS

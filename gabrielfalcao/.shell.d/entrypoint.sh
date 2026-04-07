@@ -5,7 +5,7 @@
 # set -x
 
 export TZ=UTC
-declare -gir shell_d_started_at=$(date --utc +%s)
+declare -gir shell_d_started_at=$(date --utc  +'%s')
 declare -gi shell_d_pid=${$}
 # declare -g shell_d_default_tmp_stderr=$(mktemp)
 declare -g default_shell_d_path="${HOME}/.shell.d"
@@ -77,18 +77,40 @@ declare -gA shell_d_sh_history_env_var_defaults=()
 shell_d_sh_history_env_var_defaults["HISTCONTROL"]="ignorespace"
 shell_d_sh_history_env_var_defaults["HISTFILE"]="${HOME}/.bash_history"
 shell_d_sh_history_env_var_defaults["HISTFILESIZE"]="211776"
-shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:cls:history*:hist-*:hist_*:[ \\t]*:git[ \\t]*st*"
+# shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:cls:history*:hist-*:hist_*:[ \\t]*:git[ \\t]*st*"
+shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:history*:hist-*:hist_*:[ \\t]*"
 shell_d_sh_history_env_var_defaults["HISTSIZE"]="211776"
 shell_d_sh_history_env_var_defaults["HISTTIMEFORMAT"]="@%s:%Z     "
 declare -gAr shell_d_sh_history_env_var_defaults
 
 shell_d_sh_initialize_hist_env_vars() {
-    local -- env_var=''
-    local -- env_value=''
+    local -- env_var=""
+    local -- env_value=""
+    local -- export_env_call=""
+    local -- result=""
+    local -i code=0
+    # local -- stderr=$(mktemp)
+
     for env_var in ${!shell_d_sh_history_env_var_defaults[@]}; do
+        code=0
+        export IFS=$"\n"
         env_value="${shell_d_sh_history_env_var_defaults[${env_var}]}"
-        export "${env_var@U}"="${env_value}"
+        export_env_call="export ${env_var@U}=${env_value@Q}"
+        # 1>&2 echo -en "${export_env_call@Q}\x0a\x3b"
+
+        # 1>&2 echo export "${env_var@U}"="${env_value}"
+        if export "${env_var@U}"="${env_value}"; then # "eval "${export_env_call}"; then
+            code=0
+        else
+            code=$?
+        fi
+        if [ ${code} -ne 0 ]; then
+            1>&2 echo -e "\x1b[1;38;2;239;41;41m\x1b[1;48;2;211;215;207mcall failed:\x1b[7m${export_env_call}\x1b[0m"
+            # 1>&2 cat "${stderr}"
+        fi
+        # echo -en "    ; # ${env_var@U}=${env_value@Q}\n"
     done
+    # echo "${result}"
 }
 shell_d_sh_initialize_env_vars() {
     shell_d_sh_initialize_hist_env_vars
@@ -122,40 +144,6 @@ shell_d_sh_initialize_env_vars() {
         fi
         export "${env_var@U}"="${env_value}"
     done
-}
-shell_d_internal_security_checks() {
-    local -i cargo_bin_created=-1
-    local -i cargo_bin_modified=-1
-    local -- cargo_bin_item=""
-    local -- name=""
-
-    for cargo_bin_item in ${shell_d_rust_bin_path}/*; do
-        cargo_bin_created=$(gstat -c '%W' "${cargo_bin_item}")
-        cargo_bin_modified=$(gstat -c '%W' "${cargo_bin_item}")
-        name=$(basename "${cargo_bin_item}")
-
-        if [ -x "${cargo_bin_item}" ]; then
-            if [ -x "/bin/${name}" ]; then
-                shadow="/bin/${name}"
-                shell_d_internal_fn_log 'CRITICAL' "removing executable permissions from ${cargo_bin_item@Q} because it shadows the path ${shadow@Q}"
-                chmod a-x "${cargo_bin_item}"
-                shell_d_internal_fn_log 'CRITICAL' "you should probably investigate what third-party rust crate installed (.i.e. \"created\") ${cargo_bin_item@Q} on $(date --date=@${cargo_bin_created} +'%Y/%m-%d %H:%M:%S %Z')"
-                hash -r "${name}"
-            fi
-        fi
-    done
-
-    # for varname in ${shell_d_sh_env_vars_to_observe[@]}; do
-    #     if [[ -v refvar ]]; then
-    #         unset -n refvar
-    #     fi
-    #     if [[ -v "${varname}" ]]; then
-    #         local -I -n refvar="${varname}"
-    #         shell_d_internal_fn_log "INFO" "env var ${varname} is set to ${refvar[@]@Q}"
-    #         unset -n refvar
-    #     fi
-    # done
-
 }
 shell_d_sh_history_entries_suffixed_with_entry_id_and_timestamp() {
     local -a argv=($@)
@@ -238,7 +226,7 @@ declare -gA shell_d_declared_functions_colon_sep_by_source=()
 declare -gA shell_d_declared_functions_colon_sep_by_caller=()
 declare -gA shell_d_declared_functions_colon_sep_by_timestamp=()
 declare -g fn=''
-declare -i now=$(date --utc +%s)
+declare -i now=$(date --utc  +'%s')
 for fn in $(declare -p -F); do
     shell_d_declared_functions_colon_sep_by_timestamp[${fn}]=${now}
 done
@@ -711,17 +699,63 @@ shell_d_internal_fn_log() {
     1>${shell_d_internal_log_path} builtin echo -e "${log_output}"
 }
 
+shell_d_internal_security_checks() {
+    local -i cargo_bin_created=-1
+    local -i cargo_bin_modified=-1
+    local -- cargo_bin_item=""
+    local -- name=""
+
+    for cargo_bin_item in ${shell_d_rust_bin_path}/*; do
+        cargo_bin_created=$(gstat -c '%W' "${cargo_bin_item}")
+        cargo_bin_modified=$(gstat -c '%W' "${cargo_bin_item}")
+        name=$(basename "${cargo_bin_item}")
+
+        if [ -x "${cargo_bin_item}" ]; then
+            if [ -x "/bin/${name}" ]; then
+                shadow="/bin/${name}"
+                shell_d_internal_fn_log 'CRITICAL' "removing executable permissions from ${cargo_bin_item@Q} because it shadows the path ${shadow@Q}"
+                chmod a-x "${cargo_bin_item}"
+                shell_d_internal_fn_log 'CRITICAL' "you should probably investigate what third-party rust crate installed (.i.e. \"created\") ${cargo_bin_item@Q} on $(date --date=@${cargo_bin_created} +'%Y/%m-%d %H:%M:%S %Z')"
+                hash -r "${name}"
+            fi
+        fi
+    done
+}
+
 # <RUST>
+
+declare -g shell_d_rust_artifacts_home="${HOME}/workbench/.artifacts/rust"
+
+# export CARGO_HOME="${HOME}/.cargo" # https://doc.rust-lang.org/cargo/guide/cargo-home.html
+
+# export RUSTUP_TOOLCHAIN="nightly-2026-03-14"
+export RUSTUP_TOOLCHAIN="nightly-2025-09-09"
+# export CARGO_LOG="debug"
+export CARGO_LOG="info"
+export CARGO_INCREMENTAL=1
+
+# #     CARGO_BUILD_TARGET_DIR = https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir
+# export CARGO_BUILD_TARGET_DIR="${shell_d_rust_artifacts_home}/CARGO_BUILD_TARGET_DIR"
+# export CARGO_BUILD_TARGET_DIR="${shell_d_rust_artifacts_home}/target" # https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir
+
+#     CARGO_BUILD_BUILD_DIR = https://doc.rust-lang.org/cargo/reference/config.html#buildbuild-dir
+export CARGO_BUILD_BUILD_DIR="${shell_d_rust_artifacts_home}/CARGO_BUILD_BUILD_DIR" # https://doc.rust-lang.org/cargo/reference/config.html#buildbuild-dir
+export CARGO_BUILD_BUILD_DIR="${shell_d_rust_artifacts_home}/build"
+
+# <CARGO_TARGET_DIR>
+# export CARGO_TARGET_DIR="${shell_d_rust_artifacts_home}/target"
+# https://doc.rust-lang.org/cargo/reference/environment-variables.html#:~:text=CARGO_TARGET_DIR%20%E2%80%94%20Location%20of%20where%20to%20place%20all%20generated%20artifacts%2C%20relative%20to%20the%20current%20working%20directory.%20See%20build.target%2Ddir%20to%20set%20via%20config.
+export CARGO_TARGET_DIR="target"
+unset CARGO_TARGET_DIR
+# </CARGO_TARGET_DIR>
+
+# export RUSTDOCFLAGS='--default-theme=ayu --document-private-items --document-hidden-items'
+
 if [ -s "${HOME}/.cargo/env" ] && [ -x "${HOME}/.cargo/bin/cargo" ]; then
     declare -g shell_d_rust_root_path="${HOME}/.cargo"
     declare -g shell_d_rust_bin_path="${shell_d_rust_root_path}/bin"
     declare -g shell_d_rust_env_path="${shell_d_rust_root_path}/env"
-
     shell_d_internal_security_checks
-else
-    declare -g shell_d_rust_root_path=""
-    declare -g shell_d_rust_bin_path=""
-    declare -g shell_d_rust_env_path=""
 fi
 # </RUST>
 
@@ -920,7 +954,9 @@ entrypoint() {
     shell_d_sh_load_source "${STAGING_PATH}/history.sh"
     shell_d_sh_load_source "${X_D_PATH}/coreutils.sh"
     shell_d_sh_load_source "${X_D_PATH}/py3.sh"
+    shell_d_sh_load_source "${X_D_PATH}/rust.sh"
 
+    shell_d_sh_initialize_env_vars
     unset s brew_path path gq
 }
 shell_d_fs_get_canonical_path() {
@@ -1107,7 +1143,7 @@ shell_d_sh_load_source() {
         return $?
     fi
     if [ -s "${shell_script_path}" ]; then
-        shell_d_load_source_queue_map["${shell_script_path}"]=$(date -u +%s)
+        shell_d_load_source_queue_map["${shell_script_path}"]=$(date -u  +'%s')
         shell_d_load_source_queue+=("${shell_script_path}")
 
         local -- shell_script_path_display="${shell_script_path}"
@@ -1371,7 +1407,7 @@ unset entrypoint postentry
 
 umask 007
 
-declare -gir shell_d_finished_at=$(date --utc +%s)
+declare -gir shell_d_finished_at=$(date --utc  +'%s')
 # <TODO: write report of new shell session at end of entrypoint.sh>
 # path: workbench/$(today)/.shell-sessions/session.pid.$$.tty.${tty_name}.$(nowdz).json
 #

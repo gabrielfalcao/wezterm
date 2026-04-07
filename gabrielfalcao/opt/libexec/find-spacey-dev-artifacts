@@ -80,8 +80,11 @@ export IFS=$'\n'
 declare -a rust_artifact_paths=()
 declare -a node_artifact_paths=()
 
+1>&2 echo -e "\x1b[0m\x1b[1;48;2;253;67;83m[${script_name} info]\x1b[7m searching node_modules\x1b[0m"
 
 node_artifact_paths+=( $(find "${HOME}/" -regextype egrep -type d -regex '.*/node_modules' -not -regex '.*/node_modules/.*/node_modules') )
+
+1>&2 echo -e "\x1b[0m\x1b[1;48;2;253;67;83m[${script_name} info]\x1b[7m searching rust target\x1b[0m"
 
 rust_artifact_paths+=( $(find "${HOME}/" -regextype egrep -type d -regex '.*/Cargo.toml' -execdir 'path canon target') )
 

@@ -1,117 +1,155 @@
 #!/usr/bin/env bash
 
-export IFS="
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+declare -- stderr="$(mktemp)"
+
+on_exit() {
+    set +x
+    bash -c "exec 1>&2;
+set -umeTE; set +f; set -o pipefail;
+rm -f ${stderr@Q} &
+disown -a
 "
-wd=$(pwd)
-declare only_base="false"
-declare -a argv=( $@ )
-# process args
-
-src_path=""
-for arg in ${@}; do
-
-    case "${arg}" in
-        "--base"|"-b")
-            only_base="true"
-            ;;
-        *)
-            if [ -e "${arg}" ]; then
-                if [ -d "$src_path" ]; then
-                    1>&2 echo "ERROR: invalid file-system path argument: '${arg}'"
-                    1>&2 echo "CAUSE: lookup path already set to: '${src_path}'"
-                    exit 1
-                fi
-                src_path="${arg}"
-            fi
-            ;;
-    esac
-done
-
-if [ -z "${src_path}" ]; then
-    src_path="$(pwd)"
-fi
-
-if [ -d "${src_path}" ]; then
-    src_path="$(cd "${src_path}" && pwd)"
-elif [ ! -d "${src_path}" ]; then
-    src_path="$(cd "$(dirname "${src_path}")" && pwd)"
-fi
-
-normalized_path() {
-    path="$1"
-    if [ ! -e "$path" ]; then
-        1>&2 echo "ERROR: path '$path' does not exist"
-        1>&2 echo "in ${BASH_SOURCE[0]}:${BASH_LINENO[0]}"
-        exit 1
-    elif [ -d "$path" ]; then
-        path="$(cd "$path" && pwd)"
-    else
-        parent_path="$(cd "$(dirname "$path")" && pwd)"
-        base_path="$(basename "$path")"
-        path="${parent_path}/${base_path}"
-    fi
-    path="${path/#$wd\//./}"
-    path="${path/%\//}"
-    path="$(echo "${path}" | sed -z 's,\/\+,/,g')"
-
-    echo "${path}"
 }
 
-src_path="$(normalized_path "${src_path}")"
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
 
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
 
-for path in $(find "${src_path}/" -type f -name "*.3g2" \
-        -or -type f -name "*.3gp" \
-        -or -type f -name "*.M2TS" \
-        -or -type f -name "*.MTS" \
-        -or -type f -name "*.TS" \
-        -or -type f -name "*.amv" \
-        -or -type f -name "*.asf" \
-        -or -type f -name "*.avi" \
-        -or -type f -name "*.drc" \
-        -or -type f -name "*.f4a" \
-        -or -type f -name "*.f4b" \
-        -or -type f -name "*.f4p" \
-        -or -type f -name "*.f4v" \
-        -or -type f -name "*.flv" \
-        -or -type f -name "*.flv" \
-        -or -type f -name "*.flv" \
-        -or -type f -name "*.gifv" \
-        -or -type f -name "*.m2v" \
-        -or -type f -name "*.m4p" \
-        -or -type f -name "*.m4v" \
-        -or -type f -name "*.m4v" \
-        -or -type f -name "*.mkv" \
-        -or -type f -name "*.mng" \
-        -or -type f -name "*.mov" \
-        -or -type f -name "*.mp2" \
-        -or -type f -name "*.mp4" \
-        -or -type f -name "*.mpe" \
-        -or -type f -name "*.mpeg" \
-        -or -type f -name "*.mpeg" \
-        -or -type f -name "*.mpg" \
-        -or -type f -name "*.mpg" \
-        -or -type f -name "*.mpv" \
-        -or -type f -name "*.mxf" \
-        -or -type f -name "*.nsv" \
-        -or -type f -name "*.ogg" \
-        -or -type f -name "*.ogv" \
-        -or -type f -name "*.qt" \
-        -or -type f -name "*.rm" \
-        -or -type f -name "*.rmvb" \
-        -or -type f -name "*.roq" \
-        -or -type f -name "*.svi" \
-        -or -type f -name "*.viv" \
-        -or -type f -name "*.vob" \
-        -or -type f -name "*.webm" \
-        -or -type f -name "*.wmv" \
-        -or -type f -name "*.yuv"); do
-    path=$(normalized_path "$path")
-    if [ "$only_base" == "true" ]; then
-        basename "$path"
-    else
-        echo "$path"
+declare -a starting_points=()
+declare -A starting_points_map=()
+
+declare -a find_args=()
+declare -A find_args_map=()
+
+declare -A unique_extensions=()
+
+declare -g arg="" argument="" field="" key="" line="" name="" filename="" filename_extension="" filename_base="" param="" path="" pos="" value="" ext=""
+declare -ig code=0 current=0 index=0 line_number=0 lineno=0 skip=0
+declare -gl regex_inner="" regex=""
+
+declare -ig allow_ts=0
+declare -ig print_regex=0
+
+export IFS=$'\n'
+
+add_starting_point() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- value=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <STARTING_POINT>"
+        return 1
     fi
+    value="${argv[@]}"
 
-    # echo "${path}" | sed 's,\/\+,/,g'
+    if [ -d "${value}" ]; then
+        if [[ ! -v starting_points_map["${value}"] ]]; then
+            starting_points_map["${value}"]=${#starting_points_map[@]}
+            starting_points+=("${value}")
+            return 0
+        fi
+        return 0
+    else
+        case "${value}" in
+            --ts)
+                allow_ts=1
+                ;;
+            --debug | --dbg | --print-regex | --regex | --print)
+                print_regex=1
+                ;;
+            --no-ts)
+                allow_ts=0
+                ;;
+            *)
+                add_find_arg "${value}"
+                ;;
+        esac
+        return 0
+    fi
+}
+add_find_arg() {
+    local -a argv=($@)
+    local -i argc=${#argv[@]}
+    local -- arg=""
+
+    if [ ${argc} -eq 0 ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "missing argument: <STARTING_POINT>"
+        return 1
+    fi
+    arg="${argv[@]}"
+
+    if [[ ! -v find_args_map["${arg}"] ]]; then
+        find_args_map["${arg}"]=${#find_args_map[@]}
+        find_args+=("${arg}")
+        return 0
+    fi
+}
+initialize_regex() {
+    local -- ext=""
+    for ext in $(base64 -d <<<'H4sIAAAAAAACA1XPQQ7CIBQE0P0ch3INV3qBVssPqRQKSvX2zpiYxsV/mfD/YsBgDhisACd3OVOhGVMnLZAegVu9AsGPYhJF8CTc/7AYaHJCN8n3H4tYjWSl4oQX8xc7PNDliyXWxpTNBNP2AGrSdLapeQOaavbIZc982+eJ+12/eD8JPgRjdPvrAAAA' | gunzip); do
+        if ! ((${allow_ts})) && [ "${ext@L}" == "ts" ]; then
+            continue
+        fi
+        if [[ ! -v unique_extensions["${ext@L}"] ]]; then
+            unique_extensions["${ext@L}"]="${ext@L}"
+        fi
+    done
+    export IFS=$'\x7c'
+    regex_inner=$(echo "${unique_extensions[*]}" | sort -r)
+    regex="(${regex_inner})"
+    export IFS=$'\n'
+}
+
+
+for index in ${!argv[@]}; do
+    current=$(($index + 1))
+    arg="${argv[$index]}"
+    pos="$(printf '%*s of %s' ${#argc} ${current} ${argc})"
+
+    if add_starting_point "${arg}"; then
+        code=0
+    else
+        code=$?
+    fi
 done
+
+if [ ${#starting_points[@]} -eq 0 ]; then
+    add_starting_point "$(pwd)"
+fi
+
+initialize_regex
+
+declare -g find_regex=".*[.]${regex}\$"
+declare -ga find_command_args=(
+    'find' ${starting_points[@]} '-regextype' 'egrep' '-regex'
+)
+
+if ((${print_regex})); then
+    echo "${find_regex@Q}"
+else
+    1>&2 echo "${find_command_args[@]} ${find_regex[@]@Q} ${find_args[@]}"
+
+    for path in $(${find_command_args[@]} "${find_regex} ${find_args[@]}"); do
+        echo "${path}"
+    done
+fi
