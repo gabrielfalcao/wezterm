@@ -26,4 +26,4 @@ jq_pipeline_from_argv() {
 }
 
 
-wezterm cli list --format="json" </dev/stdin | jq -r "${jq_pipeline:-$(jq_pipeline_from_argv)}"
+wezterm cli list --format="json" </dev/stdin | jaq -r ".[] | {pane_id,tty_name,title,path: .cwd | match(\"^[a-zA-Z0-9-]+://((?<path>[a-zA-Z0-9_/.,[:space:]-]+[^/]+)([/]?))\$\") | .captures[1].string,tab_id,window_id,window_title,tab_title,cursor_shape,cursor_visibility,cursor_x,cursor_y,cwd,is_active,is_zoomed,left_col,size,top_row,workspace}" | jaq -s | jaq 'unique_by(.pane_id)' | jaq -r "${jq_pipeline:-$(jq_pipeline_from_argv)}"

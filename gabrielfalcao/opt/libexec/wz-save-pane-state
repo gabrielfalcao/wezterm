@@ -262,7 +262,7 @@ main() {
 
     wezterm_cli_list_json_output="$(wezterm cli list --format=json)"
 
-    all_pane_ids=($(jq -r '.[].pane_id' <<<"${wezterm_cli_list_json_output}" | sort -nr))
+    all_pane_ids=($(jaq -r '.[].pane_id' <<<"${wezterm_cli_list_json_output}" | sort -nr))
 
     prefix_end="pane id ${pane_id}"
     prefix_start="pane id ${pane_id}"
@@ -273,7 +273,7 @@ main() {
 
     key=""
     for key in ${pane_file_prefix_json_fields[@]}; do
-        value=$(jq -r "${jq_select_pane_id} | .${key}" <<<"${wezterm_cli_list_json_output}")
+        value=$(jaq -r "${jq_select_pane_id} | .${key}" <<<"${wezterm_cli_list_json_output}")
         if [ -n "${value}" ]; then
             pane_field_keymap["${key}"]="${value}"
             if [ "${key}" == "tty_name" ]; then
@@ -285,7 +285,7 @@ main() {
         fi
     done
     if [ -z "${pane_tty_name}" ]; then
-        pane_tty_name=$(jq -r "${jq_select_pane_id} | .tty_name" <<<"${wezterm_cli_list_json_output}")
+        pane_tty_name=$(jaq -r "${jq_select_pane_id} | .tty_name" <<<"${wezterm_cli_list_json_output}")
     fi
     tty_name="${pane_tty_name}"
 
@@ -330,7 +330,7 @@ main() {
         continue
     fi
 
-    pane_id_json_info=$(jq -r "${jq_select_pane_id}" <<<"${wezterm_cli_list_json_output}")
+    pane_id_json_info=$(jaq -r "${jq_select_pane_id}" <<<"${wezterm_cli_list_json_output}")
     local -i max_text_line_count=0
     local -i text_content_start_line=-100000
     local -i text_content_line_count=0

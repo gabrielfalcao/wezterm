@@ -1,5 +1,56 @@
 #!/usr/bin/env bash
-set -e
+
+set -umeTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+on_exit() {
+    set +x
+}
+
+on_ctrlc() {
+    1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
 declare -i now=$(date +%s)
 
-gdate +"%Y-%m-%d" --date=@$(( $now - (60 * 60  *24) ))
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -A natnum_map=()
+declare -a natnums=()
+declare -i index=0
+declare -i current=0
+declare -- arg=""
+declare -- key=""
+declare -- val=""
+
+declare -i mul=1
+if [[ ! -v mul ]]; then
+    declare -i mul=1
+fi
+
+for index in ${!argv[@]}; do
+    current=$((index + 1))
+    arg=${argv[@]:${index}:1}
+    pos=$(printf '%*s of %d' "${#argc}" "${current}" "${argc}")
+    if [ ${mul} -le 1 ] && [[ ${arg} =~ ^[[:space:]]*(([1-9])([0-9]*))[[:space:]]*$ ]]; then
+        declare -i mul=${BASH_REMATCH[1]}
+    # elif [[ -v BASH_REMATCH ]]; then
+    #     declare -p BASH_REMATCH
+    fi
+done
+
+gdate +"%Y-%m-%d" --date=@$((now - (60 * 60 * 24 * ${mul})))

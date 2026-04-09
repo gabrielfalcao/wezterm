@@ -1,6 +1,39 @@
 # . ${HOME}/.bashrc.env.static
-
-# exec 5>${HOME}/.shell.d/trace.pid_$$.ppid_${PPID}.log
+#shopt -s checkwinsize
+#shopt -s cmdhist
+#shopt -s complete_fullquote
+#shopt -s expand_aliases
+#shopt -s extglob
+#shopt -s force_fignore
+#shopt -s globasciiranges
+#shopt -s globskipdots
+#shopt -s interactive_comments
+#shopt -s patsub_replacement
+#shopt -s progcomp
+#shopt -s promptvars
+#shopt -s sourcepath
+#
+#mkdir() {
+#    # export IFS=$'\n'
+#    local -a argv=(${@})
+#    local -i argc=${#argv[@]}
+#    # 1>&2 declare -p BASH_SOURCE
+#    # 1>&2 echo "${BASH_SOURCE[*]}"
+#    # 1>&2 declare -p BASH_LINENO
+#    # 1>&2 echo "${BASH_LINENO[*]}"
+#    # 1>&2 declare -p LINENO
+#    # 1>&2 echo "${LINENO[*]}"
+#    # 1>&2 declare -p FUNCNAME
+#    # 1>&2 echo "${FUNCNAME[*]}"
+#    # unset IFS
+#    set -x
+#    /opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin/mkdir ${argv[@]}
+#    set +x
+#    return $?
+#}
+#
+#mkdir -p "${HOME}/workbench/$(date -u +'%Y-%m_%d')"
+## exec 5>${HOME}/workbench/$(date -u +'%Y-%m_%d')/trace.pid_$$.ppid_${PPID}.log
 # export BASH_XTRACEFD=5
 # set -x
 
@@ -395,13 +428,13 @@ trap __shell_d_sh_trap_function_backtrace__ ERR
 # </ensure ERR trap is inherited by functions>
 
 if [[ ! -v workbench_path ]]; then
-    declare -- _workbench_path="${HOME}/workbench/2026-02-12"
-    if [ -e "${_workbench_path}" ] && [ ! -d "${_workbench_path}" ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "workbench path ${_workbench_path@Q} exists but is not a directory: $(gstat -c '%F' "${_workbench_path}")"
+    declare -- workbench_path="${HOME}/workbench/2026-02-12"
+    if [ -e "${workbench_path}" ] && [ ! -d "${workbench_path}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} error]" "workbench path ${workbench_path@Q} exists but is not a directory: $(gstat -c '%F' "${workbench_path}")"
     else
-        mkdir -p "${_workbench_path}"
-        declare -g workbench_path=${_workbench_path}
-        unset _workbench_path
+        mkdir -p "${workbench_path}"
+        declare -g workbench_path=${workbench_path}
+        unset workbench_path
     fi
 fi
 
@@ -739,7 +772,6 @@ export CARGO_INCREMENTAL=1
 # export CARGO_BUILD_TARGET_DIR="${shell_d_rust_artifacts_home}/target" # https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir
 
 #     CARGO_BUILD_BUILD_DIR = https://doc.rust-lang.org/cargo/reference/config.html#buildbuild-dir
-export CARGO_BUILD_BUILD_DIR="${shell_d_rust_artifacts_home}/CARGO_BUILD_BUILD_DIR" # https://doc.rust-lang.org/cargo/reference/config.html#buildbuild-dir
 export CARGO_BUILD_BUILD_DIR="${shell_d_rust_artifacts_home}/build"
 
 # <CARGO_TARGET_DIR>
@@ -1101,6 +1133,7 @@ shell_d_sh_load_source() {
     local -i subscript_load_source_started_at=-1
     local -i subscript_load_source_finished_at=-1
 
+    # 1>&2 echo -e "\x1b[1;38;2;138;226;52mshell_d_sh_load_source ${argv[@]@Q}\x1b[0m"
     if [ ${argc} -eq 0 ]; then
         shell_d_sh_log_error "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>"
         return 1
