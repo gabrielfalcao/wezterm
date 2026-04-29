@@ -90,7 +90,6 @@ else
 
 fi
 
-
 declare -gr sed_regexp='^([?][?]|[?][[:space:]])\s+(([0-9A-Z_a-z./-]+.*?)[.](log|pem|json|txt|sh|std(out|err)([.][a-zA-Z0-9]+)?))$'
 declare -gr sed_to_string='[subexp 0] => \0\n[subexp 1] => \1\n[subexp 2] => \2\n[subexp 3] => \3\n[subexp 4] => \4\n'
 declare -gr sed_command="s,${sed_regexp},${sed_to_string},g; t success q1; :success p"
@@ -141,7 +140,10 @@ if [ ${#files_to_git_add[@]} -eq 0 ]; then
 fi
 
 files_to_git_remove=(
-    $((git status --porcelain | grep -E '^([D]|[[:space:]][D])' ; echo) | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath")
+    $(
+        git status --porcelain | grep -E '^([D]|[[:space:]][D])'
+        echo | gawk '{ print $NF }' | xargs -Ieachpath echo "${git_repo_path}/eachpath"
+    )
 )
 declare -g extension=''
 declare -g ext=''
@@ -161,6 +163,8 @@ for index in ${!files_to_git_remove[@]}; do
     # (cd "${git_repo_path}" && git rm -rf "${path}")
     (cd "${git_repo_path}" && git commit "${path}" -m "${path}")
 done
+
+declare -A failures=()
 
 for index in ${!files_to_git_add[@]}; do
     path=${files_to_git_add[${index}]}
@@ -201,6 +205,17 @@ for index in ${!files_to_git_add[@]}; do
     # echo
     # echo "git add $'\x22'${name}$'\x22' && git commit $'\x22'${name}$'\x22' -m $'\x22'[log] ${name}$'\x22'"
     # echo -e "\n\n"
-    git add -f "${path}" && git commit "${path}" -m "${path##${git_repo_path}/}"
-
+    if 2>${stderr} git add -f "${path}" && git commit "${path}" -m "${path##${git_repo_path}/}"; then
+        code=0
+    else
+        code=$?
+        failures["${path}"]=$(cat "${stderr}")
+    fi
 done
+
+declare -i total_failures=${#failures[@]}
+
+if ((${total_failures})); then
+    git add .
+    git commit -am "$(basename $(pwd))"
+fi

@@ -5,4 +5,5 @@ set -o pipefail
 
 1>&2 ssh-ag
 
-rsync -rLUWv --ignore-errors --mkpath --fsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}
+# rsync -rLUWv --ignore-errors --mkpath --fsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}
+rsync  -rLUWv --progress --ignore-errors --mkpath --fsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}

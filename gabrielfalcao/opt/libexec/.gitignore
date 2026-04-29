@@ -15,12 +15,9 @@ uv-globfilter
 uvx
 verify-dmg-integrity
 wait3
-
 *~
-
-
 *.log
 *.pid
 *.stderr
 *.stdout
-
+gitea

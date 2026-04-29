@@ -1,3 +1,5 @@
+export PATH="${HOME}/.shell.d/bin:${PATH}"
+
 # . ${HOME}/.bashrc.env.static
 #shopt -s checkwinsize
 #shopt -s cmdhist
@@ -38,7 +40,7 @@
 # set -x
 
 export TZ=UTC
-declare -gir shell_d_started_at=$(date --utc  +'%s')
+declare -gir shell_d_started_at=$(tsnanos)
 declare -gi shell_d_pid=${$}
 # declare -g shell_d_default_tmp_stderr=$(mktemp)
 declare -g default_shell_d_path="${HOME}/.shell.d"
@@ -48,8 +50,17 @@ declare -gr shell_d_internal_log_dir="${default_shell_d_path}/logs/$(date -u +'%
 mkdir -p "${shell_d_internal_log_dir}"
 declare -gA shell_d_internal_benchmark_load_source_started_at_map=()
 declare -gA shell_d_internal_benchmark_load_source_finished_at_map=()
+
 declare -gA shell_d_internal_benchmark_xd_started_at_map=()
 declare -gA shell_d_internal_benchmark_xd_finished_at_map=()
+
+declare -gi shell_d_internal_widest_benchmark_load_source_source_file=0
+declare -gi shell_d_internal_widest_benchmark_xd_source_file=0
+declare -gi shell_d_internal_widest_benchmark_filename_overall=0
+declare -gA shell_d_internal_benchmark_delta_nanos_by_source_file=()
+declare -gA shell_d_internal_benchmark_delta_nanos_by_xd=()
+declare -ga shell_d_internal_benchmark_source_file_load_source_order=()
+declare -ga shell_d_internal_benchmark_source_file_xd_order=()
 
 # (replace-regexp
 #    regexp: "\\(trap\\(\\s-+\\)\\|^\\(function\\s-+\\)\\)\\s-*\\(\\([_]+shell_d_sh_\\)\\(ps4\\|trap\\)\\([_]\\)\\(function\\)[_]?\\([a-z0-9]+[a-zA-Z0-9_]*\\|[a-z0-9_]+?\\)\\([_]+\\)\\)\\s-*\\([]\\)"
@@ -100,8 +111,8 @@ export IFS=$'\n'
 
 declare -gA shell_d_sh_env_var_defaults=()
 shell_d_sh_env_var_defaults["INFOPATH"]="/opt/homebrew/share/info:/opt/homebrew/share/info:"
-shell_d_sh_env_var_defaults["MANPATH"]="/opt/homebrew/share/man:/opt/homebrew/share/man::"
-shell_d_sh_env_var_defaults["PATH"]="/opt/homebrew/bin:${HOME}/opt/libexec:${HOME}/.cargo/bin:${HOME}/.elixir-install/installs/elixir/1.18.2-otp-27/bin:${HOME}/.elixir-install/installs/otp/27.1.2/bin:${HOME}/.local/bin:${HOME}/.shell.d/.venv/bin:${HOME}/.nvm/versions/node/v22.18.0/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:${HOME}/.bun/bin:${HOME}/.deno/bin:${HOME}/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:${HOME}/go/bin:${HOME}/.zig:${HOME}/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
+shell_d_sh_env_var_defaults["MANPATH"]="/opt/homebrew/share/man:/opt/homebrew/share/man:"
+shell_d_sh_env_var_defaults["PATH"]="/opt/homebrew/bin:${HOME}/opt/libexec:${HOME}/.cargo/bin:${HOME}/.elixir-install/installs/elixir/1.18.2-otp-27/bin:${HOME}/.elixir-install/installs/otp/27.1.2/bin:${HOME}/.local/bin:${HOME}/.shell.d/.venv/bin:${HOME}/.local/share/fnm/node-versions/v22.22.2/installation/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:${HOME}/.bun/bin:${HOME}/.deno/bin:${HOME}/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:${HOME}/go/bin:${HOME}/.zig:${HOME}/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
 shell_d_sh_env_var_defaults["CDPATH"]="${HOME}/projects/work/poems.codes/tools/noon-cli/packages:${HOME}/projects/work/poems.codes/tools:${HOME}/projects/work/poems.codes:${HOME}/projects/work/poems.codes/paas:${HOME}/projects/work/poems.codes/pro-bono:${HOME}/projects/work/poems.codes/sandbox:${HOME}/projects/work/poems.codes/poc:${HOME}/projects/personal:${HOME}/projects/personal/chrome-extensions:${HOME}/projects/work:${HOME}/projects/third_party:${HOME}/projects:${HOME}/projects/опенсорси:${HOME}/.shell.d/CDPATH:${HOME}"
 shell_d_sh_env_var_defaults["EMACS_SOCKET_NAME"]="${HOME}/.emacs.d/socket/server"
 declare -gAr shell_d_sh_env_var_defaults
@@ -111,7 +122,7 @@ shell_d_sh_history_env_var_defaults["HISTCONTROL"]="ignorespace"
 shell_d_sh_history_env_var_defaults["HISTFILE"]="${HOME}/.bash_history"
 shell_d_sh_history_env_var_defaults["HISTFILESIZE"]="211776"
 # shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:cls:history*:hist-*:hist_*:[ \\t]*:git[ \\t]*st*"
-shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:history*:hist-*:hist_*:[ \\t]*"
+shell_d_sh_history_env_var_defaults["HISTIGNORE"]="[bf]g:exit:clear:history*:hist-*:hist_*:[ \t]*:HIST"
 shell_d_sh_history_env_var_defaults["HISTSIZE"]="211776"
 shell_d_sh_history_env_var_defaults["HISTTIMEFORMAT"]="@%s:%Z     "
 declare -gAr shell_d_sh_history_env_var_defaults
@@ -259,7 +270,7 @@ declare -gA shell_d_declared_functions_colon_sep_by_source=()
 declare -gA shell_d_declared_functions_colon_sep_by_caller=()
 declare -gA shell_d_declared_functions_colon_sep_by_timestamp=()
 declare -g fn=''
-declare -i now=$(date --utc  +'%s')
+declare -i now=$(tsnanos)
 for fn in $(declare -p -F); do
     shell_d_declared_functions_colon_sep_by_timestamp[${fn}]=${now}
 done
@@ -564,28 +575,30 @@ shell_d_sh_wezterm_cli() {
         fi
     fi
 }
-shell_d_sh_prompt_command() {
-    local -r pwd_canon_folded="$(path canon -uf .)"
-
-    local -- parent=$(path parent .)
-    local -- name=$(path name .)
-
-    local -- title_path=''
-
-    local -- beg="${parent}"
-    local -- end="${name}"
-
-    title_path="${pwd_canon_folded}"
-    if [ ${#title_path} -gt 12 ]; then
-        if [ ${#beg} -gt 4 ]; then
-            beg="${beg:0:4}"
-        fi
-        if [ ${#end} -gt 5 ]; then
-            end="${end:0:5}"
-        fi
-        title_path="${beg}...${end}"
+shell_d_sh_get_history_sed_regex() {
+    if [[ "${HISTTIMEFORMAT}" =~ (@(%s):(%Z)([[:space:]]{5})) ]]; then
+        builtin echo '^\s*([0-9]+)(\s*[@]([0-9]+):(UTC|[0-9:+-]+|[A-Za-z0-9]+)\s*)?\s*([^[:space:]].*)\s*$'
+    else
+        1>&2 echo -e "\x1b[1;48;2;158;24;0m\x1b[1;38;2;250;168;150m[${FUNCNAME[0]} error]\x1b[0m" "unknown HISTTIMEFORMAT: ${HISTTIMEFORMAT@Q}"
+        return 1
     fi
-    shell_d_sh_wezterm_cli set-tab-title "${title_path}"
+}
+shell_d_sh_prompt_command() {
+    local -r cwd_name="$(basename $(pwd))"
+    local -i lastcmdid=$((HISTCMD - 1))
+    local -- last_history_entry=""
+    local -- last_history_entry=$(HISTTIMEFORMAT='' history 10 | grep -E "^${lastcmdid}")
+    local -- regex=""
+    if regex=$(shell_d_sh_get_history_sed_regex); then
+        local -- hist_cmd=$(sed -E "s/${regex}/\1/g" <<<"${last_history_entry}")
+        local -- hist_timestamp=$(sed -E "s/${regex}/\2/g" <<<"${last_history_entry}")
+        local -- hist_timezone=$(sed -E "s/${regex}/\3/g" <<<"${last_history_entry}")
+        local -- hist_entry=$(sed -E "s/${regex}/\4/g" <<<"${last_history_entry}")
+        local -- lastcmd=${hist_entry}
+        local -- title="${lastcmd} at ${cwd_name}"
+        wezterm cli set-tab-title "${title}"
+        wezterm cli set-window-title "${title}"
+    fi
 }
 
 shell_d_sh_prompt_command_set_wezterm_title_last_history_entry_command() {
@@ -701,7 +714,7 @@ shell_d_internal_fn_log() {
     local -- pos=""
     local -- pot_level=""
 
-    local -i now=$(date -u +'%s')
+    local -i now=$(tsnanos)
     local -- log_timestamp="$(date --date=@${now} +'%Y/%m/%d %H:%M:%S %Z')"
 
     if [ ${argc} -eq 0 ]; then
@@ -761,8 +774,6 @@ declare -g shell_d_rust_artifacts_home="${HOME}/workbench/.artifacts/rust"
 
 # export CARGO_HOME="${HOME}/.cargo" # https://doc.rust-lang.org/cargo/guide/cargo-home.html
 
-# export RUSTUP_TOOLCHAIN="nightly-2026-03-14"
-export RUSTUP_TOOLCHAIN="nightly-2025-09-09"
 # export CARGO_LOG="debug"
 export CARGO_LOG="info"
 export CARGO_INCREMENTAL=1
@@ -787,7 +798,7 @@ if [ -s "${HOME}/.cargo/env" ] && [ -x "${HOME}/.cargo/bin/cargo" ]; then
     declare -g shell_d_rust_root_path="${HOME}/.cargo"
     declare -g shell_d_rust_bin_path="${shell_d_rust_root_path}/bin"
     declare -g shell_d_rust_env_path="${shell_d_rust_root_path}/env"
-    shell_d_internal_security_checks
+    # shell_d_internal_security_checks
 fi
 # </RUST>
 
@@ -817,24 +828,6 @@ fi
 # fi
 #
 # </PYTHON>
-
-# <NODE>
-declare -g shell_d_nvm_root_path="${HOME}/.nvm"
-
-if [ -d "${shell_d_nvm_root_path}" ]; then
-    declare -g shell_d_nvm_alias_default_path="${shell_d_nvm_root_path}/alias/default"
-    declare -g shell_d_nvm_versions_path="${shell_d_nvm_root_path}/versions"
-    if [ -s "${shell_d_nvm_alias_default_path}" ]; then
-        declare -g shell_d_nvm_default_version="$(grep -E '^v' "${shell_d_nvm_alias_default_path}" | head -1)"
-        declare -g shell_d_nvm_current_version_path="${HOME}/.nvm/versions/node/${shell_d_nvm_default_version}"
-    else
-        declare -ga shell_d_nvm_installed_versions=($(find "${HOME}/.nvm/versions/node" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort -rn))
-        declare -g shell_d_nvm_default_version="${shell_d_nvm_installed_versions[0]}"
-    fi
-    declare -g shell_d_nvm_current_version_path="${HOME}/.nvm/versions/node/${shell_d_nvm_default_version}"
-    declare -g shell_d_nvm_current_version_bin_path="${shell_d_nvm_current_version_path}/bin"
-fi
-# </NODE>
 
 # initialize_shell_d_core_global_vars() {
 #     if [[ ! -v shell_d_entrypoint_source_path_relative ]]; then
@@ -926,7 +919,7 @@ entrypoint() {
 
     if [ -x "${HOME}/.cargo/bin/ps1" ]; then
         eval "$(${HOME}/.cargo/bin/ps1 --env)"
-        # export PROMPT_COMMAND='shell_d_sh_prompt_command'
+        export PROMPT_COMMAND='shell_d_sh_prompt_command'
     else
         export PS1='\u@\h:\w\$ '
     fi
@@ -955,6 +948,7 @@ entrypoint() {
     xD "homebrew.sh"
     xD "path.sh"
     xD "cdpath.sh"
+    xD "builtin-overrides.sh"
 
     # debuggin error `pop_var_context: head of shell_variables not a function context`:
     #   `rg --multiline '((uw_)?pop_(var_)?context)(\s+|\n+)*[\(][^)]*[)](\s+|\n+)*[;]'`
@@ -969,6 +963,7 @@ entrypoint() {
 
     xD "cdpath.sh"
     xD "path.sh"
+    xD "build-essential.sh"
     xD "homebrew.sh"
     xD "sec.sh"
     xD "io.sh"
@@ -984,9 +979,13 @@ entrypoint() {
 
     shell_d_sh_load_source "${STAGING_PATH}/export_shell_env_vars.sh"
     shell_d_sh_load_source "${STAGING_PATH}/history.sh"
+    shell_d_sh_load_source "${STAGING_PATH}/ssh_router.sh"
+    shell_d_sh_load_source "${STAGING_PATH}/calculate-delays.sh"
     shell_d_sh_load_source "${X_D_PATH}/coreutils.sh"
     shell_d_sh_load_source "${X_D_PATH}/py3.sh"
     shell_d_sh_load_source "${X_D_PATH}/rust.sh"
+    shell_d_sh_load_source "${X_D_PATH}/node.sh"
+    # shell_d_sh_load_source "${X_D_PATH}/ssh.sh"
 
     shell_d_sh_initialize_env_vars
     unset s brew_path path gq
@@ -1138,7 +1137,11 @@ shell_d_sh_load_source() {
         shell_d_sh_log_error "[${FUNCNAME[0]} error]" "missing argument: <SHELL_SCRIPT_PATH>"
         return 1
     fi
-    shell_script_path=""
+    shell_script_path="${argv[@]}"
+    if [ -n "${shell_script_path}" ] && [ ! -e "${shell_script_path}" ]; then
+        1>&2 echo -e "\x1b[1;38;2;87;176;105mshell_d_sh_load_source\x1b[0m called with invalid path: \x1b[1;38;2;243;79;111m${shell_script_path}\x1b[0m"
+        return 9
+    fi
 
     for index in ${!argv[@]}; do
         current=$(($index + 1))
@@ -1169,14 +1172,27 @@ shell_d_sh_load_source() {
     #     return 1
     fi
 
+    if [ -z "${shell_script_path}" ]; then
+        1>&2 echo -e "\x1b[1;38;2;87;176;105mshell_script_path\x1b[1;38;2;243;79;111m is empty\x1b[0m"
+        __shell_d_sh_trap_function_backtrace__
+        return
+    fi
     shell_d_sh_validate_non_empty_regular_file_argument "shell_script_path" "${shell_script_path}"
+    if [ ! -f "${shell_script_path}" ]; then
+        1>&2 echo -e "\x1b[1;38;2;87;176;105m${shell_script_path}\x1b[0m is a \x1b[1;38;2;243;79;111m$(gstat -c '%F' "${shell_script_path}")\x1b[0m"
+    fi
     shell_script_path=$(shell_d_fs_get_canonical_path "${shell_script_path}")
-
+    if [ ! -f "${shell_script_path}" ]; then
+        1>&2 echo -e "\x1b[1;38;2;69;130;199m${shell_script_path}\x1b[0m is a \x1b[1;38;2;255;211;64m$(gstat -c '%F' "${shell_script_path}")\x1b[0m"
+    # else
+    #     1>&2 echo -e "\x1b[1;38;2;87;176;105mloading \x1b[1;38;2;243;79;111m${shell_script_path}\x1b[0m"
+    fi
     if ! shell_d_sh_shfmt_check "${shell_script_path}"; then
+        1>&2 echo -e "\x1b[1;38;2;87;176;105m${shell_script_path}\x1b[1;38;2;69;130;199m has syntax error\x1b[0m"
         return $?
     fi
     if [ -s "${shell_script_path}" ]; then
-        shell_d_load_source_queue_map["${shell_script_path}"]=$(date -u  +'%s')
+        shell_d_load_source_queue_map["${shell_script_path}"]=$(tsnanos)
         shell_d_load_source_queue+=("${shell_script_path}")
 
         local -- shell_script_path_display="${shell_script_path}"
@@ -1200,12 +1216,14 @@ shell_d_sh_load_source() {
                 # shell_d_sh_log_error ""
                 # shell_d_sh_log_error "\x1b[0m\x1b[1;38;2;245;121;0m\x1b[1;48;2;46;52;54m$(declare -p callers stack_size)\x1b[0m"
                 # shell_d_sh_log_error ""
-                subscript_load_source_started_at=$(date -u +'%s')
+                subscript_load_source_started_at=$(tsnanos)
                 shell_d_internal_benchmark_load_source_started_at_map["${shell_script_path}"]="${subscript_load_source_started_at}"
 
-                eval "$(cat "${shell_script_path}")" # #ff4444
+                eval "$(<${shell_script_path})" # #ff4444
+                # 1>&2 echo -e "\x1b[1;38;2;69;130;199mloaded \x1b[1;38;2;255;211;64m${shell_script_path}\x1b[0m"
+
                 # 1>&2 echo -e "\x1b[1;38;2;115;210;22mloaded ${shell_script_path@Q}\x1b[0m"
-                subscript_load_source_finished_at=$(date -u +'%s')
+                subscript_load_source_finished_at=$(tsnanos)
                 shell_d_internal_benchmark_load_source_finished_at_map["${shell_script_path}"]="${subscript_load_source_finished_at}"
 
                 shell_d_load_source_stack+=("${shell_script_path}")
@@ -1219,12 +1237,12 @@ shell_d_sh_load_source() {
                 local -- line="${BASH_LINENO[$((1 - 1))]}"
                 shell_d_sh_log_error "\x1b[0m\x1b[1;48;2;238;238;236m\x1b[1;38;2;239;41;41m${shell_script_path@Q} already loaded by ${called_by_ty} ${called_by_func} line ${called_by_line}\x1b[0m"
 
-                subscript_load_source_started_at=$(date -u +'%s')
+                subscript_load_source_started_at=$(tsnanos)
                 shell_d_internal_benchmark_load_source_started_at_map["${shell_script_path}"]="${subscript_load_source_started_at}"
 
                 shell_d_sh_log_error "\x1b[0m\x1b[1;38;2;238;238;236m\x1b[1;48;2;239;41;41mcurrent caller is ${func} at line ${line}\x1b[0m"
                 eval "$(cat "${shell_script_path}")" # #ff4444
-                subscript_load_source_finished_at=$(date -u +'%s')
+                subscript_load_source_finished_at=$(tsnanos)
                 shell_d_internal_benchmark_load_source_finished_at_map["${shell_script_path}"]="${subscript_load_source_finished_at}"
                 # 1>&2 echo -e "\x1b[1;38;2;245;121;0mre-loaded ${shell_script_path@Q}\x1b[0m"
                 return 0
@@ -1368,8 +1386,6 @@ xD() {
     local X_D_PATH="${SHELL_D_PATH}/x.d"
     local -- sh=""
 
-    # declare -gA shell_d_internal_benchmark_xd_started_at_map=()
-    # declare -gA shell_d_internal_benchmark_xd_finished_at_map=()
 
     local -i subscript_load_xd_started_at=-1
     local -i subscript_load_xd_finished_at=-1
@@ -1386,20 +1402,20 @@ xD() {
         if [ -e "${SHELL_D_PATH}/${sh}" ] && [ -r "${SHELL_D_PATH}/${sh}" ] && [ -s "${SHELL_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${SHELL_D_PATH}/${sh}"
             local -- source_path_to_load="${SHELL_D_PATH}/${sh}"
-            subscript_load_xd_started_at=$(date -u +'%s')
+            subscript_load_xd_started_at=$(tsnanos)
             shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
             shell_d_sh_load_source "${source_path_to_load}"
-            subscript_load_xd_finished_at=$(date -u +'%s')
+            subscript_load_xd_finished_at=$(tsnanos)
             shell_d_internal_benchmark_xd_finished_at_map["${source_path_to_load}"]="${subscript_load_xd_finished_at}"
             # shell_d_sh_load_libs "${SHELL_D_PATH}/${sh}"
         elif [ -e "${X_D_PATH}/${sh}" ] && [ -r "${X_D_PATH}/${sh}" ] && [ -s "${X_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${X_D_PATH}/${sh}"
             local -- source_path_to_load="${X_D_PATH}/${sh}"
 
-            subscript_load_xd_started_at=$(date -u +'%s')
+            subscript_load_xd_started_at=$(tsnanos)
             shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
             shell_d_sh_load_source "${source_path_to_load}"
-            subscript_load_xd_finished_at=$(date -u +'%s')
+            subscript_load_xd_finished_at=$(tsnanos)
             shell_d_internal_benchmark_xd_finished_at_map["${source_path_to_load}"]="${subscript_load_xd_finished_at}"
             # shell_d_sh_load_libs "${X_D_PATH}/${sh}"
         else
@@ -1421,6 +1437,10 @@ postentry() {
     unset PS2
     unset PS3
     unset PS4
+    local -- hostname=$(hostname)
+    if [[ ! "${hostname@L}" =~ /[.]langley$/ ]]; then
+        sudo hostname client.langley
+    fi
 }
 if [[ -v SHELL_D_DEBUG ]] && [ -n "${SHELL_D_DEBUG}" ]; then
     export PS3='${BASH_SOURCE[0]}${LINENO[0]}'
@@ -1440,7 +1460,7 @@ unset entrypoint postentry
 
 umask 007
 
-declare -gir shell_d_finished_at=$(date --utc  +'%s')
+declare -gir shell_d_finished_at=$(tsnanos)
 # <TODO: write report of new shell session at end of entrypoint.sh>
 # path: workbench/$(today)/.shell-sessions/session.pid.$$.tty.${tty_name}.$(nowdz).json
 #
@@ -1484,5 +1504,5 @@ declare -gir shell_d_finished_at=$(date --utc  +'%s')
 #         1>&2 echo -e "command \x1b[1;38;2;F13976m${shell_d_internal_subshell_level_2_argv[@]}"
 #     fi
 # fi
-
-find ~/.emacs.d -regextype egrep -regex '.*[.]el[nc]$' -exec rm -f {} \; || true
+# 1>/dev/null declare -F shell_d_show_benchmark && shell_d_show_benchmark
+set +x

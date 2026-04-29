@@ -31,26 +31,26 @@ def main(subexp_count, separator):
     if subexp_count < 0:
         raise TypeError(f"invalid natural number: {subexp_count}")
     if subexp_count > 9:
-        raise TypeError(f"invalid sed subexpression number, greater than 9: {subexp_count}")
+        raise TypeError(
+            f"invalid sed subexpression number, greater than 9: {subexp_count}"
+        )
 
     subexp_range = list(range(0, subexp_count + 1))
     indentation = " " * 4
-    result = r"\\\n".join(
+    result = r"\n".join(
         [
             "".join(
                 [
-                    f"\\n",
                     f"<{num}>",
-                    rf"\n{indentation}\{num}",
+                    rf"\{num}",
                     # rf"\n{indentation}\\\\{num}",
-                    f"\\n</{num}>",
-                    f"\\n",
+                    f"</{num}>",
                 ]
             )
             for num in subexp_range
         ]
     )
-    print(f'\b{result}\n')
+    print(f"\b{result}\b\\n")
 
 
 if __name__ == "__main__":

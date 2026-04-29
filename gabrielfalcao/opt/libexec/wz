@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 
 declare -- usefulness="frontend for wezterm cli"
 

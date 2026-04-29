@@ -1,4 +1,5 @@
 #!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 
 # wz-parse-get-text-output: parses each effective bash history line from
 # output of ``wezterm cli get-text``, either from command-line or from

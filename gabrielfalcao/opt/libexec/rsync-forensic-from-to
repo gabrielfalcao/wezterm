@@ -73,22 +73,23 @@ declare -g stderr="${log_folder}/${log_name}.stderr.${artifact_suffix}.log"
 declare -g stdout="${log_folder}/${log_name}.stdout.${artifact_suffix}.log"
 declare -i code=0
 declare -a rsync_call_args=(
-    rsync
-    -rLUWv
-    --ignore-errors
-    --fsync
-    --mkpath
+    rsync -rLUWv --ignore-errors--fsync --mkpath
 
-    --stats
-    # --info=name
-    # --info=progress2,stats2,misc1,flist0
-    --info=name,progress2,stats2,misc1,flist0
-    --progress
-    --log-file="${log_folder}/${log_name}.log"
-    --log-file-format='%i %n%L'
+    # --stats
+    # # --info=name
+    # # --info=progress2,stats2,misc1,flist0
+    # --info=name,progress2,stats2,misc1,flist0
+    # --progress
+    # --log-file="${log_folder}/${log_name}.log"
+    # --log-file-format='%i %n%L'
 )
 
 main() {
+    1>&2 echo -e '\n'
+    1>&2 printf '\x1b[1;38;2;254;215;75m%s\x1b[0m ' ${rsync_call_args[@]}
+    1>&2 echo -e '\n'
+
+
     if [ ${argc} -eq 0 ]; then
         1>&2 echo -e "[$(basename "${BASH_SOURCE[0]}") error]" "missing arguments: <FROM> <TO>"
     fi

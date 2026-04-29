@@ -1,5 +1,6 @@
 #!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
 
+
 import sys
 import click
 import re
@@ -19,6 +20,10 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Union, Optional, Self
 from pathlib import Path
 from subprocess import Popen
+
+def clear_screen():
+    sys.stderr.write("\x1b[2J\x1b[3J\x1b[H")
+    sys.stderr.flush()
 
 
 @dataclass
@@ -332,6 +337,7 @@ def main(get_text_of_pane_id):
 
 
 if __name__ == "__main__":
+    clear_screen()
     main()
 
 

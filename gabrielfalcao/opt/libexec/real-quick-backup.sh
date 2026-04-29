@@ -26,10 +26,11 @@ declare -ga backup_paths_from_order=()
 declare -ga backup_paths_to_order=()
 
 if [ "$(whoami)" != "root" ]; then
-    sudo -E ${this_script_path}
+    time sudo -E ${this_script_path}
     exit 0
 fi
 
+1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 declare -- stderr="${log_folder}/stderr.log"
 declare -- stdout="${log_folder}/stdout.log"
 
@@ -102,14 +103,15 @@ sync_from_to() {
     local -i code=0
     local -a rsync_call_argv=(
         rsync
-        --info=name
-        # -gWpuacvot
-        -gpuacvot
-        --stats
-        --fsync
+        # --info=name
+        --modify-window=1
+        -pvaulogUNW
+        --size-only
+        # --fsync
         --mkpath
         --ignore-errors
         --progress
+        --stats
         --info=progress2,stats2,misc1,flist0
         --log-file="${log_folder}/${log_name}.log"
         --log-file-format='%i %n%L'
@@ -135,14 +137,19 @@ sync_from_to() {
     return ${code}
 }
 
-sync_from_to "/Users/gabrielfalcao/workbench/" \
-    "/Volumes/nothing/APFEL/workbench/"
+rsync --modify-window=1 --remove-source-files -pvaulogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/*scratch*/.x/" "/Volumes/nothing/APFEL/*scratch*/.x/"
 
-sync_from_to "/Users/gabrielfalcao/godot/" \
-    "/Volumes/nothing/APFEL/godot/"
+sync_from_to "/Users/gabrielfalcao/Downloads/" \
+    "/Volumes/nothing/APFEL/Downloads/"
 
-sync_from_to "/Users/gabrielfalcao/projects/" \
-    "/Volumes/nothing/APFEL/projects/"
+sync_from_to "/Users/gabrielfalcao/Kino/" \
+    "/Volumes/nothing/APFEL/Kino/"
+
+sync_from_to "/Users/gabrielfalcao/*scratch*/" \
+    "/Volumes/nothing/APFEL/*scratch*/"
+
+sync_from_to "/Users/gabrielfalcao/opt/" \
+    "/Volumes/nothing/APFEL/opt/"
 
 sync_from_to "/Users/gabrielfalcao/.emacs.d/" \
     "/Volumes/nothing/APFEL/.emacs.d/"
@@ -150,102 +157,118 @@ sync_from_to "/Users/gabrielfalcao/.emacs.d/" \
 sync_from_to "/Users/gabrielfalcao/.shell.d/" \
     "/Volumes/nothing/APFEL/.shell.d/"
 
-sync_from_to "/Users/gabrielfalcao/opt/" \
-    "/Volumes/nothing/APFEL/opt/"
+sync_from_to "/Users/gabrielfalcao/projects/" \
+    "/Volumes/nothing/APFEL/projects/"
 
-sync_from_to "/Users/gabrielfalcao/Kino/" \
-    "/Volumes/nothing/APFEL/Kino/"
-sync_from_to "/Users/gabrielfalcao/go/" \
-    "/Volumes/nothing/APFEL/go/"
-sync_from_to "/Users/gabrielfalcao/.gnupg/" \
-    "/Volumes/nothing/APFEL/.gnupg/"
-sync_from_to "/Users/gabrielfalcao/.ssh/" \
-    "/Volumes/nothing/APFEL/.ssh/"
-sync_from_to "/Users/gabrielfalcao/.config/" \
-    "/Volumes/nothing/APFEL/.config/"
-sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-    "/Volumes/nothing/APFEL/*scratch*/" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
-sync_from_to "/Users/gabrielfalcao/*scratch*/Data/" \
-    "/Volumes/nothing/APFEL/*scratch*/Data/"
-sync_from_to "/Users/gabrielfalcao/__sandbox__/" \
-    "/Volumes/nothing/APFEL/__sandbox__/"
-sync_from_to "/Users/gabrielfalcao/*sandbox*/" \
-    "/Volumes/nothing/APFEL/*sandbox*/"
-sync_from_to "/Users/gabrielfalcao/*nons*/" \
-    "/Volumes/nothing/APFEL/*nons*/"
-sync_from_to "/Users/gabrielfalcao/.wezterm.lua/" \
-    "/Volumes/nothing/APFEL/.wezterm.lua/"
-sync_from_to "/Users/gabrielfalcao/SDKs/" \
-    "/Volumes/nothing/APFEL/SDKs/"
-sync_from_to "/Users/gabrielfalcao/.bun/" \
-    "/Volumes/nothing/APFEL/.bun/"
-sync_from_to "/Users/gabrielfalcao/.nvm/" \
-    "/Volumes/nothing/APFEL/.nvm/"
-sync_from_to "/Users/gabrielfalcao/.yarn/" \
-    "/Volumes/nothing/APFEL/.yarn/"
-sync_from_to "/Users/gabrielfalcao/.local/" \
-    "/Volumes/nothing/APFEL/.local/"
-sync_from_to "/Users/gabrielfalcao/.logs/" \
-    "/Volumes/nothing/APFEL/.logs/"
-sync_from_to "/Users/gabrielfalcao/Music/" \
-    "/Volumes/nothing/APFEL/Music/"
-sync_from_to "/Users/gabrielfalcao/JUCE/" \
-    "/Volumes/nothing/APFEL/JUCE/"
-sync_from_to "/Users/gabrielfalcao/Unity/" \
-    "/Volumes/nothing/APFEL/Unity/"
-sync_from_to "/Users/gabrielfalcao/Blender/" \
-    "/Volumes/nothing/APFEL/Blender/"
+sync_from_to "/Users/gabrielfalcao/godot/" \
+    "/Volumes/nothing/APFEL/godot/"
+
+sync_from_to "/Users/gabrielfalcao/workbench/" \
+    "/Volumes/nothing/APFEL/workbench/"
+
 sync_from_to "/Users/gabrielfalcao/Documents/" \
     "/Volumes/nothing/APFEL/Documents/"
-sync_from_to "/Users/gabrielfalcao/Splice/" \
-    "/Volumes/nothing/APFEL/Splice/"
-sync_from_to "/Users/gabrielfalcao/Downloads/" \
-    "/Volumes/nothing/APFEL/Downloads/"
-sync_from_to "/Users/gabrielfalcao/Bildern/" \
-    "/Volumes/nothing/APFEL/Bildern/"
-sync_from_to "/Users/gabrielfalcao/Büchen/" \
-    "/Volumes/nothing/APFEL/Büchen/"
-sync_from_to "/Users/gabrielfalcao/Kino/" \
-    "/Volumes/nothing/APFEL/Kino/"
-sync_from_to "/Users/gabrielfalcao/LOL/" \
-    "/Volumes/nothing/APFEL/LOL/"
-sync_from_to "/Users/gabrielfalcao/Publications/" \
-    "/Volumes/nothing/APFEL/Publications/"
-sync_from_to "/Users/gabrielfalcao/tmp/" \
-    "/Volumes/nothing/APFEL/tmp/"
+
 sync_from_to "/Users/gabrielfalcao/Desktop/" \
     "/Volumes/nothing/APFEL/Desktop/"
-sync_from_to "/Users/gabrielfalcao/Movies/" \
-    "/Volumes/nothing/APFEL/Movies/"
-sync_from_to "/Users/gabrielfalcao/Pictures/" \
-    "/Volumes/nothing/APFEL/Pictures/"
-sync_from_to "/Users/gabrielfalcao/Library/" \
-    "/Volumes/nothing/APFEL/Library/"
-sync_from_to "/Users/gabrielfalcao/Applications/" \
-    "/Volumes/nothing/APFEL/Applications/"
-sync_from_to "/Users/gabrielfalcao/Library/Application%20Support/" \
-    "/Volumes/nothing/APFEL/Library/Application%20Support/"
-sync_from_to "/Users/gabrielfalcao/Library/HTTPStorages/" \
-    "/Volumes/nothing/APFEL/Library/HTTPStorages/"
-sync_from_to "/Users/gabrielfalcao/Library/Caches/" \
-    "/Volumes/nothing/APFEL/Library/Caches/"
-sync_from_to "/Users/gabrielfalcao/Library/LaunchAgents/" \
-    "/Volumes/nothing/APFEL/Library/LaunchAgents/"
-sync_from_to "/Users/gabrielfalcao/Library/LaunchDaemons/" \
-    "/Volumes/nothing/APFEL/Library/LaunchDaemons/"
-sync_from_to "/Users/gabrielfalcao/Library/Logs/" \
-    "/Volumes/nothing/APFEL/Library/Logs/"
-sync_from_to "/Users/gabrielfalcao/Library/Audio/Plug-Ins/" \
-    "/Volumes/nothing/APFEL/Library/Audio/Plug-Ins/"
 
-sync_from_to "/Users/gabrielfalcao/usr/local/" \
-    "/Volumes/nothing/APFEL_Root/usr/local/"
-sync_from_to "/Users/gabrielfalcao/opt/" \
-    "/Volumes/nothing/APFEL_Root/opt/"
-sync_from_to "/Users/gabrielfalcao/var/log/" \
-    "/Volumes/nothing/APFEL_Root/var/log/"
-sync_from_to "/Users/gabrielfalcao/Applications/" \
-    "/Volumes/nothing/APFEL_Root/Applications/"
+sync_from_to "/Users/gabrielfalcao/.bun/" \
+    "/Volumes/nothing/APFEL/.bun/"
 
-# # sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-#     "/Volumes/nothing/APFEL/*scratch*/" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+sync_from_to "/Users/gabrielfalcao/.deno/" \
+    "/Volumes/nothing/APFEL/.deno/"
+
+sync_from_to "/Users/gabrielfalcao/.nvm/" \
+    "/Volumes/nothing/APFEL/.nvm/"
+
+sync_from_to "/Users/gabrielfalcao/.yarn/" \
+    "/Volumes/nothing/APFEL/.yarn/"
+
+sync_from_to "/Users/gabrielfalcao/.local/" \
+    "/Volumes/nothing/APFEL/.local/"
+
+sync_from_to "/Users/gabrielfalcao/Blender/" \
+    "/Volumes/nothing/APFEL/Blender/"
+
+rsync --modify-window=1 -pvaulogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/" "/Volumes/nothing/APFEL/"
+
+diskutil unmount /Volumes/nothing/
+## sync_from_to "/Users/gabrielfalcao/go/" \
+##     "/Volumes/nothing/APFEL/go/"
+## sync_from_to "/Users/gabrielfalcao/.gnupg/" \
+##     "/Volumes/nothing/APFEL/.gnupg/"
+## sync_from_to "/Users/gabrielfalcao/.ssh/" \
+##     "/Volumes/nothing/APFEL/.ssh/"
+## sync_from_to "/Users/gabrielfalcao/.config/" \
+##     "/Volumes/nothing/APFEL/.config/"
+## sync_from_to "/Users/gabrielfalcao/*scratch*/" \
+##     "/Volumes/nothing/APFEL/*scratch*/" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+## sync_from_to "/Users/gabrielfalcao/*scratch*/Data/" \
+##     "/Volumes/nothing/APFEL/*scratch*/Data/"
+## sync_from_to "/Users/gabrielfalcao/__sandbox__/" \
+##     "/Volumes/nothing/APFEL/__sandbox__/"
+## sync_from_to "/Users/gabrielfalcao/*sandbox*/" \
+##     "/Volumes/nothing/APFEL/*sandbox*/"
+## sync_from_to "/Users/gabrielfalcao/*nons*/" \
+##     "/Volumes/nothing/APFEL/*nons*/"
+## sync_from_to "/Users/gabrielfalcao/.wezterm.lua/" \
+##     "/Volumes/nothing/APFEL/.wezterm.lua/"
+## sync_from_to "/Users/gabrielfalcao/SDKs/" \
+##     "/Volumes/nothing/APFEL/SDKs/"
+## sync_from_to "/Users/gabrielfalcao/.logs/" \
+##     "/Volumes/nothing/APFEL/.logs/"
+## sync_from_to "/Users/gabrielfalcao/Music/" \
+##     "/Volumes/nothing/APFEL/Music/"
+## sync_from_to "/Users/gabrielfalcao/JUCE/" \
+##     "/Volumes/nothing/APFEL/JUCE/"
+## sync_from_to "/Users/gabrielfalcao/Unity/" \
+##     "/Volumes/nothing/APFEL/Unity/"
+## sync_from_to "/Users/gabrielfalcao/Splice/" \
+##     "/Volumes/nothing/APFEL/Splice/"
+## sync_from_to "/Users/gabrielfalcao/Bildern/" \
+##     "/Volumes/nothing/APFEL/Bildern/"
+## sync_from_to "/Users/gabrielfalcao/Büchen/" \
+##     "/Volumes/nothing/APFEL/Büchen/"
+## sync_from_to "/Users/gabrielfalcao/Kino/" \
+##     "/Volumes/nothing/APFEL/Kino/"
+## sync_from_to "/Users/gabrielfalcao/LOL/" \
+##     "/Volumes/nothing/APFEL/LOL/"
+## sync_from_to "/Users/gabrielfalcao/Publications/" \
+##     "/Volumes/nothing/APFEL/Publications/"
+## sync_from_to "/Users/gabrielfalcao/tmp/" \
+##     "/Volumes/nothing/APFEL/tmp/"
+## sync_from_to "/Users/gabrielfalcao/Movies/" \
+##     "/Volumes/nothing/APFEL/Movies/"
+## sync_from_to "/Users/gabrielfalcao/Pictures/" \
+##     "/Volumes/nothing/APFEL/Pictures/"
+## sync_from_to "/Users/gabrielfalcao/Library/" \
+##     "/Volumes/nothing/APFEL/Library/"
+## sync_from_to "/Users/gabrielfalcao/Applications/" \
+##     "/Volumes/nothing/APFEL/Applications/"
+## sync_from_to "/Users/gabrielfalcao/Library/Application%20Support/" \
+##     "/Volumes/nothing/APFEL/Library/Application%20Support/"
+## sync_from_to "/Users/gabrielfalcao/Library/HTTPStorages/" \
+##     "/Volumes/nothing/APFEL/Library/HTTPStorages/"
+## sync_from_to "/Users/gabrielfalcao/Library/Caches/" \
+##     "/Volumes/nothing/APFEL/Library/Caches/"
+## sync_from_to "/Users/gabrielfalcao/Library/LaunchAgents/" \
+##     "/Volumes/nothing/APFEL/Library/LaunchAgents/"
+## sync_from_to "/Users/gabrielfalcao/Library/LaunchDaemons/" \
+##     "/Volumes/nothing/APFEL/Library/LaunchDaemons/"
+## sync_from_to "/Users/gabrielfalcao/Library/Logs/" \
+##     "/Volumes/nothing/APFEL/Library/Logs/"
+## sync_from_to "/Users/gabrielfalcao/Library/Audio/Plug-Ins/" \
+##     "/Volumes/nothing/APFEL/Library/Audio/Plug-Ins/"
+##
+## sync_from_to "/Users/gabrielfalcao/usr/local/" \
+##     "/Volumes/nothing/APFEL_Root/usr/local/"
+## sync_from_to "/Users/gabrielfalcao/opt/" \
+##     "/Volumes/nothing/APFEL_Root/opt/"
+## sync_from_to "/Users/gabrielfalcao/var/log/" \
+##     "/Volumes/nothing/APFEL_Root/var/log/"
+## sync_from_to "/Users/gabrielfalcao/Applications/" \
+##     "/Volumes/nothing/APFEL_Root/Applications/"
+##
+## # # sync_from_to "/Users/gabrielfalcao/*scratch*/" \
+## #     "/Volumes/nothing/APFEL/*scratch*/" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+##

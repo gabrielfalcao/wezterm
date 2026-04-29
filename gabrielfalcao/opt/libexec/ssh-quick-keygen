@@ -65,6 +65,7 @@ declare -r default_target_directory="${HOME}/.ssh"
 declare -- target_directory="${HOME}/.ssh"
 declare -- key_type="ed25519" # ecdsa | ecdsa-sk | ed25519 | ed25519-sk | rsa
 declare -- key_type="ecdsa"   # ecdsa | ecdsa-sk | ed25519 | ed25519-sk | rsa
+declare -- key_type="rsa"   # ecdsa | ecdsa-sk | ed25519 | ed25519-sk | rsa
 
 main() {
     if [ ${argc} -eq 0 ]; then
@@ -138,7 +139,8 @@ main() {
 
     if [ "${target_directory}" == "${default_target_directory}" ]; then
         local -- choice=""
-        read -p $(printf "key will be written to ${target_directory}, do you confirm?\n[N/y]: ") choice
+        local -- nl=$'\n[No/yes]: '
+        read -p "key will be written to ${target_secret_key}, do you confirm?${nl}" choice
         case "${choice@L}" in
             n | no | nope)
                 proceed=0
@@ -156,11 +158,21 @@ main() {
     else
         proceed=1
     fi
-
+    local -a make_key_cmd=()
+    make_key_cmd=(ssh-keygen -t "${key_type}" -C "${email}" -l -O hashalg=sha256 -O print-pubkey -Z chacha20-poly1305@openssh.com -f "${target_secret_key}" )
+    # make_key_cmd=(ssh-keygen -t "${key_type}" -C "${email}" -f "${target_secret_key}" -l -O hashalg=sha256 -O print-pubkey -Z chacha20-poly1305@openssh.com)
+    echo "${make_key_cmd[@]}"
     if ((${proceed})); then
         1>&2 echo -e "[${script_name} info]" "writing key to ${target_secret_key}"
-        ssh-keygen -t "${key_type}" -C "${email}" -N "${passphrase@Q}" -f "${target_secret_key}" -l >${target_secret_art}
-        cat "${target_public_key}"
+        if stdout=$(2>${stderr} ${make_key_cmd[@]}); then
+            1>${target_secret_art} echo "${stdout}"
+            code=0
+            cat "${target_public_key}"
+        else
+            code=$?
+            1>&2 echo "${make_key_cmd[@]} failed with code ${code}"
+            1>&2 cat "${stderr}"
+        fi
     else
         1>&2 echo -e "[${script_name} error]" "aborted"
     fi
