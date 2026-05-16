@@ -29,14 +29,13 @@
 
 # the-perfect-palette-20
 [color "status"]
-    header = "#409DEF"
+    header = "#8FF8E2" # "#0B5E65"
     added = "#6CB328"
-    changed = "#6BECBD" # "#A6CFD0"
+    # changed = "#6BECBD" # "#A6CFD0"
+    changed = "#FDCBB0" "#831C5D"
     untracked = bold blink "#BFFFFF"  "#3257BE"
-    # branch = "#E4FCA2" "#3257BE" # "#AFE356"" "#DD8C00"
-    branch = "#0C101B" "#AFE356" # "#DD8C00"
-    branch = "bold blink #AFE356" "#0E3E12"
-    # Because the phrase Detached HEAD isn't unnerving enough
+    branch = "#FBFF86" "#4C3E24"
+    # branch = "#8FF8E2" "#313638"
     nobranch = bold ul blink "#CB734D"
 
 [color "diff"]
@@ -44,8 +43,8 @@
     old = "#FF424F"
 
     meta = "#515151"
-    func = "#EC8CFF"
-    frag = "#70DBFF"
+    func = "#F04F78"
+    frag = "#4D9BE6"
     context = "#CDBFB3"
 
 [init]
@@ -110,71 +109,71 @@
         format='%x1b[2J%x1b[3J%x1b[H%0a%C(#EEEEEC)commit%C(#D3D7CF) %H%C(#FFFFFF)%d%n%C(#EF2929)Author: %C(#EF2929)%aN %C(#EF2929)<%aE>%n%C(#729FCF)Date: %aD %C(#FCE94F)%ar%0a'
         format='%x1b[2J%x1b[3J%x1b[H%0a%C(#73D216)commit%C(#8AE234) %H%C(#EDD400)%d%n%C(#EDD400)Author: %C(#EDD400)%aN %C(#EDD400)<%aE>%n%C(#729FCF)Date: %aD %C(#3265A4)%ar%0a'
 
+# COLORS resurrect-64
 
-# COLORS
 
 
-#140E1E
-#2D1A71
-#3257BE
-#409DEF
-#70DBFF
-#BFFFFF
-#3E32D5
-#6E6AFF
-#A6ADFF
-#D8E0FF
-#652BBC
-#B44CEF
-#EC8CFF
-#FFCDFF
-#480E55
-#941887
-#E444C3
-#FF91E2
-#190C12
-#550E2B
-#AF102E
-#FF424F
-#FF9792
-#FFD5CF
-#491D1E
-#AA2C1E
-#F66D1E
-#FFAE68
-#FFE1B5
-#492917
-#97530F
-#DD8C00
-#FBC800
-#FFF699
-#0C101B
-#0E3E12
-#38741A
-#6CB328
-#AFE356
-#E4FCA2
-#0D384C
-#177578
-#00BC9F
-#6BECBD
-#C9FCCC
-#353234
-#665D5B
-#998D86
-#CDBFB3
-#EAE6DA
-#2F3143
-#505D6D
-#7B95A0
-#A6CFD0
-#DFEAE4
-#8D4131
-#CB734D
-#EFAF79
-#9C2B3B
-#E45761
+#2E222F
+#3E3546
+#625565
+#966C6C
+#AB947A
+#694F62
+#7F708A
+#9BABB2
+#C7DCD0
 #FFFFFF
-#000000
-#E4162B
-#FFFF40
+#6E2727
+#B33831
+#EA4F36
+#F57D4A
+#AE2334
+#E83B3B
+#FB6B1D
+#F79617
+#F9C22B
+#7A3045
+#9E4539
+#CD683D
+#E6904E
+#FBB954
+#4C3E24
+#676633
+#A2A947
+#D5E04B
+#FBFF86
+#165A4C
+#239063
+#1EBC73
+#91DB69
+#CDDF6C
+#313638
+#374E4A
+#547E64
+#92A984
+#B2BA90
+#0B5E65
+#0B8A8F
+#0EAF9B
+#30E1B9
+#8FF8E2
+#323353
+#484A77
+#4D65B4
+#4D9BE6
+#8FD3FF
+#45293F
+#6B3E75
+#905EA9
+#A884F3
+#EAADED
+#753C54
+#A24B6F
+#CF657F
+#ED8099
+#831C5D
+#C32454
+#F04F78
+#F68181
+#FCA790
+#FDCBB0
