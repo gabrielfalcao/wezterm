@@ -1,0 +1,1 @@
+/Users/gabrielfalcao/.shell.d/conf.d/.gitconfig-ch4mb3rp0t@protonmail.ch
