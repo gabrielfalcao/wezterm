@@ -1,1 +1,180 @@
-/Users/gabrielfalcao/.shell.d/conf.d/.gitconfig
+##'"""""`## oo   d$                              .8888b oo
+#' .mmm. `#      88                              88   "
+#  ######## d$ d8888$ .d8888b. .d8888b. 88d888b. 88aaa  d$ .d8888b.
+#  ###   `# 88   88   88'  `"" 88'  `88 88'  `88 88     88 88'  `88
+#. `###' .# 88   88   88.  ... 88.  .88 88    88 88     88 88.  .88
+##.     .## d$   d$   `88888$' `88888$' d$    d$ d$     d$ `8888$88
+###########                                                     .88
+#                                                            d8888$
+
+[core]
+	excludesfile = /Users/gabrielfalcao/.gitignoreglobal
+	sshCommand = "ssh -o'HostkeyAlgorithms=+ssh-rsa' -o'PubkeyAcceptedAlgorithms=+ssh-rsa'"
+	autocrlf = input
+
+[user]
+	name = Gabriel Falcão
+	email = gabrielteratos@gmail.com
+
+# signingkey = 4D0786C80D60FCC46F757F6139338D1E636B3B24
+# email = gabriel@nacaolivre.org
+# signingkey = 13A1C786C5257CD0093876E15DD7F3FE97A876A3
+# signingkey = EA7BEF96DFFC763694768D6AE15E75934D9123FD
+
+[color]
+	# status = always
+	# ui = always
+	ui = true
+	status = true
+
+# the-perfect-palette-20
+[color "status"]
+    header = "#409DEF"
+    added = "#6CB328"
+    changed = "#6BECBD" # "#A6CFD0"
+    untracked = bold blink "#BFFFFF"  "#3257BE"
+    # branch = "#E4FCA2" "#3257BE" # "#AFE356"" "#DD8C00"
+    branch = "#0C101B" "#AFE356" # "#DD8C00"
+    branch = "bold blink #AFE356" "#0E3E12"
+    # Because the phrase Detached HEAD isn't unnerving enough
+    nobranch = bold ul blink "#CB734D"
+
+[color "diff"]
+    new = "#6CB328"
+    old = "#FF424F"
+
+    meta = "#515151"
+    func = "#EC8CFF"
+    frag = "#70DBFF"
+    context = "#CDBFB3"
+
+[init]
+	defaultBranch = main
+
+[push]
+	autoSetupRemote = true
+# [commit]
+# 	gpgsign = true
+
+# [log]
+# 	showSignature = true
+
+[receive]
+	keepAlive = 6
+
+[http]
+	postBuffer = 52428800
+
+[advice]
+	addEmptyPathspec = false
+
+[alias]
+	path = rev-parse --show-toplevel
+        git = !git
+        colorlog = log --format='%x1b[2J%x1b[3J%x1b[H%C(#73D216)commit%C(#8AE234) %H%C(#EDD400)%d%n%C(#EDD400)Author: %C(#EDD400)%aN %C(#EDD400)<%aE>%n%C(#729FCF)Date: %aD %C(#3265A4)%ar%x0a'
+
+	br = branch
+	st = status
+	t = status --porcelain
+
+        # "git st" and "git t" typos
+	tst = status
+	stp = status --porcelain
+	stt = status --porcelain
+
+
+        # "git log" typos
+	lgo = status
+	olg = status
+	glo = status
+	gol = status
+
+# st = !bash -c 'cd $(git rev-parse --show-toplevel) && git status'
+	dh = diff HEAD
+	whatchanged = log --raw --no-merges
+# dir = rev-parse --show-toplevel
+
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+
+[safe]
+	directory = /Users
+# [remote "origin"]
+# 	fetch = +refs/heads/*:refs/remotes/origin/*
+[log]
+	# date = format:%a %b %d %Y %I:%M:%S %p
+	date = format:%a %b %d %Y %I:%M:%S %p
+        format='%x1b[2J%x1b[3J%x1b[H%0a%C(#EEEEEC)commit%C(#D3D7CF) %H%C(#FFFFFF)%d%n%C(#EF2929)Author: %C(#EF2929)%aN %C(#EF2929)<%aE>%n%C(#729FCF)Date: %aD %C(#FCE94F)%ar%0a'
+        format='%x1b[2J%x1b[3J%x1b[H%0a%C(#73D216)commit%C(#8AE234) %H%C(#EDD400)%d%n%C(#EDD400)Author: %C(#EDD400)%aN %C(#EDD400)<%aE>%n%C(#729FCF)Date: %aD %C(#3265A4)%ar%0a'
+
+
+# COLORS
+
+
+#140E1E
+#2D1A71
+#3257BE
+#409DEF
+#70DBFF
+#BFFFFF
+#3E32D5
+#6E6AFF
+#A6ADFF
+#D8E0FF
+#652BBC
+#B44CEF
+#EC8CFF
+#FFCDFF
+#480E55
+#941887
+#E444C3
+#FF91E2
+#190C12
+#550E2B
+#AF102E
+#FF424F
+#FF9792
+#FFD5CF
+#491D1E
+#AA2C1E
+#F66D1E
+#FFAE68
+#FFE1B5
+#492917
+#97530F
+#DD8C00
+#FBC800
+#FFF699
+#0C101B
+#0E3E12
+#38741A
+#6CB328
+#AFE356
+#E4FCA2
+#0D384C
+#177578
+#00BC9F
+#6BECBD
+#C9FCCC
+#353234
+#665D5B
+#998D86
+#CDBFB3
+#EAE6DA
+#2F3143
+#505D6D
+#7B95A0
+#A6CFD0
+#DFEAE4
+#8D4131
+#CB734D
+#EFAF79
+#9C2B3B
+#E45761
+#FFFFFF
+#000000
+#E4162B
+#FFFF40
