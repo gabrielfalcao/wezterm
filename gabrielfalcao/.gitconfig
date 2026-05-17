@@ -33,7 +33,7 @@
     added = "#6CB328"
     # changed = "#6BECBD" # "#A6CFD0"
     changed = "#FDCBB0" "#831C5D"
-    untracked = bold blink "#BFFFFF"  "#3257BE"
+    untracked =  "#BFFFFF"  "#0B5E65"
     branch = "#FBFF86" "#4C3E24"
     # branch = "#8FF8E2" "#313638"
     nobranch = bold ul blink "#CB734D"
