@@ -101,4 +101,4 @@ for index in ${!stdin_lines[@]}; do
     fi
 done
 
-dua | ansistrip | ack '^\s+(0\s+B\b|[1-8][.]0+\s+KiB)\s+' | lastcol  | xargs -Ieach echo "rm -rfv each"
+dua | ansistrip | ack '^\s+(0\s+B\b|[1-8][.]0+\s+KiB)\s+' | lastcol  | xargs -Ieach rm -rfv each

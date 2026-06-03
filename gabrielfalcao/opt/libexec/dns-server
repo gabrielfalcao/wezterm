@@ -516,6 +516,24 @@ wl() {
 
     restart
 }
+allow() {
+    local -a bl_argv=($@)
+    local -i bl_argc=${#bl_argv[@]}
+    local -i index=0
+    local -i current=0
+    local -- arg=""
+    local -- pos=""
+
+    name=$(extract_domain "${bl_argv[@]}")
+    declare -a ipv4_addresses=()
+    ipv4_addresses=(
+        $(2>/dev/null resolve-upstream "${name}")
+    )
+    local -a config_entries=()
+    config_entries=(
+        $(printf "address=/${name}/%s" ${ipv4_addresses[@]})
+    )
+}
 
 block() {
     name="$1"
@@ -530,7 +548,7 @@ block() {
 
 case $1 in
     #%help%
-    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl' | 'block')
+    'restart' | 'refresh' | 'logs' | 'help' | 'cf_prettified_json' | 'cfquery' | 'wl' | 'block' | 'allow')
         invoke=$1
         shift
         declare -a argv=(${@})

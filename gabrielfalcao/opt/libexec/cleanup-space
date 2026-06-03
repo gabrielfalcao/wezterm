@@ -1,3 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+export IFS=$'\n'
 
 rm -rf $HOME/.cargo/registry/{src,cache,}
+rm -rf $HOME/workbench/.artifacts
+
+find ~/projects/ ~/workbench/ -type f -name Cargo.toml | sed -E 's,Cargo[.]toml$,target,g' | xargs -Ieach rm -rf 'each'
+find ~/projects/ ~/workbench/ -type d -name node_modules -not -path 'node_modules/**/node_modules'  -not -path 'node_modules/*/node_modules'  -not -path 'node_modules*node_modules'  | xargs -Ieach rm -rf 'each'

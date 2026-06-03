@@ -14,3 +14,8 @@ declare -a argv=(${@})
 declare -i argc=${#argv[@]}
 
 git status --porcelain | grep -E '^[?[:space:]][?]'
+
+
+# git log --diff-filter=[(A|C|D|M|R|T|U|X|B)...[*]]
+
+#

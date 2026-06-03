@@ -162,6 +162,7 @@ main() {
     make_key_cmd=(ssh-keygen -t "${key_type}" -C "${email}" -l -O hashalg=sha256 -O print-pubkey -Z chacha20-poly1305@openssh.com -f "${target_secret_key}" )
     # make_key_cmd=(ssh-keygen -t "${key_type}" -C "${email}" -f "${target_secret_key}" -l -O hashalg=sha256 -O print-pubkey -Z chacha20-poly1305@openssh.com)
     echo "${make_key_cmd[@]}"
+    exit 0
     if ((${proceed})); then
         1>&2 echo -e "[${script_name} info]" "writing key to ${target_secret_key}"
         if stdout=$(2>${stderr} ${make_key_cmd[@]}); then

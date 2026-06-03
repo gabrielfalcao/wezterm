@@ -21,6 +21,7 @@ from typing import List, Dict, Tuple, Union, Optional, Self
 from pathlib import Path
 from subprocess import Popen
 
+
 def clear_screen():
     sys.stderr.write("\x1b[2J\x1b[3J\x1b[H")
     sys.stderr.flush()
@@ -225,8 +226,8 @@ class wezterm:
         )
         popen_kwargs.update(popen_core_kwargs)
         popen_kwargs.update(dict(capture_output=True))
-        popen_kwargs.pop('stderr', None)
-        popen_kwargs.pop('stdout', None)
+        popen_kwargs.pop("stderr", None)
+        popen_kwargs.pop("stdout", None)
         # sys.stderr.write('popen_kwargs: {}\n'.format(pformat(popen_kwargs)))
         # sys.stderr.flush()
         return subprocess.run(**popen_kwargs)
@@ -264,37 +265,40 @@ class wezterm:
 
 
 def dataclassy_json(obj) -> dict:
-    if isinstance(obj, (pane, pane_size)):
+    ty = type(obj)
+    if hasattr(obj, "to_dict") and callable(obj.to_dict):
+        return obj.to_dict()
+    elif isinstance(obj, (str, bytes)):
+        return obj
+    elif isinstance(obj, Path):
+        return str(obj.expanduser().absolute())
+    elif isinstance(getattr(obj, "__dataclass_fields__", None), (dict, OrderedDict)):
         fields = dataclasses.fields(obj)
-        # import ipdb;ipdb.set_trace()
         result = []
         for f in fields:
             # field = f
             key = f.name
             value = getattr(obj, key, None)
-            # import ipdb;ipdb.set_trace()
             result.append((key, value))
 
-        # import ipdb;ipdb.set_trace()
-
-        return dict(result)
-    elif isinstance(obj, Path):
-        return str(obj.expanduser().absolute())
+        return OrderedDict(result)
+    elif hasattr(obj, "__iter__") and callable(obj.__iter__):
+        return ty(map(dataclassy_json, obj))
     else:
         ty = type(obj)
-        # import ipdb;ipdb.set_trace()
-        return obj
+        return {str(ty): repr(obj)}
 
 
-def ensure_int(value: Union[int| Union[float, Decimal]]) -> int:
+def ensure_int(value: Union[int | Union[float, Decimal]]) -> int:
     return int(math.copysign(value, 1))
 
-def ensure_negative(value: Union[int| Union[float, Decimal]]) -> int:
+
+def ensure_negative(value: Union[int | Union[float, Decimal]]) -> int:
     return int(ensure_int(value) * -1)
 
 
 @click.command()
-@click.option('-g', '--get-text-of-pane-id', type=int)
+@click.option("-g", "--get-text-of-pane-id", type=int)
 def main(get_text_of_pane_id):
     """
     retrieves all output from one wezterm pane at a timex
@@ -313,7 +317,10 @@ def main(get_text_of_pane_id):
     ts = int(now.strftime("%s"))
     target_dirs = [
         # Path("~/workbench").expanduser().absolute().joinpath(today),
-        Path(f"~/workbench/{today}").expanduser().absolute().joinpath(f"wezterm-wip-{today}"),
+        Path(f"~/workbench/{today}")
+        .expanduser()
+        .absolute()
+        .joinpath(f"wezterm-wip-{today}"),
     ]
     json_dump_output_paths_safe = dict()
     for directory in target_dirs:
@@ -324,7 +331,7 @@ def main(get_text_of_pane_id):
             json_output_path = directory.joinpath(f"wezterm-panes.{ts}.json")
 
         if json_output_path not in json_dump_output_paths_safe:
-            json_dump_output_paths_safe[str(json_output_path)]=json_output_path
+            json_dump_output_paths_safe[str(json_output_path)] = json_output_path
 
     for json_output_path in json_dump_output_paths_safe.values():
         with json_output_path.open("w") as fd:

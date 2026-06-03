@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
-
-
-
+#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
 
 import sys
 import click
@@ -15,7 +11,7 @@ import subprocess
 import urllib
 import urllib.parse
 import dataclasses
-
+from collections import OrderedDict
 from pprint import pformat
 from decimal import Decimal
 from datetime import datetime, timedelta, UTC
@@ -23,6 +19,10 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Union, Optional, Self
 from pathlib import Path
 from subprocess import Popen
+
+def clear_screen():
+    sys.stderr.write("\x1b[2J\x1b[3J\x1b[H")
+    sys.stderr.flush()
 
 
 @dataclass
@@ -263,26 +263,28 @@ class wezterm:
 
 
 def dataclassy_json(obj) -> dict:
-    if isinstance(obj, (pane, pane_size)):
+    ty = type(obj)
+    if hasattr(obj, "to_dict") and callable(obj.to_dict):
+        return obj.to_dict()
+    elif isinstance(obj, (str, bytes)):
+        return obj
+    elif isinstance(obj, Path):
+        return str(obj.expanduser().absolute())
+    elif isinstance(getattr(obj, "__dataclass_fields__", None), (dict, OrderedDict)):
         fields = dataclasses.fields(obj)
-        # import ipdb;ipdb.set_trace()
         result = []
         for f in fields:
             # field = f
             key = f.name
             value = getattr(obj, key, None)
-            # import ipdb;ipdb.set_trace()
             result.append((key, value))
 
-        # import ipdb;ipdb.set_trace()
-
-        return dict(result)
-    elif isinstance(obj, Path):
-        return str(obj.expanduser().absolute())
+        return OrderedDict(result)
+    elif hasattr(obj, "__iter__") and callable(obj.__iter__):
+        return ty(map(dataclassy_json, obj))
     else:
         ty = type(obj)
-        # import ipdb;ipdb.set_trace()
-        return obj
+        return {str(ty): repr(obj)}
 
 
 def ensure_int(value: Union[int| Union[float, Decimal]]) -> int:
@@ -293,11 +295,30 @@ def ensure_negative(value: Union[int| Union[float, Decimal]]) -> int:
 
 
 @click.command()
-@click.option('-p', '--pane-id', type=int, default=int(os.getenv("WEZTERM_PANE") or 0))
-def main(get_text_of_pane_id):
+@click.argument('pane_id', type=int, default=int(os.environ.get("WEZTERM_PANE") or -1))
+def main(pane_id):
     """
-    retrieves json information about one wezterm pane at a time
+    retrieves all output from one wezterm pane at a time
     """
+    if os.environ.get("WEZTERM_PANE") is None:
+        print(f'environment variable WEZTERM_PANE is not set', file=sys.stderr)
+        raise SystemExit(130)
+    if pane_id < 0:
+        print(f'invalid pane id {repr(str(pane_id))}', file=sys.stderr)
+        raise SystemExit(130)
+
+    for pane in wezterm.list_panes():
+        item_pane_id=int(pane.pane_id)
+        if pane_id == item_pane_id:
+            print(json.dumps(pane, indent=4, default=dataclassy_json))
+            return
+
 
 if __name__ == "__main__":
+    clear_screen()
     main()
+
+
+panes = sorted(wezterm.list_panes())
+first_pane = panes[0]
+last_pane = panes[-1]

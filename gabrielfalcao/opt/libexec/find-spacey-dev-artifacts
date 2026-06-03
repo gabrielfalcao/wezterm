@@ -77,16 +77,35 @@ fi
 # </GIT>
 export IFS=$'\n'
 
+declare -a initial_rust_artifact_paths=()
 declare -a rust_artifact_paths=()
 declare -a node_artifact_paths=()
 
+declare -a spacey_locations=()
+
+spacey_locations=(
+    $(path canon '~/projects/')
+    $(path canon '~/workbench/')
+    $(path canon '~/Blender/')
+    $(path canon '~/godot/')
+    $(path canon '~/go/')
+)
+
+
 1>&2 echo -e "\x1b[0m\x1b[1;48;2;253;67;83m[${script_name} info]\x1b[7m searching node_modules\x1b[0m"
 
-node_artifact_paths+=( $(find "${HOME}/" -regextype egrep -type d -regex '.*/node_modules' -not -regex '.*/node_modules/.*/node_modules') )
+initial_rust_artifact_paths+=(
+    $(find ${spacey_locations[@]} -regextype egrep -type d -regex '.*/Cargo.toml' -exec bash -c 'declare -- manifest="{}"; path canon "$(path parent "${manifest}" \;)/target"' \; )
+)
+for path in ${initial_rust_artifact_paths[@]}; do
+    if [ -e "${path}" ]; then
+        rust_artifact_paths+=("${path}")
+    fi
+done
+node_artifact_paths+=( $(find ${spacey_locations[@]} -regextype egrep -type d -regex '.*/node_modules' -not -regex '.*/node_modules/.*/node_modules') )
 
 1>&2 echo -e "\x1b[0m\x1b[1;48;2;253;67;83m[${script_name} info]\x1b[7m searching rust target\x1b[0m"
 
-rust_artifact_paths+=( $(find "${HOME}/" -regextype egrep -type d -regex '.*/Cargo.toml' -execdir 'path canon target') )
 
 export IFS=$'\n'
 

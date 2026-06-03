@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+
+# git log --diff-filter=[(A|C|D|M|R|T|U|X|B)...[*]]
+
+
 export IFS=$'\n'
 set -umeTE
 set +f

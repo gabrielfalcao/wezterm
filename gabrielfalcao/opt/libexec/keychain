@@ -1,3 +1,24 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-open "/System/Library/CoreServices/Applications/Keychain Access.app"
+set -umeTE
+set +f
+set -o pipefail
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+declare -a keepass_xc_pids=()
+keepass_xc_pids=($(ps aux | aux-pid "Keychain.*Access.app"))
+
+declare -- app_location="/System/Library/CoreServices/Applications/Keychain Access.app"
+declare -- app_fqdn="$(basename "${app_location}")"
+declare -- app_name="${app_fqdn%%.app}"
+declare -- desc_pids=""
+
+if [ ${#keepass_xc_pids[@]} -eq 0 ]; then
+    open -a "${app_fqdn}"
+else
+    desc_pids=($(printf '%s, ' ${keepass_xc_pids[@]} | sed -E 's/[[:space:]]*[,][[:space:]]*$//g'))
+    echo "${desc_pids}"
+fi

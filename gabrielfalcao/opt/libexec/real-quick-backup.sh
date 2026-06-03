@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+cls() {
+    1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
+}
+
 set -umeTE
 set +f
 set -o pipefail
@@ -19,7 +23,7 @@ declare -g target_system_base="${target_volume}/APFEL_System"
 declare -g target_root_base="${target_volume}/APFEL_Root"
 declare -g target_home_base="${target_volume}/APFEL"
 
-declare -g log_folder="${userland_home}/workbench/$(today)/quick-backup-logs"
+declare -g log_folder="${userland_home}/workbench/$(today)/real-quick-backup-logs"
 mkdir -p "${log_folder}"
 declare -gA backup_paths_from_to_map=()
 declare -ga backup_paths_from_order=()
@@ -36,16 +40,7 @@ declare -- stdout="${log_folder}/stdout.log"
 
 on_exit() {
     set +x
-    1>/dev/null 2>/dev/null bash -c "#!/usr/bin/env bash
-
-exec 1>/dev/null 2>/dev/null </dev/null
-
-set -umeTE;set +f; set -o pipefail;
-rm -f ${stderr@Q} &
-disown -a
-
-1>/dev/null 2>/dev/null stty sane
-"
+    exit 11
 }
 on_ctrlc() {
     1>&2 echo -e "\x1b[1;38;2;253;67;83m\rAborted with Ctrl-C\x1b[0m"
@@ -83,18 +78,18 @@ sync_from_to() {
 
     if [ ! -e "${from}" ]; then
         1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <FROM> does not exist: ${from@Q}"
-        return 9
+        return 0
     elif [ ! -d "${from}" ]; then
         1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <FROM> is not a directory ${from@Q}"
-        return 9
+        return 0
     fi
 
     if [ ! -e "${to}" ]; then
         1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <TO> does not exist: ${to@Q}"
-        return 9
+        return 0
     elif [ ! -d "${to}" ]; then
         1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <TO> is not a directory ${to@Q}"
-        return 9
+        return 0
     fi
 
     local -- log_name=$(heck-string --to=kebab "${from}")
@@ -105,13 +100,16 @@ sync_from_to() {
         rsync
         # --info=name
         --modify-window=1
-        -pvaulogUNW
+        --no-links
+        -pvauogUNW
         --size-only
         # --fsync
         --mkpath
         --ignore-errors
         --progress
         --stats
+        --exclude='**/node_modules/'
+        --exclude='**/target'
         --info=progress2,stats2,misc1,flist0
         --log-file="${log_folder}/${log_name}.log"
         --log-file-format='%i %n%L'
@@ -124,7 +122,9 @@ sync_from_to() {
         code=0
         1>&2 echo -e "succcess: ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1}"
     else
-        code=$?
+        1>&2 echo -e "failed to sync: ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1}"
+        1>&2 cat "${stderr}"
+        code=0
     fi
     if [ ${code} -ne 0 ]; then
         1>&2 echo -en "command ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1} failed with ${code}"
@@ -137,70 +137,83 @@ sync_from_to() {
     return ${code}
 }
 
-rsync --modify-window=1 --remove-source-files -pvaulogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/*scratch*/.x/" "/Volumes/nothing/APFEL/*scratch*/.x/"
-
-sync_from_to "/Users/gabrielfalcao/Downloads/" \
-    "/Volumes/nothing/APFEL/Downloads/"
-
-sync_from_to "/Users/gabrielfalcao/Kino/" \
-    "/Volumes/nothing/APFEL/Kino/"
-
-sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-    "/Volumes/nothing/APFEL/*scratch*/"
-
-sync_from_to "/Users/gabrielfalcao/opt/" \
-    "/Volumes/nothing/APFEL/opt/"
-
-sync_from_to "/Users/gabrielfalcao/.emacs.d/" \
-    "/Volumes/nothing/APFEL/.emacs.d/"
-
-sync_from_to "/Users/gabrielfalcao/.shell.d/" \
-    "/Volumes/nothing/APFEL/.shell.d/"
-
-sync_from_to "/Users/gabrielfalcao/projects/" \
-    "/Volumes/nothing/APFEL/projects/"
-
-sync_from_to "/Users/gabrielfalcao/godot/" \
-    "/Volumes/nothing/APFEL/godot/"
-
-sync_from_to "/Users/gabrielfalcao/workbench/" \
-    "/Volumes/nothing/APFEL/workbench/"
-
-sync_from_to "/Users/gabrielfalcao/Documents/" \
-    "/Volumes/nothing/APFEL/Documents/"
-
-sync_from_to "/Users/gabrielfalcao/Desktop/" \
-    "/Volumes/nothing/APFEL/Desktop/"
-
-sync_from_to "/Users/gabrielfalcao/.bun/" \
-    "/Volumes/nothing/APFEL/.bun/"
-
-sync_from_to "/Users/gabrielfalcao/.deno/" \
-    "/Volumes/nothing/APFEL/.deno/"
-
-sync_from_to "/Users/gabrielfalcao/.nvm/" \
-    "/Volumes/nothing/APFEL/.nvm/"
-
-sync_from_to "/Users/gabrielfalcao/.yarn/" \
-    "/Volumes/nothing/APFEL/.yarn/"
-
-sync_from_to "/Users/gabrielfalcao/.local/" \
-    "/Volumes/nothing/APFEL/.local/"
-
 sync_from_to "/Users/gabrielfalcao/Blender/" \
     "/Volumes/nothing/APFEL/Blender/"
+sync_from_to "/Users/gabrielfalcao/DaVinci/" \
+    "/Volumes/nothing/APFEL/DaVinci/"
+sync_from_to "/Users/gabrielfalcao/Splice/" \
+    "/Volumes/nothing/APFEL/Splice/"
+sync_from_to "/Users/gabrielfalcao/go/" \
+    "/Volumes/nothing/APFEL/go/"
+sync_from_to "/Users/gabrielfalcao/.gnupg/" \
+    "/Volumes/nothing/APFEL/.gnupg/"
+sync_from_to "/Users/gabrielfalcao/.ssh/" \
+    "/Volumes/nothing/APFEL/.ssh/"
+sync_from_to "/Users/gabrielfalcao/.config/" \
+    "/Volumes/nothing/APFEL/.config/"
+sync_from_to "/Users/gabrielfalcao/.cargo/" \
+    "/Volumes/nothing/APFEL/.cargo/"
+sync_from_to "/Users/gabrielfalcao/.rustup/" \
+    "/Volumes/nothing/APFEL/.rustup/"
 
-rsync --modify-window=1 -pvaulogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/" "/Volumes/nothing/APFEL/"
+
+sync_from_to "/Users/gabrielfalcao/SEC/" \
+   "/Volumes/nothing/APFEL/SEC/"
+
+sync_from_to "/Users/gabrielfalcao/workbench/" \
+   "/Volumes/nothing/APFEL/workbench/"
+
+sync_from_to "/Users/gabrielfalcao/projects/" \
+   "/Volumes/nothing/APFEL/projects/"
+
+sync_from_to "/Users/gabrielfalcao/opt/" \
+   "/Volumes/nothing/APFEL/opt/"
+
+sync_from_to "/Users/gabrielfalcao/.emacs.d/" \
+   "/Volumes/nothing/APFEL/.emacs.d/"
+
+sync_from_to "/Users/gabrielfalcao/.shell.d/" \
+   "/Volumes/nothing/APFEL/.shell.d/"
+
+sync_from_to "/Users/gabrielfalcao/godot/" \
+   "/Volumes/nothing/APFEL/godot/"
+
+sync_from_to "/Users/gabrielfalcao/*scratch*/" \
+   "/Volumes/nothing/APFEL/*scratch*/"
+
+sync_from_to "/Users/gabrielfalcao/Documents/" \
+   "/Volumes/nothing/APFEL/Documents/"
+
+sync_from_to "/Users/gabrielfalcao/Downloads/" \
+   "/Volumes/nothing/APFEL/Downloads/"
+
+sync_from_to "/Users/gabrielfalcao/Kino/" \
+   "/Volumes/nothing/APFEL/Kino/"
+
+sync_from_to "/Users/gabrielfalcao/Desktop/" \
+   "/Volumes/nothing/APFEL/Desktop/"
+
+sync_from_to "/Users/gabrielfalcao/.bun/" \
+   "/Volumes/nothing/APFEL/.bun/"
+
+sync_from_to "/Users/gabrielfalcao/.deno/" \
+   "/Volumes/nothing/APFEL/.deno/"
+
+sync_from_to "/Users/gabrielfalcao/.nvm/" \
+   "/Volumes/nothing/APFEL/.nvm/"
+
+sync_from_to "/Users/gabrielfalcao/.yarn/" \
+   "/Volumes/nothing/APFEL/.yarn/"
+
+sync_from_to "/Users/gabrielfalcao/.local/" \
+   "/Volumes/nothing/APFEL/.local/"
+
+
+rsync --modify-window=1 --remove-source-files --no-links -pvauogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/*scratch*/.x/" "/Volumes/nothing/APFEL/*scratch*/.x/"
+rsync --modify-window=1 -pvaulogUNW --exclude='/*/*/' --mkpath --ignore-errors "/Users/gabrielfalcao/" "/Volumes/nothing/APFEL/"
+
 
 diskutil unmount /Volumes/nothing/
-## sync_from_to "/Users/gabrielfalcao/go/" \
-##     "/Volumes/nothing/APFEL/go/"
-## sync_from_to "/Users/gabrielfalcao/.gnupg/" \
-##     "/Volumes/nothing/APFEL/.gnupg/"
-## sync_from_to "/Users/gabrielfalcao/.ssh/" \
-##     "/Volumes/nothing/APFEL/.ssh/"
-## sync_from_to "/Users/gabrielfalcao/.config/" \
-##     "/Volumes/nothing/APFEL/.config/"
 ## sync_from_to "/Users/gabrielfalcao/*scratch*/" \
 ##     "/Volumes/nothing/APFEL/*scratch*/" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
 ## sync_from_to "/Users/gabrielfalcao/*scratch*/Data/" \
