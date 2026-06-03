@@ -1303,6 +1303,11 @@ ssh_ag() {
 alias ssh-ag=ssh_ag
 
 spawn_wezterm_cli() {
+    if [[ ! -v WEZTERM_PANE ]]; then
+        1>&2 echo -e "[${BASH_SOURCE} ${FUNCNAME} warning] WEZTERM_PANE not set"
+        return
+    fi
+
     if [ -n "$(ps aux | ack -i 'wezterm[.]app' | ack -v ack)" ]; then
         wezterm cli spawn ${@}
     else

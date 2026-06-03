@@ -16,3 +16,4 @@ export MANPATH="/opt/homebrew/share/man:/opt/homebrew/share/man:/opt/homebrew/sh
 
 
 . ~/.shell.d/entrypoint.sh
+. "$HOME/.cargo/env"

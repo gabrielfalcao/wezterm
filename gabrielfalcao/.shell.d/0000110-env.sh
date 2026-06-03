@@ -1,11 +1,17 @@
 set -o pipefail
 export IFS=$'\n'
 
-if [[ ! "${HOME}" =~ ^/(Users|home)/${USER} ]] || [[  "${USER}" =~ "root" ]] && [[ ! "${HOME}" =~ "/${USER}" ]]    then
+declare -- xv_cookies_path="${HOME}/.config/yt-dlp.youtube.cookies.txt"
+
+if [ -f "${xv_cookies_path}" ] && [ -s "${xv_cookies_path}" ]; then
+    export XVCOOKIES="$(cat "${xv_cookies_path}")"
+fi
+
+if [[ ! "${HOME}" =~ ^/(Users|home)/${USER} ]] || [[ "${USER}" =~ "root" ]] && [[ ! "${HOME}" =~ "/${USER}" ]]; then
     1>&2 echo "[${BASH_SOURCE[0]} critical warning]" "\${HOME} environment variable "
 fi
 
-declare -ga shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
+declare -ga shfmt_args=("-bn" "-ci" "-i" "4" "-ln=bash")
 # # declare -gar shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
 # declare -r shfmt_args=( "-bn" "-ci" "-i" "4" "-ln=bash" );
 

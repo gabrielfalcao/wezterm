@@ -2,3 +2,4 @@
 # if [[ ! -v ! ]]; then
 # export PS1='\u@\h:\w\$ '
 # fi
+. "$HOME/.cargo/env"

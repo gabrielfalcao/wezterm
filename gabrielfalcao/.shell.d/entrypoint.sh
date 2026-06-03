@@ -62,6 +62,27 @@ declare -gA shell_d_internal_benchmark_delta_nanos_by_xd=()
 declare -ga shell_d_internal_benchmark_source_file_load_source_order=()
 declare -ga shell_d_internal_benchmark_source_file_xd_order=()
 
+declare -ga heck_refactor_variants=("snake" "shouty_snake" "camel" "pascal" "kebab" "train")
+heck_refactor_variants() {
+    declare -a cmd=()
+    declare -- from_input="$1"
+    declare -- to_input="$2"
+    declare -- from=""
+    declare -- to=""
+    declare -i code=0
+    for variant in ${heck_refactor_variants[@]}; do
+        cmd=($(which "heck-string") "--to=${variant}")
+        from=$(${cmd[@]} "${from_input}")
+        to=$(${cmd[@]} "${to_input}")
+        echo refactors "${from}" "${to}" -wp $(pwd)
+        if refactors "${from}" "${to}" -wp .; then
+            git add . && git commit -am "${from} => ${to}"
+        else
+            code=$?
+            return ${code}
+        fi
+    done
+}
 # (replace-regexp
 #    regexp: "\\(trap\\(\\s-+\\)\\|^\\(function\\s-+\\)\\)\\s-*\\(\\([_]+shell_d_sh_\\)\\(ps4\\|trap\\)\\([_]\\)\\(function\\)[_]?\\([a-z0-9]+[a-zA-Z0-9_]*\\|[a-z0-9_]+?\\)\\([_]+\\)\\)\\s-*\\([]\\)"
 #    to-string: \,(regex!)
@@ -105,7 +126,9 @@ if [ "${BASH_VERSINFO[0]}" -lt 5 ]; then
     shell_d_sh_log_error "[shell.d warning]" "${BASH_SOURCE[0]} requires bash version 5.2 or greater"
 fi
 # declare -g my_tty_name=$(basename $(tty))
-# echo "${$}" > "${HOME}/.shell.d/entrypoint.${my_tty_name}.${WEZTERM_PANE}.started"
+# if [[ -v WEZTERM_PANE ]]; then
+#     echo "${$}" > "${HOME}/.shell.d/entrypoint.${my_tty_name}.${WEZTERM_PANE}.started"
+# fi
 
 export IFS=$'\n'
 
@@ -387,6 +410,8 @@ __shell_d_sh_trap_function_debug__() {
 
 }
 __shell_d_sh_trap_function_backtrace__() {
+    history -n
+    history -a
     # unset PS2
     # unset PS3
     # unset PS4
@@ -418,15 +443,12 @@ __shell_d_sh_trap_function_backtrace__() {
     1>&2 echo "${backtrace_lines[*]}"
 }
 
-__shell_d_sh_trap_function_exit__() {
-    2>/dev/random 1>/dev/random stty sane
-}
-__shell_d_sh_trap_function_ctrlc__() {
-    shell_d_sh_log_error "\x1b[0m\rAborted with Ctrl-C\x1b[0m"
-    exit 1
-}
-trap __shell_d_sh_trap_function_exit__ EXIT
-trap __shell_d_sh_trap_function_ctrlc__ HUP
+# __shell_d_sh_trap_function_exit__() {
+#     history -n
+#     history -a
+# }
+
+# trap __shell_d_sh_trap_function_exit__ exit
 
 # trap __shell_d_sh_trap_function_return__ RETURN
 # trap __shell_d_sh_trap_function_debug__ DEBUG
@@ -435,7 +457,7 @@ trap __shell_d_sh_trap_function_ctrlc__ HUP
 set -o errtrace
 set -o functrace
 set -o pipefail
-trap __shell_d_sh_trap_function_backtrace__ ERR
+# trap __shell_d_sh_trap_function_backtrace__ ERR
 # </ensure ERR trap is inherited by functions>
 
 if [[ ! -v workbench_path ]]; then
@@ -566,6 +588,11 @@ shell_d_sh_wezterm_cli() {
     local -a argv=($@)
     local -i argc=${#argv[@]}
 
+    if [[ ! -v WEZTERM_PANE ]]; then
+        1>&2 echo -e "[${BASH_SOURCE} ${FUNCNAME} warning] WEZTERM_PANE not set"
+        return
+    fi
+
     if [[ -v WEZTERM_PANE ]] && [[ -v WEZTERM_UNIX_SOCKET ]]; then
         if [ -S "${WEZTERM_UNIX_SOCKET}" ] && [[ "${WEZTERM_PANE}" =~ ^[0-9]+$ ]]; then
             if [ ${argc} -eq 0 ]; then
@@ -584,6 +611,10 @@ shell_d_sh_get_history_sed_regex() {
     fi
 }
 shell_d_sh_prompt_command() {
+    if [[ ! -v WEZTERM_PANE ]]; then
+        # 1>&2 echo -e "[${BASH_SOURCE} ${FUNCNAME} warning] WEZTERM_PANE not set"
+        return
+    fi
     local -r cwd_name="$(basename $(pwd))"
     local -i lastcmdid=$((HISTCMD - 1))
     local -- last_history_entry=""
@@ -599,9 +630,14 @@ shell_d_sh_prompt_command() {
         wezterm cli set-tab-title "${title}"
         wezterm cli set-window-title "${title}"
     fi
+
 }
 
 shell_d_sh_prompt_command_set_wezterm_title_last_history_entry_command() {
+    if [[ ! -v WEZTERM_PANE ]]; then
+        1>&2 echo -e "[${BASH_SOURCE} ${FUNCNAME} warning] WEZTERM_PANE not set"
+        return
+    fi
     shell_d_sh_wezterm_cli set-tab-title "${tab_title}"
 }
 
@@ -616,6 +652,65 @@ shell_d_sh_history_enable_ignores() {
     export HISTSIZE="211776"
     export HISTTIMEFORMAT="@%s:%Z     "
 
+}
+declare -gA shell_d_hook_list_varname_map=()
+declare -ga shell_d_before_change_cwd_hook_functions=()
+declare -ga shell_d_after_change_cwd_hook_functions=()
+
+shell_d_hook_list_varname_map["shell_d_hooks_before_change_cwd"]="shell_d_before_change_cwd_hook_functions"
+shell_d_hook_list_varname_map["shell_d_hooks_after_change_cwd"]="shell_d_after_change_cwd_hook_functions"
+
+shell_d_hooks_before_change_cwd() {
+    local -- current_dir="${1}"
+    shift
+    local -- target_dir="${1}"
+    shift
+
+    local -I -n hooks_list="${shell_d_hook_list_varname_map[${FUNCNAME}]}"
+    local -i hook_total_no=${#hooks_list[@]}
+
+    local -i index=0
+    local -i current=0
+    local -- fun=""
+    local -- pos=""
+    local -gA return_code_by_fun=()
+    local -i code=0
+    local -i total_failures=0
+    for index in ${!hooks_list[@]}; do
+        code=0
+        current=$(($index + 1))
+        fun="${hooks_list[$index]}"
+        pos="$(printf '%*s of %s' ${#hook_total_no} ${current} ${hook_total_no})"
+
+        if ${fun}; then
+            code=0
+        else
+            code=$?
+            total_failures+=1
+        fi
+        return_code_by_fun["${fun}"]=${code}
+    done
+
+    if [ ${total_failures} -gt 0 ]; then
+        for fun in ${!return_code_by_fun[@]}; do
+            code=${return_code_by_fun["${fun}"]}
+            if [ ${code} -eq 0 ]; then
+                continue
+            fi
+            1>&2 echo -e "hook function ${fun@Q} failed with code ${code}"
+        done
+    fi
+    return 0
+}
+shell_d_hooks_after_change_cwd() {
+    local -- current_dir="${1}"
+    shift
+    local -- target_dir="${1}"
+    shift
+    if [ -s Cargo.toml ] && [ -s "rust-toolchain" ] || [ -s "rust-toolchain.toml" ]; then
+        # rustup override set nightly-2025-09-09
+        return 0
+    fi
 }
 
 set -umTE
@@ -919,7 +1014,7 @@ entrypoint() {
 
     if [ -x "${HOME}/.cargo/bin/ps1" ]; then
         eval "$(${HOME}/.cargo/bin/ps1 --env)"
-        export PROMPT_COMMAND='shell_d_sh_prompt_command'
+        # export PROMPT_COMMAND='shell_d_sh_prompt_command'
     else
         export PS1='\u@\h:\w\$ '
     fi
@@ -969,6 +1064,13 @@ entrypoint() {
     xD "io.sh"
     xD "workbench.sh"
     xD "ansi.sh"
+    if [[ -v WEZTERM_PANE ]]; then
+        if [[ "${WEZTERM_PANE}" =~ ^\s*([0-9]+)\s*$ ]]; then
+            xD "wezterm.sh"
+            # 1>&2 echo -e "$(declare -p BASH_REMATCH)"
+            # 1>&2 printf '%*sBASH_REMATCH["%s"]=%s\n' "${#BASH_REMATCH[@]}" ' ' ${BASH_REMATCH[@]@K}
+        fi
+    fi
 
     shell_d_sh_load_source "${X_D_PATH}/completions.sh"
     shell_d_sh_load_source "${X_D_PATH}/hooks.sh"
@@ -981,11 +1083,16 @@ entrypoint() {
     shell_d_sh_load_source "${STAGING_PATH}/history.sh"
     shell_d_sh_load_source "${STAGING_PATH}/ssh_router.sh"
     shell_d_sh_load_source "${STAGING_PATH}/calculate-delays.sh"
+    shell_d_sh_load_source "${STAGING_PATH}/colors.sh"
     shell_d_sh_load_source "${X_D_PATH}/coreutils.sh"
     shell_d_sh_load_source "${X_D_PATH}/py3.sh"
     shell_d_sh_load_source "${X_D_PATH}/rust.sh"
-    shell_d_sh_load_source "${X_D_PATH}/node.sh"
+    shell_d_sh_load_source "${X_D_PATH}/docker.sh"
     # shell_d_sh_load_source "${X_D_PATH}/ssh.sh"
+
+    eval "$(fnm env)" # shell_d_sh_load_source "${X_D_PATH}/node.sh"
+    export LS_COLORS="$(vivid generate tokyonight-moon)"
+    export LS_COLORS="$(vivid generate gruvbox-dark)"
 
     shell_d_sh_initialize_env_vars
     unset s brew_path path gq
@@ -1386,7 +1493,6 @@ xD() {
     local X_D_PATH="${SHELL_D_PATH}/x.d"
     local -- sh=""
 
-
     local -i subscript_load_xd_started_at=-1
     local -i subscript_load_xd_finished_at=-1
 
@@ -1395,13 +1501,25 @@ xD() {
         return 1
     fi
     for sh in ${path_list[@]}; do
+        local -- xd_path_to_load="${X_D_PATH}/${sh}"
+        local -- source_path_to_load="${SHELL_D_PATH}/${sh}"
+
         if [ -z "${sh}" ]; then
             shell_d_sh_log_error "[warning]" "xD skipping empty arg"
             return 1
         fi
+        if [[ -v shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"] ]]; then
+            shell_d_sh_log_error "[warning]" "xD skipping re-loading ${source_path_to_load@Q}, already loaded"
+            continue
+        fi
+        if [[ -v shell_d_internal_benchmark_xd_started_at_map["${xd_path_to_load}"] ]]; then
+            shell_d_sh_log_error "[warning]" "xD skipping re-loading ${xd_path_to_load@Q}, already loaded"
+            continue
+        fi
+
         if [ -e "${SHELL_D_PATH}/${sh}" ] && [ -r "${SHELL_D_PATH}/${sh}" ] && [ -s "${SHELL_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${SHELL_D_PATH}/${sh}"
-            local -- source_path_to_load="${SHELL_D_PATH}/${sh}"
+            # local -- source_path_to_load="${SHELL_D_PATH}/${sh}"
             subscript_load_xd_started_at=$(tsnanos)
             shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
             shell_d_sh_load_source "${source_path_to_load}"
@@ -1410,13 +1528,12 @@ xD() {
             # shell_d_sh_load_libs "${SHELL_D_PATH}/${sh}"
         elif [ -e "${X_D_PATH}/${sh}" ] && [ -r "${X_D_PATH}/${sh}" ] && [ -s "${X_D_PATH}/${sh}" ]; then
             # shell_d_sh_log_error "[xD debug]" "loading ${X_D_PATH}/${sh}"
-            local -- source_path_to_load="${X_D_PATH}/${sh}"
-
+            # local -- xd_path_to_load="${X_D_PATH}/${sh}"
             subscript_load_xd_started_at=$(tsnanos)
-            shell_d_internal_benchmark_xd_started_at_map["${source_path_to_load}"]="${subscript_load_xd_started_at}"
-            shell_d_sh_load_source "${source_path_to_load}"
+            shell_d_internal_benchmark_xd_started_at_map["${xd_path_to_load}"]="${subscript_load_xd_started_at}"
+            shell_d_sh_load_source "${xd_path_to_load}"
             subscript_load_xd_finished_at=$(tsnanos)
-            shell_d_internal_benchmark_xd_finished_at_map["${source_path_to_load}"]="${subscript_load_xd_finished_at}"
+            shell_d_internal_benchmark_xd_finished_at_map["${xd_path_to_load}"]="${subscript_load_xd_finished_at}"
             # shell_d_sh_load_libs "${X_D_PATH}/${sh}"
         else
             shell_d_sh_log_error "[error]" "xD could not find readable non-empty file ${sh@Q}"
@@ -1490,19 +1607,21 @@ declare -gir shell_d_finished_at=$(tsnanos)
 # unset BASH_XTRACEFD
 # set +x
 # exec 5>&- # Close the file descriptor
-# declare -g my_tty_name=$(basename $(tty))
-# echo "${$}" > "${HOME}/.shell.d/entrypoint.${my_tty_name}.${WEZTERM_PANE}.finished"
-
-# if [[ -v SHLVL ]] && [[ "${SHLVL}" -eq 1 ]]; then
-#     declare -i shell_d_internal_subshell_level_2_exit_code=0
-#     declare -a shell_d_internal_subshell_level_2_argv=()
-#     shell_d_internal_subshell_level_2_argv=( ${gnu_bash_libexec} --init-file "${BASH_SOURCE[0]}" -l  )
-#     if ${shell_d_internal_subshell_level_2_argv[@]}; then
-#         shell_d_internal_subshell_level_2_exit_code=0
-#     else
-#         shell_d_internal_subshell_level_2_exit_code=$?
-#         1>&2 echo -e "command \x1b[1;38;2;F13976m${shell_d_internal_subshell_level_2_argv[@]}"
+# if [[ -v WEZTERM_PANE ]]; then
+#     declare -g my_tty_name=$(basename $(tty))
+#     echo "${$}" > "${HOME}/.shell.d/entrypoint.${my_tty_name}.${WEZTERM_PANE}.finished"
+#
+#     if [[ -v SHLVL ]] && [[ "${SHLVL}" -eq 1 ]]; then
+#         declare -i shell_d_internal_subshell_level_2_exit_code=0
+#         declare -a shell_d_internal_subshell_level_2_argv=()
+#         shell_d_internal_subshell_level_2_argv=( ${gnu_bash_libexec} --init-file "${BASH_SOURCE[0]}" -l  )
+#         if ${shell_d_internal_subshell_level_2_argv[@]}; then
+#             shell_d_internal_subshell_level_2_exit_code=0
+#         else
+#             shell_d_internal_subshell_level_2_exit_code=$?
+#             1>&2 echo -e "command \x1b[1;38;2;F13976m${shell_d_internal_subshell_level_2_argv[@]}"
+#         fi
 #     fi
+#     1>/dev/null declare -F shell_d_show_benchmark && shell_d_show_benchmark
 # fi
-# 1>/dev/null declare -F shell_d_show_benchmark && shell_d_show_benchmark
 set +x
