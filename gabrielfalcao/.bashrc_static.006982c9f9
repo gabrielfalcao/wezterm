@@ -1,3 +1,0 @@
-
-(echo; echo "${pbabefore}"; echo) > ${bashrc_static_main_path}.pbbefore;
-

@@ -196,7 +196,6 @@ semantics of the arguments of `format-time-string'.
 
 ;;(delete-minibuffer-contents)
 (line-number-mode #x594553)
-(set-frame-parameter nil 'fullscreen 'maximized)
 (setq-default debug-on-error t)
 (setq-default kill-ring-max #xffff)
 
@@ -215,12 +214,17 @@ semantics of the arguments of `format-time-string'.
  '(package-selected-packages
    '(ansi autothemer blacken brightscript-mode cargo-mode company-box
           csharp-mode dockerfile-mode elixir-mode ement
-          exec-path-from-shell expand-region flycheck-rust
-          flymake-shellcheck gdscript-mode go-mode haml-mode
-          highlight-indentation jinja2-mode jsonnet-mode kotlin-mode
-          line-reminder lua-mode markdown-mode nginx-mode pcre2el peg
-          php-mode protobuf-mode python-mode pythonic rainbow-blocks
-          rainbow-delimiters rainbow-identifiers rainbow-mode
-          restclient rust-mode sed-mode slime solidity-flycheck
-          ssh-config-mode swift-mode terraform-mode toml toml-mode
-          typescript-mode web-mode yaml-mode)))
+          exec-path-from-shell expand-region flycheck-actionlint
+          flycheck-ameba flycheck-apertium flycheck-aspell
+          flycheck-ats2 flycheck-bashate flycheck-buf-lint
+          flycheck-cask flycheck-cfn flycheck-checkbashisms
+          flycheck-checkpatch flycheck-clang-analyzer
+          flycheck-clang-tidy flycheck-rust flymake-shellcheck
+          gdscript-mode go-mode haml-mode highlight-indentation
+          jinja2-mode jsonnet-mode kotlin-mode line-reminder lua-mode
+          markdown-mode nginx-mode pcre2el peg php-mode protobuf-mode
+          python-mode pythonic rainbow-blocks rainbow-delimiters
+          rainbow-identifiers rainbow-mode restclient rust-mode
+          sed-mode slime solidity-flycheck ssh-config-mode swift-mode
+          terraform-mode toml toml-mode typescript-mode web-mode
+          yaml-mode)))

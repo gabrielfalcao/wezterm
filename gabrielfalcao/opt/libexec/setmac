@@ -62,27 +62,36 @@ trap on_ctrlc bus
 trap on_ctrlc segv
 trap on_ctrlc sys
 
+declare -r iface="en0"
+declare -r svice="Wi-Fi"
+
 declare -- desired_mac_addr=""
 declare -- desired_dns_ipv4=""
+declare -- desired_addr_ipv4=""
 declare -- current_mac_addr=""
 declare -- current_dns_ipv4=""
-declare -- iface="en0"
-declare -- svice="Wi-Fi"
 declare -- desired_dns_ipv4="127.0.0.1"
+
+declare -r desired_addr_ipv4="192.168.8.137"
+declare -r desired_subnet_ipv4="255.255.255.0"
+declare -r desired_gateway_ipv4="192.168.8.1"
+
+declare -r default_mac_addr="10:CA:81:15:11:4C"
 
 # declare -- nowhex=$(date | sha256sum | gawk '{print $1}')
 # desired_mac_addr="10:CA:81:${nowhex[@]:4:2}:${nowhex[@]:2:2}:${nowhex[@]:0:2}"
-desired_mac_addr="10:CA:81:02:19:58"
-desired_mac_addr="00:0B:79:15:11:4c"
-desired_mac_addr="00:A0:D0:15:11:4c"
-desired_mac_addr="58:EE:CE:15:11:4c" # 58:EE:CE => "Icon Time Systems"
-desired_mac_addr="00:04:B4:15:11:4c" # CIAC
-desired_mac_addr="20:DE:88:21:17:76" # IC Realtime LLC
-desired_mac_addr="10:CA:81:15:11:4c" # PRECIA
-
+desired_mac_addr="10:ca:81:02:19:58"
+desired_mac_addr="00:0b:79:15:11:4c"
+desired_mac_addr="00:a0:d0:15:11:4c"
+desired_mac_addr="58:ee:ce:15:11:4c" # 58:EE:CE => "Icon Time Systems"
+desired_mac_addr="00:04:b4:15:11:4c" # CIAC
+desired_mac_addr="20:de:88:21:17:76" # IC Realtime LLC
+desired_mac_addr="10:ca:81:15:11:4c" # PRECIA
+# desired_mac_addr="${default_mac_addr}"
 # desired_mac_addr="00:1F:B0:21:17:76"
 
-current_mac_addr=$(ifconfig "${iface}" ether | gawk '$1 ~ /ether/ { print $NF }')
+current_mac_addr=$(getmac | tr '[:upper:]' '[:lower:]')
+current_addr_ipv4=$(networksetup -getinfo Wi-Fi | grep -Ei '^ip.address:' | lastcol)
 current_dns_ipv4=$(networksetup -getdnsservers ${svice})
 declare -i run_again=0
 declare -i static_dhcp=0
@@ -113,10 +122,6 @@ for index in ${!argv[@]}; do
     fi
 done
 
-if [ ${static_dhcp} -eq 0 ]; then
-    1>&2 echo -e "\x1b[1;38;2;236;148;234msetting ${iface} to DHCP \x1b[0m"
-fi
-
 disable_wifi() {
     local -i target_pid=-1
     for target_pid in ${pids_to_kill[@]}; do
@@ -130,54 +135,64 @@ enable_wifi() {
 run_once() {
     if (($static_dhcp)); then
         networksetup -setv6off ${svice}
-        networksetup -setmanual ${svice} 192.168.8.37 255.255.255.0 192.168.8.1
+        # networksetup -setmanual <networkservice> <ip> <subnet> <router>
+        networksetup -setmanual ${svice} ${desired_addr_ipv4} ${desired_subnet_ipv4} ${desired_gateway_ipv4}
+    elif [ "${current_addr_ipv4}" != "${desired_addr_ipv4}" ]; then
+        1>&2 echo -e "\x1b[1;38;2;245;125;74msetting \x1b[1;38;2;249;194;43m${iface} \x1b[1;38;2;245;125;74mto DHCP because desired ipv4 (${desired_addr_ipv4}) \x1b[1;38;2;245;125;74mdiffers from current: \x1b[1;38;2;247;150;23m${current_addr_ipv4} \x1b[0m"
+        networksetup -setdhcp ${svice}
     else
+        1>&2 echo -e "\x1b[1;38;2;236;148;234msetting ${iface} to DHCP \x1b[0m"
         networksetup -setdhcp ${svice}
     fi
     hostname main.langley
     # 1>&2 echo "current_dns_ipv4 ${current_dns_ipv4}"
-    if [ "${current_dns_ipv4}" != "${desired_dns_ipv4}" ]; then
-        disable_wifi
-        networksetup -detectnewhardware
-        if networksetup -setdnsservers ${svice} 127.0.0.1; then
-            1>&2 echo -e "\x1b[1;38;2;115;210;22mADDR SET\x1b[0m"
-        else
-            1>&2 echo -e "\x1b[1;38;2;204;0;0mDNS NOT SET\x1b[0m"
-        fi
-        enable_wifi
-    fi
 
-    if [ "${current_mac_addr@U}" != "${desired_mac_addr@U}" ]; then
-        disable_wifi
-        if 2>${stderr} ifconfig ${iface} lladdr ${desired_mac_addr}; then
-            code=0
-            1>&2 echo -e "\x1b[1;38;2;204;241;122mLLADDR SET: \x1b[1;38;2;240;192;76m${desired_mac_addr}\x1b[0m"
+    if [ "${current_mac_addr@L}" != "${desired_mac_addr@L}" ]; then
+        if [ "${current_dns_ipv4}" != "${desired_dns_ipv4}" ]; then
+            disable_wifi
+            networksetup -detectnewhardware
+            if networksetup -setdnsservers ${svice} 127.0.0.1; then
+                1>&2 echo -e "\x1b[1;38;2;115;210;22mADDR SET\x1b[0m"
+            else
+                1>&2 echo -e "\x1b[1;38;2;204;0;0mDNS NOT SET\x1b[0m"
+            fi
             enable_wifi
-            1>&2 cat "${stderr}"
-            run_again=0
-        else
-            code=$?
-            # 1>&2 echo -e "\x1b[1;38;2;239;41;41mLLADDR NOT SET, will retry\x1b[0m"
-            # 1>&2 cat "${stderr}"
-            run_again=1
+            networksetup -getinfo "${svice}"
+        fi
 
-            enable_wifi
-            networksetup -detectnewhardware
-        fi
-        if 2>${stderr} ifconfig ${iface} ether ${desired_mac_addr}; then
-            code=0
-            1>&2 echo -e "\x1b[1;38;2;253;203;176mETHER SET: \x1b[1;38;2;195;36;84m${desired_mac_addr}\x1b[0m"
-            enable_wifi
-            1>&2 cat "${stderr}"
-        else
-            code=$?
-            run_again=1
-            1>&2 echo -e "\x1b[1;38;2;239;41;41mETHER NOT SET\x1b[0m"
-            1>&2 cat "${stderr}"
-            enable_wifi
-            networksetup -detectnewhardware
-        fi
-        return ${code}
+        while [ "${current_mac_addr@L}" != "${desired_mac_addr@L}" ]; do
+            disable_wifi
+            if 2>${stderr} ifconfig ${iface} lladdr ${desired_mac_addr}; then
+                code=0
+                1>&2 echo -e "\x1b[1;38;2;204;241;122mLLADDR SET: \x1b[1;38;2;240;192;76m${desired_mac_addr}\x1b[0m"
+                enable_wifi
+                1>&2 cat "${stderr}"
+                run_again=0
+            else
+                code=$?
+                # 1>&2 echo -e "\x1b[1;38;2;239;41;41mLLADDR NOT SET, will retry\x1b[0m"
+                # 1>&2 cat "${stderr}"
+                run_again=1
+
+                enable_wifi
+                networksetup -detectnewhardware
+            fi
+            if 2>${stderr} ifconfig ${iface} ether ${desired_mac_addr}; then
+                code=0
+                1>&2 echo -e "\x1b[1;38;2;253;203;176mETHER SET: \x1b[1;38;2;195;36;84m${desired_mac_addr}\x1b[0m"
+                enable_wifi
+                1>&2 cat "${stderr}"
+            else
+                code=$?
+                run_again=1
+                1>&2 echo -e "\x1b[1;38;2;239;41;41mETHER NOT SET\x1b[0m"
+                1>&2 cat "${stderr}"
+                enable_wifi
+                networksetup -detectnewhardware
+                return ${code}
+            fi
+        done
+        networksetup -getinfo "${svice}"
     else
         disable_wifi
         networksetup -detectnewhardware
@@ -186,7 +201,6 @@ run_once() {
         enable_wifi
         networksetup -detectnewhardware
     fi
-    networksetup -getinfo "${svice}"
 }
 setup_lan_turtle_if_connected() {
     # lan turtle
@@ -277,11 +291,15 @@ setup_lan_turtle_if_connected() {
 
 # 00:04:B4:27:01:60
 
-setup_lan_turtle_if_connected
-run_once
-while ((${run_again})); do
+if [ "${desired_addr_ipv4}" != "${current_addr_ipv4}" ] || [ "${desired_mac_addr}" != "${current_mac_addr}" ]; then
+    setup_lan_turtle_if_connected
     run_once
-done
+    while ((${run_again})); do
+        run_once
+    done
+else
+    1>/dev/null echo -e "\x1b[1;38;2;145;219;105mnothing to do, you're all set\x1b[0m"
+fi
 
 # #\(00[:]?04[:]?B4\|00[:]?0B[:]?79\|00[:]?A0[:]?D0\|10[:]?CA[:]?81\|20[:]?DE[:]?88\|58[:]?EE[:]?CE\)
 # grep -Ei '^((00[:]?04[:]?B4|00[:]?0B[:]?79|00[:]?A0[:]?D0|10[:]?CA[:]?81|20[:]?DE[:]?88|58[:]?EE[:]?CE)|.*(time|cia).*)' ~/opt/etc/macaddrvendors.txt

@@ -1,4 +1,4 @@
-export PATH="${HOME}/.shell.d/bin:${PATH}"
+export PATH="${HOME}/.shell.d/bin:${HOME}/opt/libexec:${PATH}"
 
 # . ${HOME}/.bashrc.env.static
 #shopt -s checkwinsize
@@ -135,7 +135,7 @@ export IFS=$'\n'
 declare -gA shell_d_sh_env_var_defaults=()
 shell_d_sh_env_var_defaults["INFOPATH"]="/opt/homebrew/share/info:/opt/homebrew/share/info:"
 shell_d_sh_env_var_defaults["MANPATH"]="/opt/homebrew/share/man:/opt/homebrew/share/man:"
-shell_d_sh_env_var_defaults["PATH"]="/opt/homebrew/bin:${HOME}/opt/libexec:${HOME}/.cargo/bin:${HOME}/.elixir-install/installs/elixir/1.18.2-otp-27/bin:${HOME}/.elixir-install/installs/otp/27.1.2/bin:${HOME}/.local/bin:${HOME}/.shell.d/.venv/bin:${HOME}/.local/share/fnm/node-versions/v22.22.2/installation/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:${HOME}/.bun/bin:${HOME}/.deno/bin:${HOME}/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:${HOME}/go/bin:${HOME}/.zig:${HOME}/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
+shell_d_sh_env_var_defaults["PATH"]="/opt/homebrew/bin:${HOME}/opt/libexec:${HOME}/.cargo/bin:${HOME}/.elixir-install/installs/elixir/1.18.2-otp-27/bin:${HOME}/.elixir-install/installs/otp/27.1.2/bin:${HOME}/.local/bin:${HOME}/.shell.d/.venv/bin:${HOME}/.local/share/fnm/node-versions/v26.2.0/installation/bin:/opt/homebrew/Cellar/gnu-sed/4.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-sed/4.9/bin:/opt/homebrew/Cellar/findutils/4.10.0/libexec/gnubin:/opt/homebrew/Cellar/findutils/4.10.0/bin:/opt/homebrew/Cellar/git/2.47.0/libexec/git-core:/opt/homebrew/sbin:${HOME}/.bun/bin:${HOME}/.deno/bin:${HOME}/go/install/1.25.0/go/bin:/opt/homebrew/Cellar/gawk/5.3.0/libexec/gnubin:/opt/homebrew/Cellar/gawk/5.3.0/bin:/opt/homebrew/Cellar/bzip2/1.0.8/bin:/opt/homebrew/Cellar/coreutils/9.5/libexec/gnubin:/opt/homebrew/Cellar/coreutils/9.5/bin:/opt/homebrew/Cellar/curl/8.10.1/bin:/opt/homebrew/Cellar/gnu-tar/1.34_1/libexec/gnubin:/opt/homebrew/Cellar/gnu-tar/1.34_1/bin:/opt/homebrew/Cellar/gnu-time/1.9/libexec/gnubin:/opt/homebrew/Cellar/gnu-time/1.9/bin:/opt/homebrew/Cellar/make/4.4.1/libexec/gnubin:/opt/homebrew/Cellar/make/4.4.1/bin:/opt/homebrew/Cellar/openssl@3/3.6.0/bin:${HOME}/go/bin:${HOME}/.zig:${HOME}/.shell.d/scripts:/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/Applications/Emacs.app/Contents/MacOS:./tools:./scripts:./node_modules/.bin:/opt/homebrew/bin:/opt/homebrew/sbin"
 shell_d_sh_env_var_defaults["CDPATH"]="${HOME}/projects/work/poems.codes/tools/noon-cli/packages:${HOME}/projects/work/poems.codes/tools:${HOME}/projects/work/poems.codes:${HOME}/projects/work/poems.codes/paas:${HOME}/projects/work/poems.codes/pro-bono:${HOME}/projects/work/poems.codes/sandbox:${HOME}/projects/work/poems.codes/poc:${HOME}/projects/personal:${HOME}/projects/personal/chrome-extensions:${HOME}/projects/work:${HOME}/projects/third_party:${HOME}/projects:${HOME}/projects/опенсорси:${HOME}/.shell.d/CDPATH:${HOME}"
 shell_d_sh_env_var_defaults["EMACS_SOCKET_NAME"]="${HOME}/.emacs.d/socket/server"
 declare -gAr shell_d_sh_env_var_defaults
@@ -861,6 +861,7 @@ shell_d_internal_security_checks() {
             fi
         fi
     done
+    export RUST_BACKTRACE=1
 }
 
 # <RUST>
@@ -1037,6 +1038,7 @@ entrypoint() {
     #    )
 
     export PS1="\[\r\][#\${HISTCMD}][\\\$?=\$?][\\\$!=\$!][up \$(shell_d_internal_bash_uptime)][level \${SHLVL}] [\\\$\\\$=\$\$] ${PS1}"
+    # export PS1="\[\r\][#${HISTCMD}][\$?=$?][\$!=$!][up $(shell_d_internal_bash_uptime)][level ${SHLVL}] [\$\$=$$] \[\033[1;38;5;220m\]\u\[\033[1;38;5;231m\]:\[\033[1;38;5;220m\]\w\[\033[1;38;5;37m\]$(ps1 --resolve git:branch)\[\033[1;38;5;220m\]\$\[\033[0m\]"
     # # See `man bash'
     # export EXECIGNORE=""
     xD "locale.sh"
@@ -1062,7 +1064,6 @@ entrypoint() {
     xD "homebrew.sh"
     xD "sec.sh"
     xD "io.sh"
-    xD "workbench.sh"
     xD "ansi.sh"
     if [[ -v WEZTERM_PANE ]]; then
         if [[ "${WEZTERM_PANE}" =~ ^\s*([0-9]+)\s*$ ]]; then
@@ -1088,7 +1089,8 @@ entrypoint() {
     shell_d_sh_load_source "${X_D_PATH}/py3.sh"
     shell_d_sh_load_source "${X_D_PATH}/rust.sh"
     shell_d_sh_load_source "${X_D_PATH}/docker.sh"
-    # shell_d_sh_load_source "${X_D_PATH}/ssh.sh"
+    shell_d_sh_load_source "${X_D_PATH}/ssh.sh"
+    shell_d_sh_load_source "${X_D_PATH}/net.sh"
 
     eval "$(fnm env)" # shell_d_sh_load_source "${X_D_PATH}/node.sh"
     export LS_COLORS="$(vivid generate tokyonight-moon)"
@@ -1096,6 +1098,7 @@ entrypoint() {
 
     shell_d_sh_initialize_env_vars
     unset s brew_path path gq
+    source "${HOME}/.sdkman/bin/sdkman-init.sh"
 }
 shell_d_fs_get_canonical_path() {
     if [ ${#} -eq 0 ]; then

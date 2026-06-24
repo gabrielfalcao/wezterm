@@ -6,4 +6,6 @@ set -o pipefail
 1>&2 ssh-ag
 
 # rsync -rLUWv --ignore-errors --mkpath --fsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}
-rsync  -rLUWv --exclude '**/.venv/*'  --exclude '**/.venv'  --exclude '**/.git/*'  --exclude '**/.git'  --exclude '**/node_modules/*'  --exclude '**/node_modules'   --exclude '**/target/*'  --exclude '**/target' --progress --ignore-errors --mkpath --fsync -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}
+declare -a ignores=( '--exclude' '**/.venv/*'  '--exclude' '**/.venv'  '--exclude' '**/.git/*'  '--exclude' '**/.git'  '--exclude' '**/node_modules/*'  '--exclude' '**/node_modules'   '--exclude' '**/target/*'  '--exclude' '**/target' )
+rsync  -rLUWv --progress --ignore-errors --mkpath -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}
+# rsync  -putavoz --progress --ignore-errors -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ${@}

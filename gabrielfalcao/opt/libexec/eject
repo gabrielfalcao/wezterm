@@ -1,3 +1,70 @@
 #!/usr/bin/env bash
 
-sudo eject-usb-disks || sudo eject-disks -v
+set -meTE
+set +f
+set -o pipefail
+unset IFS
+export IFS=$'\n'
+
+declare -- script_name="$(basename "${BASH_SOURCE[0]}")"
+declare -- script_path="$(2>/dev/random 1>/dev/random cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+declare -- this_script_path="${script_path}/${script_name}"
+
+on_exit() {
+    set +x
+}
+
+on_ctrlc() {
+    local -- msg="Aborted with Ctrl-C"
+    local -i len=${#msg}
+    local -i screen_width=0
+    if [[ -v COLUMNS ]]; then
+        screen_width=$((COLUMNS))
+    else
+        local -- stty_info=$(stty -a | grep -E -i columns)
+        screen_width=$(echo "${stty_info}" | sed -n -E "s,^.*[;]\s+((\s*columns\s+)([0-9]+)|([0-9]+)(\s+columns\s*))[;],\3\4,gp" | grep -E '^[0-9]+$' | sort -un)
+    fi
+
+    1>&2 echo -e "\r$(printf '%*s' ${screen_width} "\r\x1b[1;38;2;253;67;83m${msg}")\x1b[0m"
+    exit 130
+}
+trap on_exit exit
+trap on_ctrlc hup
+trap on_ctrlc int
+trap on_ctrlc bus
+trap on_ctrlc segv
+trap on_ctrlc sys
+
+declare -a argv=(${@})
+declare -i argc=${#argv[@]}
+
+declare -- arg=""
+declare -- volume=""
+declare -- output=""
+declare -i dissenter_pid=-1
+declare -a mounted_volumes=()
+declare -i kill_count=0
+
+mounted_volumes=(
+    $(df -h | grep -E '\s+/Volumes' | sed -E 's/^([^[:space:]]+\s+){5}//g')
+)
+set -x
+
+sed_command='/Dissenter/{s/Dissenter\s+parent\s+PPID\s+([0-9]+).*/\1/gp};t success q1; :success q0'
+# sed_command='s/Dissenter\s+parent\s+PPID\s+([0-9]+).*/\1/g'
+
+mounted_volumes=(
+    $(df -h | grep -E '\s+/Volumes' | sed -E 's/^([^[:space:]]+\s+){5}//g')
+)
+
+for volume in ${mounted_volumes[@]}; do
+    1>&2 echo "trying to unmount volume ${volume@Q}"
+    if dissenter_pid=$(2>&1 sudo diskutil unmount "${volume}" | sed -E "${sed_command}" ); then
+        kill_count=0
+        while [[ ${kill_count} -lt 5 ]] && dissenter_pid=$(sed -n -E "/Dissenter/{s/Dissenter\s+parent\s+PPID\s+([0-9]+).*/\1/gp};t success q1; :success q0" <<<"${output}"); do
+            1>&2 echo -e "killing dissenter pid ${dissenter_pid}"
+            sudo kill -9 "${dissenter_pid}"
+            kill_count=$((kill_count + 1))
+        done
+    fi
+done

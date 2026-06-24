@@ -29,7 +29,9 @@ set +m
 # bash -c '1>/dev/random 2>/dev/random $HOME/opt/lib/bash-ps.sh &
 # disown -a'
 
-if [ -z "$(g p -r Phoenix)" ]; then
-    open /Applications/Phoenix.app &
-    disown -h
+if [ -d /Applications/Phoenix.app ]; then
+    if [ -z "$(g p -r Phoenix)" ]; then
+        open /Applications/Phoenix.app &
+        disown -h
+    fi
 fi

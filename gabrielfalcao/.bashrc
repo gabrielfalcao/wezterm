@@ -1,5 +1,6 @@
-. ~/.bash_profile
-# if [[ ! -v ! ]]; then
-# export PS1='\u@\h:\w\$ '
-# fi
-. "$HOME/.cargo/env"
+. ~/.shell.d/entrypoint.sh
+
+# Added by Helix CLI installer
+export PATH="$HOME/.local/bin:$PATH"
+
+. "$HOME/.kyu/bin/env"

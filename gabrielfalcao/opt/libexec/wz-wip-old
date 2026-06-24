@@ -1,4 +1,4 @@
-#!/Users/gabrielfalcao/.shell.d/.venv/bin/python3
+#!/usr/bin/env uv run --script --with click
 
 
 import sys
@@ -17,6 +17,7 @@ from pprint import pformat
 from decimal import Decimal
 from datetime import datetime, timedelta, UTC
 from dataclasses import dataclass, field
+from collections import OrderedDict
 from typing import List, Dict, Tuple, Union, Optional, Self
 from pathlib import Path
 from subprocess import Popen

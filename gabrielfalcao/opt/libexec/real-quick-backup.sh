@@ -37,7 +37,7 @@ fi
 1>&2 echo -en "\x1b[2J\x1b[3J\x1b[H"
 declare -- stderr="${log_folder}/stderr.log"
 declare -- stdout="${log_folder}/stdout.log"
-
+declare -a pids=()
 on_exit() {
     set +x
     exit 11
@@ -69,6 +69,8 @@ declare -g key=''
 declare -g name=''
 declare -g path=''
 declare -g value=''
+declare -a array_of_scheduled_sync_paths=()
+declare -A map_of_scheduled_sync_commands=()
 
 sync_from_to() {
     local -- from="${1}"
@@ -77,18 +79,54 @@ sync_from_to() {
     shift
 
     if [ ! -e "${from}" ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <FROM> does not exist: ${from@Q}"
+        1>&2 echo -e "[${FUNCNAME[0]} warning]" "skipping ${from@Q} because does not exist: ${from@Q}"
         return 0
     elif [ ! -d "${from}" ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <FROM> is not a directory ${from@Q}"
+        1>&2 echo -e "[${FUNCNAME[0]} warning]" "skipping ${from@Q} because is not a directory: ${from@Q}"
         return 0
     fi
 
-    if [ ! -e "${to}" ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <TO> does not exist: ${to@Q}"
+    local -- log_name=$(heck-string --to=kebab "${from}")
+    local -- stderr="${log_folder}/${log_name}.stderr.$$.${PPID}.log"
+    local -- stdout="${log_folder}/${log_name}.stdout.$$.${PPID}.log"
+    local -i code=0
+    local -a rsync_call_argv=(
+        rsync
+        # --info=name
+        --modify-window=1
+        --no-links
+        -pvauogUNW
+        --size-only
+        # --fsync
+        --mkpath
+        --ignore-errors
+        --progress
+        --stats
+        --exclude='**/node_modules/'
+        --exclude='**/target'
+        --info=progress2,stats2,misc1,flist0
+        --log-file="${log_folder}/${log_name}.log"
+        --log-file-format='%i %n%L'
+        "${from}"
+        "${to}"
+    )
+    1>&2 echo -e "scheduling backup of ${from@Q}"
+
+    array_of_scheduled_sync_paths+=("${from}")
+    map_of_scheduled_sync_commands["${from}"]="${rsync_call_argv[@]}"
+}
+
+schedule_sync() {
+    local -- from="${1}"
+    shift
+    local -- to="${1}"
+    shift
+
+    if [ ! -e "${from}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} warning]" "argument <FROM> does not exist: ${from@Q}"
         return 0
-    elif [ ! -d "${to}" ]; then
-        1>&2 echo -e "[${FUNCNAME[0]} error]" "argument <TO> is not a directory ${to@Q}"
+    elif [ ! -d "${from}" ]; then
+        1>&2 echo -e "[${FUNCNAME[0]} warning]" "argument <FROM> is not a directory ${from@Q}"
         return 0
     fi
 
@@ -124,7 +162,7 @@ sync_from_to() {
     else
         1>&2 echo -e "failed to sync: ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1}"
         1>&2 cat "${stderr}"
-        code=0
+        code=$?
     fi
     if [ ${code} -ne 0 ]; then
         1>&2 echo -en "command ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1} failed with ${code}"
@@ -137,151 +175,183 @@ sync_from_to() {
     return ${code}
 }
 
-sync_from_to "/Users/gabrielfalcao/Blender/" \
-    "/Volumes/nothing/APFEL/Blender/"
-sync_from_to "/Users/gabrielfalcao/DaVinci/" \
-    "/Volumes/nothing/APFEL/DaVinci/"
-sync_from_to "/Users/gabrielfalcao/Splice/" \
-    "/Volumes/nothing/APFEL/Splice/"
-sync_from_to "/Users/gabrielfalcao/go/" \
-    "/Volumes/nothing/APFEL/go/"
-sync_from_to "/Users/gabrielfalcao/.gnupg/" \
-    "/Volumes/nothing/APFEL/.gnupg/"
-sync_from_to "/Users/gabrielfalcao/.ssh/" \
-    "/Volumes/nothing/APFEL/.ssh/"
-sync_from_to "/Users/gabrielfalcao/.config/" \
-    "/Volumes/nothing/APFEL/.config/"
-sync_from_to "/Users/gabrielfalcao/.cargo/" \
-    "/Volumes/nothing/APFEL/.cargo/"
-sync_from_to "/Users/gabrielfalcao/.rustup/" \
-    "/Volumes/nothing/APFEL/.rustup/"
+sync_scheduled() {
+    local -i index=0
+    local -i current=0
+    local -- from=""
+    local -- sync_command=""
+    local -i total=${#array_of_scheduled_sync_paths[@]}
+    export IFS=$'\n'
+    for index in ${!array_of_scheduled_sync_paths[@]}; do
+        export IFS=$'\n'
+        current=$(( index + 1 ))
+        from="${array_of_scheduled_sync_paths[${index}]}"
+        sync_command=${map_of_scheduled_sync_commands["${from}"]}
+
+        1>&2 echo -e "running: ${sync_command}"
+        unset IFS
+        if 2>${stderr} ${sync_command} | tee ${stdout}; then
+            code=0
+            1>&2 echo -e "succcess: ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1}"
+            export IFS=$'\n'
+        else
+            1>&2 echo -e "failed to sync: ${rsync_call_argv[@]:0:1} ${rsync_call_argv[@]:1}"
+            1>&2 cat "${stderr}"
+            code=$?
+            export IFS=$'\n'
+        fi
+    done
+}
 
 
-sync_from_to "/Users/gabrielfalcao/SEC/" \
-   "/Volumes/nothing/APFEL/SEC/"
+## schedule_sync "/Users/gabrielfalcao/Downloads/" \
+##    "${target_volume}/APFEL/Downloads/"
+## schedule_sync "/Users/gabrielfalcao/Blender/" \
+##     "${target_volume}/APFEL/Blender/"
+## schedule_sync "/Users/gabrielfalcao/Splice/" \
+##     "${target_volume}/APFEL/Splice/"
+## schedule_sync "/Users/gabrielfalcao/go/" \
+##     "${target_volume}/APFEL/go/"
+## schedule_sync "/Users/gabrielfalcao/.gnupg/" \
+##     "${target_volume}/APFEL/.gnupg/"
+## schedule_sync "/Users/gabrielfalcao/.ssh/" \
+##     "${target_volume}/APFEL/.ssh/"
+## schedule_sync "/Users/gabrielfalcao/.config/" \
+##     "${target_volume}/APFEL/.config/"
+## schedule_sync "/Users/gabrielfalcao/.cargo/" \
+##     "${target_volume}/APFEL/.cargo/"
+## schedule_sync "/Users/gabrielfalcao/.rustup/" \
+##     "${target_volume}/APFEL/.rustup/"
+#
+#
+## schedule_sync "/Users/gabrielfalcao/SEC/" \
+##    "${target_volume}/APFEL/SEC/"
+#
+## schedule_sync "/Users/gabrielfalcao/workbench/" \
+##    "${target_volume}/APFEL/workbench/"
+#
+#
+## schedule_sync "/Users/gabrielfalcao/godot/" \
+##    "${target_volume}/APFEL/godot/"
+#
+## schedule_sync "/Users/gabrielfalcao/Documents/" \
+##    "${target_volume}/APFEL/Documents/"
+#
+## schedule_sync "/Users/gabrielfalcao/Kino/" \
+##    "${target_volume}/APFEL/Kino/"
+#
+## schedule_sync "/Users/gabrielfalcao/Desktop/" \
+##    "${target_volume}/APFEL/Desktop/"
+#
+## schedule_sync "/Users/gabrielfalcao/.bun/" \
+##    "${target_volume}/APFEL/.bun/"
+#
+## schedule_sync "/Users/gabrielfalcao/.deno/" \
+##    "${target_volume}/APFEL/.deno/"
+#
+## schedule_sync "/Users/gabrielfalcao/.nvm/" \
+##    "${target_volume}/APFEL/.nvm/"
+#
+## schedule_sync "/Users/gabrielfalcao/.yarn/" \
+##    "${target_volume}/APFEL/.yarn/"
+#
+#schedule_sync "/Users/gabrielfalcao/.local/" \
+#   "${target_volume}/APFEL/.local/"
+#schedule_sync "/Users/gabrielfalcao/projects/" \
+#   "${target_volume}/APFEL/projects/"
+#
+#schedule_sync "/Users/gabrielfalcao/Library/" \
+#    "${target_volume}/APFEL/Library/"
+#
+#schedule_sync "/Users/gabrielfalcao/opt/" \
+#   "${target_volume}/APFEL/opt/"
+#
+#schedule_sync "/Users/gabrielfalcao/.emacs.d/" \
+#   "${target_volume}/APFEL/.emacs.d/"
+#
+#schedule_sync "/Users/gabrielfalcao/.shell.d/" \
+#              "${target_volume}/APFEL/.shell.d/"
+#
+#schedule_sync "/Users/gabrielfalcao/*scratch*/" \
+#   "${target_volume}/APFEL/*scratch*/"
+#
+#
+#sync_scheduled
+#rsync --modify-window=1 --remove-source-files --no-links -pvauogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/*scratch*/.x/" "${target_volume}/APFEL/*scratch*/.x/"
+rsync --modify-window=1 -pvaulogUNW --mkpath --ignore-errors "/Users/gabrielfalcao/" "${target_volume}/APFEL/"
 
-sync_from_to "/Users/gabrielfalcao/workbench/" \
-   "/Volumes/nothing/APFEL/workbench/"
 
-sync_from_to "/Users/gabrielfalcao/projects/" \
-   "/Volumes/nothing/APFEL/projects/"
-
-sync_from_to "/Users/gabrielfalcao/opt/" \
-   "/Volumes/nothing/APFEL/opt/"
-
-sync_from_to "/Users/gabrielfalcao/.emacs.d/" \
-   "/Volumes/nothing/APFEL/.emacs.d/"
-
-sync_from_to "/Users/gabrielfalcao/.shell.d/" \
-   "/Volumes/nothing/APFEL/.shell.d/"
-
-sync_from_to "/Users/gabrielfalcao/godot/" \
-   "/Volumes/nothing/APFEL/godot/"
-
-sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-   "/Volumes/nothing/APFEL/*scratch*/"
-
-sync_from_to "/Users/gabrielfalcao/Documents/" \
-   "/Volumes/nothing/APFEL/Documents/"
-
-sync_from_to "/Users/gabrielfalcao/Downloads/" \
-   "/Volumes/nothing/APFEL/Downloads/"
-
-sync_from_to "/Users/gabrielfalcao/Kino/" \
-   "/Volumes/nothing/APFEL/Kino/"
-
-sync_from_to "/Users/gabrielfalcao/Desktop/" \
-   "/Volumes/nothing/APFEL/Desktop/"
-
-sync_from_to "/Users/gabrielfalcao/.bun/" \
-   "/Volumes/nothing/APFEL/.bun/"
-
-sync_from_to "/Users/gabrielfalcao/.deno/" \
-   "/Volumes/nothing/APFEL/.deno/"
-
-sync_from_to "/Users/gabrielfalcao/.nvm/" \
-   "/Volumes/nothing/APFEL/.nvm/"
-
-sync_from_to "/Users/gabrielfalcao/.yarn/" \
-   "/Volumes/nothing/APFEL/.yarn/"
-
-sync_from_to "/Users/gabrielfalcao/.local/" \
-   "/Volumes/nothing/APFEL/.local/"
-
-
-rsync --modify-window=1 --remove-source-files --no-links -pvauogUNW --size-only --mkpath --ignore-errors "/Users/gabrielfalcao/*scratch*/.x/" "/Volumes/nothing/APFEL/*scratch*/.x/"
-rsync --modify-window=1 -pvaulogUNW --exclude='/*/*/' --mkpath --ignore-errors "/Users/gabrielfalcao/" "/Volumes/nothing/APFEL/"
-
-
-diskutil unmount /Volumes/nothing/
 ## sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-##     "/Volumes/nothing/APFEL/*scratch*/" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+##     "${target_volume}/APFEL/*scratch*/" # && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
 ## sync_from_to "/Users/gabrielfalcao/*scratch*/Data/" \
-##     "/Volumes/nothing/APFEL/*scratch*/Data/"
+##     "${target_volume}/APFEL/*scratch*/Data/"
 ## sync_from_to "/Users/gabrielfalcao/__sandbox__/" \
-##     "/Volumes/nothing/APFEL/__sandbox__/"
+##     "${target_volume}/APFEL/__sandbox__/"
 ## sync_from_to "/Users/gabrielfalcao/*sandbox*/" \
-##     "/Volumes/nothing/APFEL/*sandbox*/"
+##     "${target_volume}/APFEL/*sandbox*/"
 ## sync_from_to "/Users/gabrielfalcao/*nons*/" \
-##     "/Volumes/nothing/APFEL/*nons*/"
+##     "${target_volume}/APFEL/*nons*/"
 ## sync_from_to "/Users/gabrielfalcao/.wezterm.lua/" \
-##     "/Volumes/nothing/APFEL/.wezterm.lua/"
+##     "${target_volume}/APFEL/.wezterm.lua/"
 ## sync_from_to "/Users/gabrielfalcao/SDKs/" \
-##     "/Volumes/nothing/APFEL/SDKs/"
+##     "${target_volume}/APFEL/SDKs/"
 ## sync_from_to "/Users/gabrielfalcao/.logs/" \
-##     "/Volumes/nothing/APFEL/.logs/"
+##     "${target_volume}/APFEL/.logs/"
 ## sync_from_to "/Users/gabrielfalcao/Music/" \
-##     "/Volumes/nothing/APFEL/Music/"
+##     "${target_volume}/APFEL/Music/"
 ## sync_from_to "/Users/gabrielfalcao/JUCE/" \
-##     "/Volumes/nothing/APFEL/JUCE/"
+##     "${target_volume}/APFEL/JUCE/"
 ## sync_from_to "/Users/gabrielfalcao/Unity/" \
-##     "/Volumes/nothing/APFEL/Unity/"
+##     "${target_volume}/APFEL/Unity/"
 ## sync_from_to "/Users/gabrielfalcao/Splice/" \
-##     "/Volumes/nothing/APFEL/Splice/"
+##     "${target_volume}/APFEL/Splice/"
 ## sync_from_to "/Users/gabrielfalcao/Bildern/" \
-##     "/Volumes/nothing/APFEL/Bildern/"
+##     "${target_volume}/APFEL/Bildern/"
 ## sync_from_to "/Users/gabrielfalcao/Büchen/" \
-##     "/Volumes/nothing/APFEL/Büchen/"
+##     "${target_volume}/APFEL/Büchen/"
 ## sync_from_to "/Users/gabrielfalcao/Kino/" \
-##     "/Volumes/nothing/APFEL/Kino/"
+##     "${target_volume}/APFEL/Kino/"
 ## sync_from_to "/Users/gabrielfalcao/LOL/" \
-##     "/Volumes/nothing/APFEL/LOL/"
+##     "${target_volume}/APFEL/LOL/"
 ## sync_from_to "/Users/gabrielfalcao/Publications/" \
-##     "/Volumes/nothing/APFEL/Publications/"
+##     "${target_volume}/APFEL/Publications/"
 ## sync_from_to "/Users/gabrielfalcao/tmp/" \
-##     "/Volumes/nothing/APFEL/tmp/"
+##     "${target_volume}/APFEL/tmp/"
 ## sync_from_to "/Users/gabrielfalcao/Movies/" \
-##     "/Volumes/nothing/APFEL/Movies/"
+##     "${target_volume}/APFEL/Movies/"
 ## sync_from_to "/Users/gabrielfalcao/Pictures/" \
-##     "/Volumes/nothing/APFEL/Pictures/"
+##     "${target_volume}/APFEL/Pictures/"
 ## sync_from_to "/Users/gabrielfalcao/Library/" \
-##     "/Volumes/nothing/APFEL/Library/"
+##     "${target_volume}/APFEL/Library/"
 ## sync_from_to "/Users/gabrielfalcao/Applications/" \
-##     "/Volumes/nothing/APFEL/Applications/"
+##     "${target_volume}/APFEL/Applications/"
 ## sync_from_to "/Users/gabrielfalcao/Library/Application%20Support/" \
-##     "/Volumes/nothing/APFEL/Library/Application%20Support/"
+##     "${target_volume}/APFEL/Library/Application%20Support/"
 ## sync_from_to "/Users/gabrielfalcao/Library/HTTPStorages/" \
-##     "/Volumes/nothing/APFEL/Library/HTTPStorages/"
+##     "${target_volume}/APFEL/Library/HTTPStorages/"
 ## sync_from_to "/Users/gabrielfalcao/Library/Caches/" \
-##     "/Volumes/nothing/APFEL/Library/Caches/"
+##     "${target_volume}/APFEL/Library/Caches/"
 ## sync_from_to "/Users/gabrielfalcao/Library/LaunchAgents/" \
-##     "/Volumes/nothing/APFEL/Library/LaunchAgents/"
+##     "${target_volume}/APFEL/Library/LaunchAgents/"
 ## sync_from_to "/Users/gabrielfalcao/Library/LaunchDaemons/" \
-##     "/Volumes/nothing/APFEL/Library/LaunchDaemons/"
+##     "${target_volume}/APFEL/Library/LaunchDaemons/"
 ## sync_from_to "/Users/gabrielfalcao/Library/Logs/" \
-##     "/Volumes/nothing/APFEL/Library/Logs/"
+##     "${target_volume}/APFEL/Library/Logs/"
 ## sync_from_to "/Users/gabrielfalcao/Library/Audio/Plug-Ins/" \
-##     "/Volumes/nothing/APFEL/Library/Audio/Plug-Ins/"
+##     "${target_volume}/APFEL/Library/Audio/Plug-Ins/"
 ##
 ## sync_from_to "/Users/gabrielfalcao/usr/local/" \
-##     "/Volumes/nothing/APFEL_Root/usr/local/"
+##     "${target_volume}/APFEL_Root/usr/local/"
 ## sync_from_to "/Users/gabrielfalcao/opt/" \
-##     "/Volumes/nothing/APFEL_Root/opt/"
+##     "${target_volume}/APFEL_Root/opt/"
 ## sync_from_to "/Users/gabrielfalcao/var/log/" \
-##     "/Volumes/nothing/APFEL_Root/var/log/"
+##     "${target_volume}/APFEL_Root/var/log/"
 ## sync_from_to "/Users/gabrielfalcao/Applications/" \
-##     "/Volumes/nothing/APFEL_Root/Applications/"
+##     "${target_volume}/APFEL_Root/Applications/"
 ##
 ## # # sync_from_to "/Users/gabrielfalcao/*scratch*/" \
-## #     "/Volumes/nothing/APFEL/*scratch*/" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
+## #     "${target_volume}/APFEL/*scratch*/" && rm -rf "$USERLAND_HOME/*scratch*/NSA/$(date +"%Y")*"; g p tcpdump -k
 ##
+
+
+diskutil unmount "${target_volume}/"

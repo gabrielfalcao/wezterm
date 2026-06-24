@@ -15,3 +15,5 @@ wezterm-pane-debug.*
 *.pid
 
 /logs
+
+uv.lock

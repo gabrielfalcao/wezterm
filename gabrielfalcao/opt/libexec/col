@@ -5,7 +5,13 @@ import click
 
 class sint(str):
     def __init__(self, val: str):
-        self.val = val.upper().replace("R", "-").replace("N", "-").replace("O", "+").replace("P", "+")
+        self.val = (
+            val.upper()
+            .replace("R", "-")
+            .replace("N", "-")
+            .replace("O", "+")
+            .replace("P", "+")
+        )
 
     def __sub__(self, other):
         return int(self.val) - int(other)
@@ -17,16 +23,16 @@ class sint(str):
 def chop(container, start, end, sep):
     try:
         if end is None:
-            return container[start-1]
-        return sep.join(container[start-1:end-1])
+            return container[start - 1]
+        return sep.join(container[start - 1 : end - 1])
     except IndexError:
         return ""
 
 
 @click.command()
-@click.argument('start', type=sint)
-@click.argument('end', type=sint, default=None, required=False)
-@click.argument('sep', default="", required=False)
+@click.argument("start", type=sint)
+@click.argument("end", type=sint, default=None, required=False)
+@click.argument("sep", default="", required=False)
 def main(start, end=None, sep=""):
     if sys.stdin.isatty():
         sys.stderr.write(f"this program only works with data from STDIN for now...\n")
@@ -36,5 +42,5 @@ def main(start, end=None, sep=""):
         print(chop(line.split(), start, end, sep if sep else ""))
 
 
-if __name__== '__main__':
+if __name__ == "__main__":
     main()
