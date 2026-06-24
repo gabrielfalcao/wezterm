@@ -1,0 +1,3 @@
+https://github.com/psf/black.git
+https://github.com/PyCQA/isort.git
+https://github.com/PyCQA/autoflake.git
