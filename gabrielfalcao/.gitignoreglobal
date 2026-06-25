@@ -1,43 +1,5 @@
 # directories
 
-Shared/
-*/projects/*
-*/.*
-*/*nons*
-*/*scratch*
-*/Applications
-*/Bildern
-*/Blender
-*/Büchen
-*/Desktop
-*/Documents
-*/Downloads
-*/Kino
-*/Kunst
-*/LOL
-*/Library
-*/Movies
-*/Music
-*/NOON
-*/Ouijit
-*/Pictures
-*/Poliigon
-*/Publications
-*/SEC
-*/Sound
-*/Splice
-*/go
-*/godot
-*/opt
-*/projects
-*/tryouts
-*/workbench
-*/shared
-*/vm
-*/vm-shared
-*/Büchen
-
-
 ## source code, installed dependencies compiled artifacts, etc
 
 **/.venv

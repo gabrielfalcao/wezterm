@@ -1,0 +1,7 @@
+[safe]
+	directory = *
+[init]
+	defaultBranch = main
+[user]
+	name = Gabriel Falcão
+	email = gabrielteratos@gmail.com
