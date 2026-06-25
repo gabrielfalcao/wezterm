@@ -2,7 +2,7 @@
 
 export IFS=$'\n'
 set -x
-sudo rm -rf "${HOME}/*scratch*/.x"
+# sudo rm -rf "${HOME}/*scratch*/.x"
 sudo rm -rf "${HOME}/.cargo/registry"
 sudo rm -rf "${HOME}/Library/Caches/deno"
 sudo rm -rf "${HOME}/Library/Caches/ort.pyke.io"
@@ -13,6 +13,8 @@ sudo rm -rf ${HOME}/.rustup/{update-hashes,downloads,tmp}
 sudo rm -rf "/Applications/Visual Studio Code.app"
 
 
-sudo find "${HOME}/.rustup/toolchains/" -mindepth 1 -maxdepth 1 -type d -not -name nightly-2026-05-24-aarch64-apple-darwin -exec rm -rf "{}" \;
-sudo find "${HOME}/projects/" "${HOME}/workbench/" -type f -name Cargo.toml | sed -E 's,Cargo[.]toml$,target,g' | xargs -Ieach rm -rf 'each'
-sudo find "${HOME}/projects/" "${HOME}/workbench/" -type d -name node_modules -not -path 'node_modules/**/node_modules'  -not -path 'node_modules/*/node_modules'  -not -path 'node_modules*node_modules'  | xargs -Ieach rm -rf 'each'
+sudo find "${HOME}/.rustup/toolchains/" -mindepth 1 -maxdepth 1 -type d -not -name nightly-2026-06-24-aarch64-apple-darwin -exec rm -rf "{}" \;
+bash -c 'sudo find "${HOME}/projects/" "${HOME}/workbench/" -type f -name Cargo.toml | sed -E "s,Cargo[.]toml\$,target,g" | xargs -Ieach rm -rf "each"' &
+disown -a
+bash -c 'sudo find "${HOME}/projects/" "${HOME}/workbench/" -type d -name node_modules -not -path "node_modules/**/node_modules"  -not -path "node_modules/*/node_modules"  -not -path "node_modules*node_modules"  | xargs -Ieach rm -rf "each"' &
+disown -a
