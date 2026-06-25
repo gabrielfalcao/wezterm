@@ -2,8 +2,10 @@
 
 set -e
 declare -a argv=($@)
-declare argc=${#argv}
-
+declare -i argc=${#argv}
+declare -i index=0
+declare -i current=0
+declare -a action_args=()
 declare -a known_opts=(
     "-a"
     "add"
@@ -13,6 +15,8 @@ declare -a known_opts=(
     "path"
     "-v"
     "verbose"
+    "-x"
+    "extract"
     "-h"
     "--help"
 )
@@ -24,9 +28,14 @@ action="add"
 verbose="false"
 path=$HOME/$(rmao -l *ocknech*/unen)/mu
 mkdir -p "${path}"
-
+declare -i slurp_args=0
 if [ ${#argv} -gt 0 ]; then
-    for arg in ${argv[@]}; do
+    for index in ${!argv[@]}; do
+        arg=${argv[${index}]}
+        if (( ${slurp_args} )); then
+            action_args+=("${arg}")
+            continue
+        fi
         case "${arg}" in
             "--help" | "-h")
                 usage
@@ -40,6 +49,10 @@ if [ ${#argv} -gt 0 ]; then
                 ;;
             "-a"|"add")
                 action="add"
+                ;;
+            "-x"|"extract")
+                action="extract"
+                slurp_args=1
                 ;;
             "-l"|"list")
                 action="list"
@@ -69,6 +82,9 @@ musgz_list() {
     ls -ltrh | lastcol
 }
 
+musgz_extract() {
+    zcat ${action_args[@]} | mu | jaq '.[].tabs[] | select(.url | test("xvideos[.]com")) | . * {accessedSecs: .lastAccessed  / 1000}' | jaq -s | jaq '.[] | {url,accessed: {date: .accessedSecs | strftime("%Y-%m-%d"), time: .accessedSecs | strftime("%H:%M:%S"), unix: {seconds: .accessedSecs| ceil, milliseconds: .lastAccessed| ceil}}}' | jaq -s # | jaq 'sort_by(.accessed.unix.milliseconds)'
+}
 
 case "${action}" in
     "show_path")
@@ -76,6 +92,9 @@ case "${action}" in
         ;;
     "add")
         musgz_add
+        ;;
+    "extract")
+        musgz_extract
         ;;
     "list")
         musgz_list
