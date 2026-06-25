@@ -173,7 +173,7 @@ class wezterm:
         return bin_path
 
     @classmethod
-    def get_popen_args(cls, args: List[str]) -> str:
+    def get_popen_args(cls, args: List[str]) -> List[str]:
         if not isinstance(args, list):
             ty = type(args).__name__
             raise RuntimeError(f"args is a {ty}, not a list: {repr(args)}")
